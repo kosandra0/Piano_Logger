@@ -793,8 +793,8 @@ td.up{color:var(--ok)} td.down{color:var(--bad)}
       <div class="logo">♪</div>
       <div><h1>Piano Lifetime Logger</h1><p>MIDI visualizer · every key press saved permanently on this computer</p></div>
     </div>
-    <div class="clock" id="istClock" role="timer" tabindex="0" title="Indian Standard Time. Click to switch 12/24-hour" aria-label="Current time in India">
-      <div class="clk-row"><span class="clk-time" id="clkTime">--:--:--</span><span class="clk-zone">IST</span></div>
+    <div class="clock" id="istClock" role="timer" tabindex="0" title="Your local time. Click to switch 12/24-hour" aria-label="Current local time">
+      <div class="clk-row"><span class="clk-time" id="clkTime">--:--:--</span><span class="clk-zone" id="clkZone"></span></div>
       <span class="clk-date" id="clkDate"></span>
     </div>
     <div class="midi-ctl">
@@ -2483,7 +2483,7 @@ const GUIDE_HTML = `<div class="guide">
 <ul>
 <li>⚙️ <b>Appearance &amp; layout:</b> 7 themes (including Light glass), your own accent colours or background image, text size, high contrast, compact mode, calm mode (fewer animations) and a 12-hour clock.</li>
 <li>Hover a section: <b>⠿</b> drags it to a new place, <b>▾</b> folds it away. In ⚙️ → Sections you can hide sections or reorder them with arrows; <b>Reset layout</b> restores everything.</li>
-<li>🧘 <b>Focus mode</b> shows only the piano (Esc to leave). ⛶ is fullscreen. The <b>IST clock</b> switches between 12 and 24 hours when clicked.</li>
+<li>🧘 <b>Focus mode</b> shows only the piano (Esc to leave). ⛶ is fullscreen. The <b>clock</b> (your own local time) switches between 12 and 24 hours when clicked.</li>
 </ul>
 
 <h3 id="g-keys">16. Shortcuts</h3>
@@ -3205,15 +3205,159 @@ window.addEventListener('keyup', e => { if (e.code === 'Space') setTimeout(updPe
 window.addEventListener('blur', () => setTimeout(updPedal, 0));
 
 /* =====================================================================
-   IST CLOCK
+   LOCAL CLOCK (each visitor sees their own time zone and its abbreviation)
    ===================================================================== */
 const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } })();
+// Time-zone abbreviations by IANA zone. "STD/DST" means: first name in standard time, second during daylight saving.
+const TZ_ABBR = {};
+[
+  // South Asia
+  ['IST', 'Asia/Kolkata Asia/Calcutta'], ['PKT', 'Asia/Karachi'], ['BST', 'Asia/Dhaka Asia/Dacca'],
+  ['NPT', 'Asia/Kathmandu Asia/Katmandu'], ['SLST', 'Asia/Colombo'], ['BTT', 'Asia/Thimphu Asia/Thimbu'],
+  ['MVT', 'Indian/Maldives'], ['AFT', 'Asia/Kabul'], ['IOT', 'Indian/Chagos'],
+  // South-East Asia
+  ['PHT', 'Asia/Manila'], ['SGT', 'Asia/Singapore Singapore'], ['MYT', 'Asia/Kuala_Lumpur Asia/Kuching'],
+  ['WIB', 'Asia/Jakarta Asia/Pontianak'], ['WITA', 'Asia/Makassar Asia/Ujung_Pandang'], ['WIT', 'Asia/Jayapura'],
+  ['ICT', 'Asia/Bangkok Asia/Ho_Chi_Minh Asia/Saigon Asia/Phnom_Penh Asia/Vientiane'], ['MMT', 'Asia/Yangon Asia/Rangoon'],
+  ['BNT', 'Asia/Brunei'], ['TLT', 'Asia/Dili'], ['CXT', 'Indian/Christmas'], ['CCT', 'Indian/Cocos'],
+  // East Asia
+  ['CST', 'Asia/Shanghai Asia/Chongqing Asia/Chungking Asia/Harbin PRC Asia/Macau Asia/Macao Asia/Taipei ROC'],
+  ['XJT', 'Asia/Urumqi Asia/Kashgar'], ['HKT', 'Asia/Hong_Kong Hongkong'], ['JST', 'Asia/Tokyo Japan'],
+  ['KST', 'Asia/Seoul ROK Asia/Pyongyang'], ['ULAT', 'Asia/Ulaanbaatar Asia/Ulan_Bator Asia/Choibalsan'], ['HOVT', 'Asia/Hovd'],
+  // Central Asia and Caucasus
+  ['UZT', 'Asia/Tashkent Asia/Samarkand'], ['KGT', 'Asia/Bishkek'], ['TJT', 'Asia/Dushanbe'], ['TMT', 'Asia/Ashgabat Asia/Ashkhabad'],
+  ['AZT', 'Asia/Baku'], ['GET', 'Asia/Tbilisi'], ['AMT', 'Asia/Yerevan'],
+  // Middle East
+  ['GST', 'Asia/Dubai Asia/Muscat'], ['AST', 'Asia/Riyadh Asia/Qatar Asia/Kuwait Asia/Bahrain Asia/Aden Asia/Baghdad'],
+  ['IRST', 'Asia/Tehran Iran'], ['IST/IDT', 'Asia/Jerusalem Asia/Tel_Aviv Israel'],
+  ['EET/EEST', 'Asia/Beirut Asia/Gaza Asia/Hebron Asia/Nicosia Asia/Famagusta Europe/Nicosia'],
+  // Russia
+  ['EET', 'Europe/Kaliningrad'], ['MSK', 'Europe/Moscow Europe/Simferopol Europe/Kirov Europe/Volgograd W-SU Europe/Minsk'],
+  ['SAMT', 'Europe/Samara Europe/Ulyanovsk Europe/Astrakhan Europe/Saratov'], ['YEKT', 'Asia/Yekaterinburg'], ['OMST', 'Asia/Omsk'],
+  ['NOVT', 'Asia/Novosibirsk'], ['KRAT', 'Asia/Krasnoyarsk Asia/Novokuznetsk Asia/Barnaul Asia/Tomsk'], ['IRKT', 'Asia/Irkutsk'],
+  ['YAKT', 'Asia/Yakutsk Asia/Chita Asia/Khandyga'], ['VLAT', 'Asia/Vladivostok Asia/Ust-Nera'], ['SAKT', 'Asia/Sakhalin'],
+  ['MAGT', 'Asia/Magadan Asia/Srednekolymsk'], ['PETT', 'Asia/Kamchatka'], ['ANAT', 'Asia/Anadyr'],
+  // Europe
+  ['GMT/BST', 'Europe/London Europe/Belfast Europe/Guernsey Europe/Jersey Europe/Isle_of_Man GB GB-Eire'],
+  ['GMT/IST', 'Europe/Dublin Eire'], ['GMT', 'Atlantic/Reykjavik Iceland Atlantic/St_Helena'],
+  ['WET/WEST', 'Europe/Lisbon Portugal Atlantic/Madeira Atlantic/Canary Atlantic/Faroe Atlantic/Faeroe'],
+  ['AZOT/AZOST', 'Atlantic/Azores'],
+  ['CET/CEST', 'Europe/Paris Europe/Berlin Europe/Madrid Europe/Rome Europe/Amsterdam Europe/Brussels Europe/Vienna Europe/Zurich ' +
+    'Europe/Stockholm Europe/Oslo Europe/Copenhagen Europe/Warsaw Poland Europe/Prague Europe/Budapest Europe/Belgrade Europe/Zagreb ' +
+    'Europe/Ljubljana Europe/Sarajevo Europe/Skopje Europe/Podgorica Europe/Bratislava Europe/Luxembourg Europe/Monaco Europe/Malta ' +
+    'Europe/Andorra Europe/Tirane Europe/Vaduz Europe/San_Marino Europe/Vatican Europe/Gibraltar Europe/Busingen Africa/Ceuta ' +
+    'Arctic/Longyearbyen Atlantic/Jan_Mayen CET'],
+  ['EET/EEST', 'Europe/Athens Europe/Bucharest Europe/Sofia Europe/Helsinki Europe/Kiev Europe/Kyiv Europe/Riga Europe/Tallinn ' +
+    'Europe/Vilnius Europe/Chisinau Europe/Tiraspol Europe/Mariehamn Europe/Uzhgorod Europe/Zaporozhye Africa/Cairo Egypt EET'],
+  ['TRT', 'Europe/Istanbul Asia/Istanbul Turkey'],
+  // Africa
+  ['WAT', 'Africa/Lagos Africa/Kinshasa Africa/Luanda Africa/Douala Africa/Libreville Africa/Malabo Africa/Niamey Africa/Porto-Novo ' +
+    'Africa/Brazzaville Africa/Bangui Africa/Ndjamena'],
+  ['CAT', 'Africa/Maputo Africa/Harare Africa/Lusaka Africa/Lubumbashi Africa/Blantyre Africa/Bujumbura Africa/Gaborone Africa/Kigali ' +
+    'Africa/Windhoek Africa/Juba Africa/Khartoum'],
+  ['EAT', 'Africa/Nairobi Africa/Addis_Ababa Africa/Dar_es_Salaam Africa/Kampala Africa/Mogadishu Africa/Djibouti Africa/Asmara ' +
+    'Africa/Asmera Indian/Antananarivo Indian/Comoro Indian/Mayotte'],
+  ['SAST', 'Africa/Johannesburg Africa/Maseru Africa/Mbabane'],
+  ['GMT', 'Africa/Abidjan Africa/Accra Africa/Bamako Africa/Banjul Africa/Bissau Africa/Conakry Africa/Dakar Africa/Freetown ' +
+    'Africa/Lome Africa/Monrovia Africa/Nouakchott Africa/Ouagadougou Africa/Sao_Tome Africa/Timbuktu'],
+  ['EET', 'Africa/Tripoli Libya'], ['CET', 'Africa/Algiers Africa/Tunis'],
+  ['MUT', 'Indian/Mauritius'], ['RET', 'Indian/Reunion'], ['SCT', 'Indian/Mahe'], ['CVT', 'Atlantic/Cape_Verde'],
+  // North America
+  ['EST/EDT', 'America/New_York America/Detroit America/Toronto America/Montreal America/Nassau America/Iqaluit America/Nipigon ' +
+    'America/Thunder_Bay America/Indiana/Indianapolis America/Indianapolis America/Indiana/Vincennes America/Indiana/Winamac ' +
+    'America/Indiana/Marengo America/Indiana/Petersburg America/Indiana/Vevay America/Kentucky/Louisville America/Louisville ' +
+    'America/Kentucky/Monticello America/Fort_Wayne America/Port-au-Prince America/Grand_Turk US/Eastern US/Michigan Canada/Eastern EST5EDT'],
+  ['CST/CDT', 'America/Chicago America/Winnipeg America/Indiana/Knox America/Knox_IN America/Indiana/Tell_City America/Menominee ' +
+    'America/North_Dakota/Center America/North_Dakota/New_Salem America/North_Dakota/Beulah America/Rainy_River America/Rankin_Inlet ' +
+    'America/Resolute America/Matamoros America/Ojinaga America/Havana Cuba US/Central Canada/Central CST6CDT'],
+  ['MST/MDT', 'America/Denver America/Boise America/Edmonton America/Yellowknife America/Cambridge_Bay America/Inuvik ' +
+    'America/Ciudad_Juarez America/Shiprock Navajo US/Mountain Canada/Mountain MST7MDT'],
+  ['PST/PDT', 'America/Los_Angeles America/Vancouver America/Tijuana America/Ensenada America/Santa_Isabel US/Pacific Canada/Pacific PST8PDT'],
+  ['AKST/AKDT', 'America/Anchorage America/Juneau America/Sitka America/Nome America/Yakutat America/Metlakatla US/Alaska'],
+  ['HST/HDT', 'America/Adak America/Atka US/Aleutian'], ['HST', 'Pacific/Honolulu Pacific/Johnston US/Hawaii'],
+  ['AST/ADT', 'America/Halifax America/Glace_Bay America/Moncton America/Goose_Bay America/Thule Atlantic/Bermuda Canada/Atlantic'],
+  ['NST/NDT', 'America/St_Johns Canada/Newfoundland'],
+  ['MST', 'America/Phoenix US/Arizona America/Whitehorse America/Dawson America/Dawson_Creek America/Fort_Nelson America/Creston ' +
+    'America/Hermosillo America/Mazatlan Canada/Yukon MST'],
+  ['CST', 'America/Regina America/Swift_Current Canada/Saskatchewan America/Mexico_City America/Monterrey America/Merida ' +
+    'America/Bahia_Banderas America/Chihuahua Mexico/General America/Guatemala America/Belize America/El_Salvador ' +
+    'America/Tegucigalpa America/Managua America/Costa_Rica'],
+  ['EST', 'America/Cancun America/Panama America/Jamaica Jamaica America/Cayman America/Atikokan America/Coral_Harbour EST'],
+  ['AST', 'America/Puerto_Rico America/Santo_Domingo America/Barbados America/Port_of_Spain America/Martinique America/Guadeloupe ' +
+    'America/Curacao America/Aruba America/Kralendijk America/Lower_Princes America/St_Thomas America/St_Lucia America/St_Vincent ' +
+    'America/St_Kitts America/Antigua America/Anguilla America/Dominica America/Grenada America/Montserrat America/Tortola ' +
+    'America/St_Barthelemy America/Marigot America/Blanc-Sablon America/Virgin'],
+  // South America
+  ['COT', 'America/Bogota'], ['PET', 'America/Lima'], ['ECT', 'America/Guayaquil'], ['GALT', 'Pacific/Galapagos'],
+  ['VET', 'America/Caracas'], ['BOT', 'America/La_Paz'], ['GYT', 'America/Guyana'], ['SRT', 'America/Paramaribo'], ['GFT', 'America/Cayenne'],
+  ['BRT', 'America/Sao_Paulo America/Bahia America/Fortaleza America/Recife America/Belem America/Maceio America/Araguaina ' +
+    'America/Santarem Brazil/East'],
+  ['AMT', 'America/Manaus America/Cuiaba America/Campo_Grande America/Porto_Velho America/Boa_Vista Brazil/West'],
+  ['ACT', 'America/Rio_Branco America/Eirunepe America/Porto_Acre Brazil/Acre'], ['FNT', 'America/Noronha Brazil/DeNoronha'],
+  ['ART', 'America/Buenos_Aires America/Argentina/Buenos_Aires America/Argentina/Cordoba America/Cordoba America/Argentina/Salta ' +
+    'America/Argentina/Jujuy America/Jujuy America/Argentina/Tucuman America/Argentina/Catamarca America/Catamarca ' +
+    'America/Argentina/La_Rioja America/Argentina/San_Juan America/Argentina/Mendoza America/Mendoza America/Argentina/San_Luis ' +
+    'America/Argentina/Rio_Gallegos America/Argentina/Ushuaia America/Rosario'],
+  ['UYT', 'America/Montevideo'], ['PYT', 'America/Asuncion'], ['CLT/CLST', 'America/Santiago Chile/Continental'],
+  ['EAST/EASST', 'Pacific/Easter Chile/EasterIsland'], ['FKST', 'Atlantic/Stanley'], ['GST', 'Atlantic/South_Georgia'],
+  ['WGT/WGST', 'America/Nuuk America/Godthab'], ['EGT/EGST', 'America/Scoresbysund'],
+  // Australia and the Pacific
+  ['AEST/AEDT', 'Australia/Sydney Australia/Melbourne Australia/Hobart Australia/Canberra Australia/ACT Australia/NSW ' +
+    'Australia/Victoria Australia/Tasmania Australia/Currie Antarctica/Macquarie'],
+  ['AEST', 'Australia/Brisbane Australia/Lindeman Australia/Queensland'],
+  ['ACST/ACDT', 'Australia/Adelaide Australia/Broken_Hill Australia/South Australia/Yancowinna'],
+  ['ACST', 'Australia/Darwin Australia/North'], ['AWST', 'Australia/Perth Australia/West'], ['ACWST', 'Australia/Eucla'],
+  ['LHST/LHDT', 'Australia/Lord_Howe Australia/LHI'],
+  ['NZST/NZDT', 'Pacific/Auckland NZ Antarctica/McMurdo Antarctica/South_Pole'], ['CHAST/CHADT', 'Pacific/Chatham NZ-CHAT'],
+  ['FJT', 'Pacific/Fiji'], ['ChST', 'Pacific/Guam Pacific/Saipan'], ['PGT', 'Pacific/Port_Moresby'], ['NCT', 'Pacific/Noumea'],
+  ['VUT', 'Pacific/Efate'], ['SBT', 'Pacific/Guadalcanal'], ['TOT', 'Pacific/Tongatapu'], ['WST', 'Pacific/Apia'],
+  ['TAHT', 'Pacific/Tahiti'], ['SST', 'Pacific/Pago_Pago Pacific/Samoa Pacific/Midway US/Samoa'], ['MHT', 'Pacific/Majuro Pacific/Kwajalein Kwajalein'],
+  ['GILT', 'Pacific/Tarawa'], ['PHOT', 'Pacific/Kanton Pacific/Enderbury'], ['LINT', 'Pacific/Kiritimati'], ['PWT', 'Pacific/Palau'],
+  ['NFT/NFDT', 'Pacific/Norfolk'], ['CKT', 'Pacific/Rarotonga'], ['NRT', 'Pacific/Nauru'], ['TVT', 'Pacific/Funafuti'],
+  ['CHUT', 'Pacific/Chuuk Pacific/Truk Pacific/Yap'], ['PONT', 'Pacific/Pohnpei Pacific/Ponape'], ['KOST', 'Pacific/Kosrae'],
+  ['MART', 'Pacific/Marquesas'], ['GAMT', 'Pacific/Gambier'], ['NUT', 'Pacific/Niue'], ['WFT', 'Pacific/Wallis'],
+  ['TKT', 'Pacific/Fakaofo'], ['WAKT', 'Pacific/Wake'], ['BST', 'Pacific/Bougainville'],
+  // Universal
+  ['UTC', 'UTC Etc/UTC Etc/UCT UCT Etc/Universal Universal Etc/Zulu Zulu'], ['GMT', 'GMT Etc/GMT Etc/Greenwich Greenwich GMT0 Etc/GMT0']
+].forEach(([ab, zones]) => zones.split(' ').forEach(z => { TZ_ABBR[z] = ab; }));
+// Is daylight saving in effect right now? (works for both hemispheres)
+function tzIsDst(d) {
+  const y = d.getFullYear(), a = -new Date(y, 0, 1).getTimezoneOffset(), b = -new Date(y, 6, 1).getTimezoneOffset();
+  return a !== b && -d.getTimezoneOffset() > Math.min(a, b);
+}
+const tzFmt = {};
+function tzPart(d, loc, style) {
+  try {
+    const k = loc + style, f = tzFmt[k] || (tzFmt[k] = new Intl.DateTimeFormat(loc, { timeZoneName: style }));
+    const p = f.formatToParts(d).find(x => x.type === 'timeZoneName'); return p ? p.value : '';
+  } catch (e) { return ''; }
+}
+function tzOffset(d) {
+  const o = -d.getTimezoneOffset(), a = Math.abs(o);
+  return 'GMT' + (o < 0 ? '−' : '+') + Math.floor(a / 60) + (a % 60 ? ':' + pad(a % 60) : '');
+}
+function zoneAbbr(d = new Date()) {
+  const m = TZ_ABBR[TZ];
+  if (m) { const p = m.split('/'); return p.length > 1 && tzIsDst(d) ? p[1] : p[0]; }
+  const locs = ['en-US', 'en-GB', 'en-AU', 'en-IN', navigator.language || 'en-US'];
+  for (const l of locs) { const n = tzPart(d, l, 'short'); if (/^[A-Z]{2,5}$/.test(n)) return n; }
+  return d.getTimezoneOffset() === 0 ? 'UTC' : tzOffset(d);
+}
+function zoneLong(d = new Date()) { return tzPart(d, 'en-US', 'long') || tzOffset(d); }
+let zoneKey = '';
 function renderClock() {
-  const d = new Date(Date.now() + 19800000);          // IST = UTC + 5:30, independent of this computer's time zone setting
-  let hh = d.getUTCHours(); const mm = pad(d.getUTCMinutes()), ss = pad(d.getUTCSeconds());
+  const d = new Date();                                // the visitor's own device time zone
+  let hh = d.getHours(); const mm = pad(d.getMinutes()), ss = pad(d.getSeconds());
   let t; if (X2.clock12) { const ap = hh >= 12 ? 'PM' : 'AM'; hh = hh % 12 || 12; t = hh + ':' + mm + ':' + ss + ' ' + ap; } else t = pad(hh) + ':' + mm + ':' + ss;
   $('#clkTime').textContent = t;
-  $('#clkDate').textContent = WD[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MO[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  $('#clkDate').textContent = WD[d.getDay()] + ', ' + d.getDate() + ' ' + MO[d.getMonth()] + ' ' + d.getFullYear();
+  const k = TZ + d.getTimezoneOffset();               // refresh the label only when the zone or daylight saving changes
+  if (k !== zoneKey) {
+    zoneKey = k; const ab = zoneAbbr(d), ln = zoneLong(d), z = $('#clkZone'), c = $('#istClock');
+    if (z) z.textContent = ab;
+    if (c) { c.title = ln + (TZ ? ' (' + TZ.replace(/_/g, ' ') + ')' : '') + ' · ' + tzOffset(d) + '. Click to switch 12/24-hour'; c.setAttribute('aria-label', 'Current local time, ' + ln); }
+  }
 }
 function clockTick() { renderClock(); setTimeout(clockTick, 1000 - (Date.now() % 1000) + 8); }
 const toggleClock = () => { X2.clock12 = !X2.clock12; saveX2(); renderClock(); };
@@ -3985,7 +4129,7 @@ const TOUR = [
   ['#octInfo', '⌨ PC keyboard', 'Two rows of your keyboard are piano keys. Use ← and → to move them up or down an octave.'],
   ['#xEngine', '🔊 Instruments', 'Pick a sound: built-in synth, a real grand piano (downloaded once), electric piano, organ, strings or music box. The slider next to it adds room reverb.'],
   ['#btnConnect', '🎛 Connect MIDI', 'Plug in a MIDI keyboard and press this. Every note from any input is saved for life.'],
-  ['#istClock', '🕘 Indian time', 'The current time and date in IST. Click it to switch between 12-hour and 24-hour.'],
+  ['#istClock', '🕘 Local time', 'The current time and date in your own time zone, with its short name (IST in India, PHT in the Philippines and so on). Click it to switch between 12-hour and 24-hour.'],
   ['[data-sec=live]', '📊 Live panels', 'Your latest note, the chord you are holding, the key you seem to be playing in, the sustain pedal and your counters.'],
   ['#tabs', '📑 Your data', 'Dashboard, History and Key statistics show everything you have played. Click a bar in a chart to open those presses in History.'],
   ['.tab[data-tab=practice]', '🎓 Practice', 'Load a MIDI song or a demo. Notes fall toward the keys, “Wait for me” mode pauses until you play them, and you get a score.'],
@@ -4876,7 +5020,7 @@ async function buildReport(ym) {
   const chords = [...A.chords].sort((a, b) => b[1] - a[1]).slice(0, 8), keys = [...A.keyN].sort((a, b) => b[1] - a[1]).slice(0, 5), prog = [...A.prog3].sort((a, b) => b[1] - a[1]).slice(0, 5);
   const longest = A.sessions.reduce((m, s) => !m || s.span > m.span ? s : m, null), chg = prev ? Math.round((rows.length - prev) / prev * 100) : null;
   const tile = (l, v, s2) => '<div class="rt"><span>' + l + '</span><b>' + v + '</b>' + (s2 ? '<em>' + s2 + '</em>' : '') + '</div>';
-  const now = new Date(Date.now() + 19800000), gen = now.getUTCDate() + ' ' + MO[now.getUTCMonth()] + ' ' + now.getUTCFullYear() + ', ' + pad(now.getUTCHours()) + ':' + pad(now.getUTCMinutes()) + ' IST';
+  const now = new Date(), gen = now.getDate() + ' ' + MO[now.getMonth()] + ' ' + now.getFullYear() + ', ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' ' + zoneAbbr(now);
   const mName = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Mo - 1] + ' ' + Y;
   if (!rows.length) return '<div class="rep-page"><header><div><div class="rep-kicker">PIANO LIFETIME LOGGER · MONTHLY REPORT</div><h1>' + mName + '</h1></div></header><p>No key presses were logged in this month.</p></div>';
   return '<div class="rep-page">' +
