@@ -781,6 +781,326 @@ td.up{color:var(--ok)} td.down{color:var(--bad)}
 }
 @media(max-width:700px){.rep .rep-grid{grid-template-columns:1fr 1fr}.rep .rep-2col{grid-template-columns:1fr}.ear-row{grid-template-columns:100px 1fr 70px}}
 
+
+/* =====================================================================
+   v5 — PROFILE, LEVELS, ACHIEVEMENTS, COSMETICS & THEME SKINS
+   ===================================================================== */
+:root{--rk:#94a3b8;--bg2:#15152a;--sky:#16163a;--tint:#ffffff;--kb:#14141f;--on-acc:#0a0a14}
+
+/* ---------- header level chip ---------- */
+.lvl-chip{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:9px;row-gap:5px;align-items:center;
+  padding:7px 12px 8px 8px;border-radius:16px;border:1px solid color-mix(in srgb,var(--rk) 45%,var(--line));cursor:pointer;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--rk) 16%,rgba(0,0,0,.2)),rgba(0,0,0,.18));color:var(--txt);font:inherit;text-align:left;
+  box-shadow:0 0 18px -6px color-mix(in srgb,var(--rk) 70%,transparent);transition:transform .15s,box-shadow .2s,border-color .2s;position:relative;min-width:150px}
+.lvl-chip:hover{transform:translateY(-1px);box-shadow:0 0 24px -4px color-mix(in srgb,var(--rk) 80%,transparent)}
+.lvl-chip:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+.lc-em{grid-row:1/3;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:19px;
+  background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--rk) 55%,#fff 0%),color-mix(in srgb,var(--rk) 25%,transparent));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 0 0 1px color-mix(in srgb,var(--rk) 60%,transparent)}
+.lc-txt{display:flex;align-items:baseline;gap:7px;line-height:1.1;white-space:nowrap}
+.lc-txt b{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.lc-txt small{font-size:11px;color:var(--mut);font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.lc-bar{height:5px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+.lc-bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--rk),var(--c1));transition:width .6s cubic-bezier(.2,.9,.3,1)}
+.xp-float{position:absolute;right:8px;top:-6px;font-size:12px;font-weight:800;color:var(--c3);pointer-events:none;text-shadow:0 0 10px color-mix(in srgb,var(--c3) 70%,transparent);
+  animation:xpFloat 1.8s ease-out forwards}
+@keyframes xpFloat{0%{opacity:0;transform:translateY(6px)}15%{opacity:1}100%{opacity:0;transform:translateY(-18px)}}
+
+/* ---------- profile tab ---------- */
+#p-profile{display:none;gap:14px}
+#p-profile.on{display:grid}
+.pf-top{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px}
+.pf-mid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media(max-width:900px){.pf-top,.pf-mid{grid-template-columns:minmax(0,1fr)}}
+#p-profile .sc{border-radius:var(--r-md);border:1px solid var(--line-soft);background:rgba(255,255,255,.03)}
+.pf-hero{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px 18px;align-items:center;position:relative;overflow:hidden;
+  background:radial-gradient(120% 140% at 0% 0%,color-mix(in srgb,var(--rk) 18%,transparent),transparent 60%),rgba(255,255,255,.03)!important;
+  border-color:color-mix(in srgb,var(--rk) 35%,var(--line-soft))!important}
+.pf-av{--fr:var(--rk);width:86px;height:86px;border-radius:26px;display:grid;place-items:center;font-size:44px;position:relative;
+  background:radial-gradient(circle at 35% 28%,color-mix(in srgb,var(--rk) 45%,rgba(255,255,255,.25)),color-mix(in srgb,var(--rk) 14%,rgba(0,0,0,.25)) 70%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 12px 30px -12px color-mix(in srgb,var(--rk) 80%,transparent)}
+.pf-av::before,.pf-av::after{content:"";position:absolute;pointer-events:none}
+.pf-av.fr-ring::before{inset:-5px;border-radius:30px;border:2px solid color-mix(in srgb,var(--c1) 80%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--c1) 60%,transparent)}
+.pf-av.fr-pulse::before{inset:-6px;border-radius:31px;border:2px solid var(--c2);box-shadow:0 0 18px var(--c2),inset 0 0 12px color-mix(in srgb,var(--c2) 50%,transparent);animation:frPulse 2.4s ease-in-out infinite}
+@keyframes frPulse{50%{box-shadow:0 0 30px var(--c2),inset 0 0 16px color-mix(in srgb,var(--c2) 60%,transparent)}}
+.pf-av.fr-rank::before{inset:-7px;border-radius:32px;background:conic-gradient(from 0deg,var(--rk),transparent 30%,var(--rk) 50%,transparent 80%,var(--rk));
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));border-radius:50%;opacity:.9}
+.pf-av.fr-laurel::before{inset:-7px;border-radius:32px;border:3px double #fbbf24;box-shadow:0 0 16px rgba(251,191,36,.55)}
+.pf-av.fr-laurel::after{content:"🌿";font-size:18px;left:-12px;bottom:-8px;transform:rotate(-20deg)}
+.pf-av.fr-prism::before{inset:-6px;border-radius:31px;padding:3px;background:linear-gradient(135deg,#f472b6,#fbbf24,#4ade80,#22d3ee,#a78bfa,#f472b6);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.pf-av.fr-halo::before{inset:-10px;border-radius:50%;border:2px solid rgba(255,255,255,.75);box-shadow:0 0 22px #fff,0 0 44px color-mix(in srgb,var(--c1) 70%,transparent)}
+.pf-av.fr-halo::after{content:"✦";font-size:14px;top:-14px;right:-6px;color:#fff;text-shadow:0 0 10px #fff}
+.pf-id{min-width:0;display:grid;gap:6px}
+#pfName{font-size:22px;font-weight:800;background:transparent!important;border:1px solid transparent!important;padding:2px 8px;margin-left:-9px;border-radius:10px;width:100%;max-width:340px;letter-spacing:-.2px}
+#pfName:hover{border-color:var(--line)!important}
+#pfName:focus{border-color:var(--c1)!important;background:rgba(0,0,0,.2)!important}
+.pf-title{font-size:13px;font-weight:700;color:var(--rk);letter-spacing:.02em}
+.pf-rank{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rk-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:800;color:var(--txt);
+  border:1px solid color-mix(in srgb,var(--rk) 60%,transparent);background:color-mix(in srgb,var(--rk) 18%,transparent);box-shadow:0 0 14px -4px var(--rk)}
+.pf-lv{text-align:center;display:grid;line-height:1}
+.pf-lv small{font-size:10px;font-weight:800;letter-spacing:.18em;color:var(--mut)}
+.pf-lv b{font-size:54px;font-weight:800;letter-spacing:-2px;font-variant-numeric:tabular-nums;
+  background:linear-gradient(180deg,var(--txt),color-mix(in srgb,var(--rk) 70%,var(--txt)));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 16px color-mix(in srgb,var(--rk) 45%,transparent))}
+.pf-xp{grid-column:1/-1;display:grid;gap:6px}
+.xpbar{height:14px;border-radius:99px;background:rgba(255,255,255,.08);border:1px solid var(--line-soft);overflow:hidden;position:relative}
+.xpbar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--rk),var(--c1),var(--c2));
+  box-shadow:0 0 14px color-mix(in srgb,var(--c1) 60%,transparent);transition:width .8s cubic-bezier(.2,.9,.3,1);position:relative}
+.xpbar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);background-size:60px 100%;animation:xpShine 2.6s linear infinite}
+@keyframes xpShine{from{background-position:-60px 0}to{background-position:400px 0}}
+.pf-xp-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.pf-xp-row span:last-child{color:var(--mut)}
+@media(max-width:560px){.pf-hero{grid-template-columns:auto minmax(0,1fr)}.pf-lv{grid-column:1/-1;display:flex;gap:10px;align-items:baseline;justify-content:center}.pf-lv b{font-size:40px}.pf-av{width:70px;height:70px;font-size:36px}}
+.pf-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pf-tile{padding:10px 12px;border-radius:12px;border:1px solid var(--line-soft);background:rgba(255,255,255,.035);min-width:0}
+.pf-tile span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.pf-tile b{display:block;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-tile em{display:block;font-style:normal;font-size:11px;color:var(--mut2)}
+#pfSince{margin-top:10px}
+.pf-list{display:grid;gap:8px}
+.pf-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;border:1px solid var(--line-soft);background:rgba(255,255,255,.03)}
+.pf-item .ic{font-size:22px;width:34px;text-align:center}
+.pf-item b{font-size:13px;display:block}
+.pf-item small{font-size:11.5px;color:var(--mut)}
+.pf-item .pbar{margin-top:5px}
+.pf-item .xp{font-size:11px;font-weight:800;color:var(--c3);white-space:nowrap}
+.pf-empty{color:var(--mut);font-size:13px;padding:6px 2px}
+.pf-ach-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pf-ach-head h2{margin:0}
+.ach-cat{margin:14px 0 8px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.ach-cat:first-child{margin-top:0}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:9px}
+.ach{display:grid;grid-template-columns:42px minmax(0,1fr);align-content:start;gap:4px 11px;padding:11px 12px;border-radius:14px;border:1px solid var(--line-soft);background:rgba(255,255,255,.025);position:relative}
+.ach>*{grid-column:2}
+.ach .ai{grid-column:1;grid-row:1/span 4;align-self:start;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:rgba(255,255,255,.05);filter:grayscale(1);opacity:.55}
+.ach b{font-size:13px;padding-right:16px}
+.ach p{font-size:11.5px;color:var(--mut);margin:0;line-height:1.35}
+.ach .meta{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--mut2);font-variant-numeric:tabular-nums}
+.ach .pbar{height:5px}
+.ach.got{border-color:color-mix(in srgb,var(--c4) 55%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--c4) 10%,transparent),rgba(255,255,255,.02));
+  box-shadow:0 0 18px -8px color-mix(in srgb,var(--c4) 70%,transparent)}
+.ach.got .ai{filter:none;opacity:1;background:color-mix(in srgb,var(--c4) 16%,transparent);box-shadow:0 0 14px -4px var(--c4)}
+.ach.got .pbar i{background:linear-gradient(90deg,var(--c4),color-mix(in srgb,var(--c4) 60%,var(--c2)))}
+.ach.got .meta span:first-child{color:var(--c4);font-weight:700}
+.ach .lock{position:absolute;right:10px;top:9px;font-size:11px;opacity:.55}
+.pf-cust{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1fr);gap:18px}
+@media(max-width:900px){.pf-cust{grid-template-columns:minmax(0,1fr)}}
+.pf-pick{display:flex;flex-wrap:wrap;gap:7px}
+.pf-pick button{position:relative;min-width:42px;height:42px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);
+  font:inherit;font-size:20px;cursor:pointer;color:var(--txt);transition:transform .12s,border-color .15s,background .15s}
+.pf-pick button.txt{font-size:12px;font-weight:700}
+.pf-pick button:hover:not([aria-disabled=true]){transform:translateY(-1px);border-color:var(--c1)}
+.pf-pick button[aria-pressed=true]{border-color:var(--c1);background:color-mix(in srgb,var(--c1) 18%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--c1) 35%,transparent)}
+.pf-pick button[aria-disabled=true]{opacity:.35;cursor:not-allowed;filter:grayscale(1)}
+.pf-pick button[aria-disabled=true]::after{content:"🔒";position:absolute;right:-4px;top:-6px;font-size:10px;filter:none}
+.pf-pick button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+#pfTitleSel{width:100%;max-width:280px}
+.pf-cust .sub{margin-top:8px}
+.pf-ranks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pf-rk{--c:#94a3b8;display:flex;gap:9px;align-items:center;padding:9px 11px;border-radius:12px;border:1px solid color-mix(in srgb,var(--c) 30%,var(--line-soft));background:color-mix(in srgb,var(--c) 6%,transparent);opacity:.5}
+.pf-rk.got{opacity:1;background:color-mix(in srgb,var(--c) 14%,transparent);border-color:color-mix(in srgb,var(--c) 55%,transparent)}
+.pf-rk.cur{box-shadow:0 0 0 2px var(--c),0 0 20px -4px var(--c)}
+.pf-rk span{font-size:20px}
+.pf-rk b{display:block;font-size:12.5px}
+.pf-rk small{font-size:11px;color:var(--mut)}
+.pf-rules summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+.pf-rules summary::-webkit-details-marker{display:none}
+.pf-rules summary h2{margin:0}
+.pf-rules summary::after{content:"▾";margin-left:auto;color:var(--mut);transition:transform .2s}
+.pf-rules[open] summary::after{transform:rotate(180deg)}
+.pf-rules .tbl-wrap{margin-top:12px}
+.pf-rules p{margin-top:10px;font-size:13px}
+.pf-rules td:last-child,.pf-rules th:last-child{text-align:right}
+.pf-brk{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.pf-brk span{padding:5px 10px;border-radius:999px;border:1px solid var(--line-soft);background:rgba(255,255,255,.04);font-size:12px}
+.pf-brk b{font-variant-numeric:tabular-nums}
+
+/* ---------- achievement toasts & level-up ---------- */
+.toast.ach{display:flex;gap:11px;align-items:center;border-left-color:var(--c4);min-width:250px}
+.toast.ach .ti{font-size:26px;width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--c4) 18%,transparent);box-shadow:0 0 16px -4px var(--c4)}
+.toast.ach small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--c4)}
+.toast.ach b{display:block;font-size:14px}
+.toast.ach em{font-style:normal;font-size:12px;color:var(--mut)}
+.lvl-up{position:fixed;left:50%;top:18vh;z-index:90;transform:translateX(-50%);pointer-events:none;text-align:center;
+  padding:22px 36px 20px;border-radius:26px;min-width:280px;
+  background:radial-gradient(120% 120% at 50% 0%,color-mix(in srgb,var(--rk) 35%,rgba(20,20,40,.9)),rgba(12,12,26,.92));
+  border:1px solid color-mix(in srgb,var(--rk) 70%,transparent);box-shadow:0 0 60px -10px var(--rk),0 30px 80px -30px rgba(0,0,0,.8);
+  animation:luIn .5s cubic-bezier(.2,1.4,.4,1) both}
+.lvl-up.out{animation:luOut .5s ease-in forwards}
+.lvl-up small{display:block;font-size:11px;font-weight:800;letter-spacing:.3em;color:var(--rk)}
+.lvl-up b{display:block;font-size:64px;line-height:1;font-weight:800;margin:6px 0 4px;color:#fff;text-shadow:0 0 30px var(--rk)}
+.lvl-up span{display:block;font-size:16px;font-weight:800;color:#fff}
+.lvl-up em{display:block;font-style:normal;font-size:12px;color:#c9cbe0;margin-top:4px}
+.lvl-up i{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;background:var(--pc);box-shadow:0 0 10px var(--pc);opacity:0;
+  animation:luBurst 1.2s cubic-bezier(.1,.8,.3,1) var(--d) forwards}
+@keyframes luIn{from{opacity:0;transform:translateX(-50%) scale(.6)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+@keyframes luOut{to{opacity:0;transform:translateX(-50%) translateY(-20px) scale(.95)}}
+@keyframes luBurst{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(.4)}}
+html.calm .lvl-up i,html.lite .lvl-up i{display:none}
+@media(prefers-reduced-motion:reduce){.lvl-up i{display:none}}
+
+/* ---------- theme gallery ---------- */
+.th-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.th-grp{margin:16px 0 8px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.th-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.th-card{display:grid;gap:7px;padding:8px 8px 10px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);cursor:pointer;
+  font:inherit;color:var(--txt);text-align:left;transition:transform .15s,border-color .15s,box-shadow .15s}
+.th-card:hover{transform:translateY(-2px);border-color:var(--c1)}
+.th-card:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+.th-card[aria-pressed=true]{border-color:var(--c1);box-shadow:0 0 0 2px var(--c1),0 0 22px -6px var(--c1)}
+.th-prev{height:74px;border-radius:11px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.12);
+  background:radial-gradient(90% 80% at 15% 10%,color-mix(in srgb,var(--b) 55%,transparent),transparent 60%),radial-gradient(80% 90% at 95% 30%,color-mix(in srgb,var(--c) 50%,transparent),transparent 60%),var(--a)}
+.th-prev::before{content:"";position:absolute;left:10px;right:10px;bottom:10px;height:22px;border-radius:7px;background:var(--g);border:1px solid rgba(255,255,255,.25);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.th-prev::after{content:"";position:absolute;left:18px;bottom:17px;width:44%;height:8px;border-radius:99px;background:linear-gradient(90deg,var(--b),var(--c))}
+.th-prev i{position:absolute;top:9px;width:13px;height:13px;border-radius:50%;box-shadow:0 0 8px currentColor}
+.th-prev i:nth-child(1){right:44px;background:var(--b);color:var(--b)}
+.th-prev i:nth-child(2){right:26px;background:var(--c);color:var(--c)}
+.th-prev i:nth-child(3){right:8px;background:var(--d);color:var(--d)}
+.th-card b{font-size:13px}
+.th-card small{font-size:11px;color:var(--mut);line-height:1.3}
+.th-tag{justify-self:start;font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--mut)}
+.th-opts{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:14px}
+.th-opts label{display:flex;gap:8px;align-items:center;font-size:13px}
+html.theme-x,html.theme-x *{transition:background-color .35s ease,border-color .35s ease,color .35s ease!important}
+
+/* =====================================================================
+   THEME SKINS — each one sets the full palette; layout stays identical
+   ===================================================================== */
+html[data-skin]:not([data-theme=light]) .orbs{background:radial-gradient(1400px 900px at 50% -20%,var(--sky) 0%,var(--bg) 62%)}
+html[data-skin]:not([data-theme=light]):not(.hc):not(.lite) .glass{
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0) 140px),
+    linear-gradient(145deg,color-mix(in srgb,var(--tint) 13%,rgba(255,255,255,.05)),rgba(255,255,255,.025) 55%,color-mix(in srgb,var(--c2) 7%,rgba(255,255,255,.035)));
+  border-color:color-mix(in srgb,var(--tint) 20%,rgba(255,255,255,.1));
+  box-shadow:var(--shadow),inset 0 1px 0 color-mix(in srgb,var(--tint) 30%,rgba(255,255,255,.18)),0 0 40px -30px var(--tint)}
+html.lite[data-skin]:not([data-theme=light]) .glass{background:color-mix(in srgb,var(--bg2) 94%,transparent)}
+html[data-skin]:not([data-theme=light]) select option{background:var(--bg2)}
+html[data-skin]:not([data-theme=light]) .toast{background:color-mix(in srgb,var(--bg2) 88%,transparent)}
+html[data-skin]:not([data-theme=light]) .gbox{background:linear-gradient(145deg,color-mix(in srgb,var(--bg2) 82%,transparent),color-mix(in srgb,var(--bg) 88%,transparent))}
+html[data-skin]:not([data-theme=light]) .tab[aria-selected=true],html[data-skin]:not([data-theme=light]) .btn.primary,html[data-skin]:not([data-theme=light]) .seg button.on{color:var(--on-acc)}
+html[data-skin]:not([data-theme=light]) p,html[data-skin]:not([data-theme=light]) li{color:color-mix(in srgb,var(--txt) 80%,var(--mut))}
+html[data-skin]:not([data-theme=light]) .key.b:not(.on){background:linear-gradient(180deg,var(--kb) 0%,color-mix(in srgb,var(--kb) 70%,#6b6b8a) 6%,color-mix(in srgb,var(--kb) 85%,transparent) 60%,#050508 100%),#0b0b12}
+html[data-skin]:not([data-theme=light]) .key.w:not(.on){background:linear-gradient(180deg,#d9dae6 0%,#f8f8fd 7%,#f1f1f8 72%,color-mix(in srgb,var(--c1) 22%,#dcdcea) 100%)}
+html[data-skin]:not([data-theme=light]) *{scrollbar-color:color-mix(in srgb,var(--tint) 35%,rgba(255,255,255,.15)) transparent}
+html[data-skin] .orbs::before{content:"";position:absolute;inset:0;pointer-events:none}
+
+/* Midnight Neon */
+html[data-skin=neon]{--bg:#030614;--bg2:#0a1230;--sky:#0b1d4a;--txt:#e8f4ff;--mut:#8fa6c8;--mut2:#5f7393;
+  --c1:#22d3ee;--c2:#3b82f6;--c3:#7dd3fc;--c4:#fbbf24;--o1:#0ea5e9;--o2:#2563eb;--o3:#22d3ee;--tint:#38bdf8;--kb:#0b1430;
+  --line:rgba(125,211,252,.18);--line-soft:rgba(125,211,252,.09);--grid:rgba(125,211,252,.08);--axis:#7f97b8}
+html[data-skin=neon] .orbs::before{background:linear-gradient(180deg,transparent 70%,rgba(34,211,238,.06)),repeating-linear-gradient(90deg,transparent 0 119px,rgba(56,189,248,.05) 119px 120px)}
+/* Cyberpunk */
+html[data-skin=cyberpunk]{--bg:#0a0214;--bg2:#1a0630;--sky:#3b0a4f;--txt:#fbe9ff;--mut:#b79acb;--mut2:#7d6491;
+  --c1:#ff2bd6;--c2:#00e5ff;--c3:#c084fc;--c4:#fde047;--o1:#ff00c8;--o2:#7c3aed;--o3:#00e5ff;--tint:#ff2bd6;--kb:#1d0629;
+  --line:rgba(255,43,214,.22);--line-soft:rgba(255,43,214,.1);--grid:rgba(0,229,255,.09);--axis:#b49ac8}
+html[data-skin=cyberpunk] .orbs::before{opacity:.55;background:
+  linear-gradient(0deg,#07010f 0 7%,transparent 7%),
+  linear-gradient(90deg,transparent 3%,#12031f 3% 9%,transparent 9% 12%,#16042a 12% 16%,transparent 16% 21%,#0f0219 21% 30%,transparent 30% 34%,#150328 34% 38%,transparent 38% 45%,#110220 45% 53%,transparent 53% 57%,#18052c 57% 62%,transparent 62% 68%,#0f0219 68% 77%,transparent 77% 81%,#16042a 81% 88%,transparent 88% 92%,#12031f 92% 97%,transparent 97%) bottom/100% 22% no-repeat,
+  repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px)}
+/* Aurora Borealis */
+html[data-skin=borealis]{--bg:#020b14;--bg2:#071a26;--sky:#06303a;--txt:#e9fbf6;--mut:#8fb8b1;--mut2:#5e817c;
+  --c1:#34d399;--c2:#a78bfa;--c3:#22d3ee;--c4:#fde68a;--o1:#10b981;--o2:#8b5cf6;--o3:#06b6d4;--tint:#34d399;--kb:#06201f;
+  --line:rgba(52,211,153,.18);--line-soft:rgba(52,211,153,.09);--grid:rgba(52,211,153,.08);--axis:#86aea7}
+html[data-skin=borealis] .orbs::before{inset:-10% -20% 40%;filter:blur(40px);opacity:.55;
+  background:linear-gradient(100deg,transparent 15%,rgba(52,211,153,.55) 30%,transparent 42%,rgba(167,139,250,.45) 58%,transparent 70%,rgba(34,211,238,.4) 82%,transparent 92%);
+  animation:aurSway 26s ease-in-out infinite alternate}
+@keyframes aurSway{to{transform:translateX(12%) skewX(-8deg)}}
+html.lite[data-skin=borealis] .orbs::before{animation:none}
+/* Synthwave */
+html[data-skin=synthwave]{--bg:#0d0221;--bg2:#1f0a3a;--sky:#3a0d5c;--txt:#fff0fb;--mut:#c09ad6;--mut2:#8461a0;
+  --c1:#ff6ec7;--c2:#9d7bff;--c3:#00d4ff;--c4:#ffb347;--o1:#ff2e97;--o2:#6a00f4;--o3:#ff9e00;--tint:#ff6ec7;--kb:#200a38;
+  --line:rgba(255,110,199,.2);--line-soft:rgba(255,110,199,.1);--grid:rgba(157,123,255,.1);--axis:#b897d0}
+html[data-skin=synthwave] .orbs::before{inset:auto;left:50%;bottom:24vh;width:36vmin;height:36vmin;border-radius:50%;transform:translateX(-50%);opacity:.5;
+  background:linear-gradient(180deg,#ffd76a 0%,#ff8fb1 45%,#ff2e97 100%);
+  -webkit-mask-image:linear-gradient(180deg,#000 52%,transparent 52%),repeating-linear-gradient(180deg,#000 0 7px,transparent 7px 12px);
+  mask-image:linear-gradient(180deg,#000 52%,transparent 52%),repeating-linear-gradient(180deg,#000 0 7px,transparent 7px 12px)}
+html[data-skin=synthwave] .orbs::after{background-image:linear-gradient(rgba(255,110,199,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(157,123,255,.16) 1px,transparent 1px);
+  background-size:64px 64px;-webkit-mask-image:linear-gradient(180deg,transparent 68%,#000);mask-image:linear-gradient(180deg,transparent 68%,#000)}
+/* Ocean Depths */
+html[data-skin=abyss]{--bg:#010d1a;--bg2:#06223a;--sky:#053b5c;--txt:#e6fbff;--mut:#88b2c4;--mut2:#5a8094;
+  --c1:#2dd4bf;--c2:#38bdf8;--c3:#5eead4;--c4:#fcd34d;--o1:#0891b2;--o2:#1e40af;--o3:#14b8a6;--tint:#22d3ee;--kb:#03203a;
+  --line:rgba(45,212,191,.18);--line-soft:rgba(45,212,191,.09);--grid:rgba(56,189,248,.08);--axis:#7fa8ba}
+html[data-skin=abyss] .orbs::before{background:linear-gradient(170deg,rgba(125,211,252,.10),transparent 40%),
+  repeating-linear-gradient(100deg,transparent 0 80px,rgba(94,234,212,.035) 80px 140px,transparent 140px 260px);
+  -webkit-mask-image:linear-gradient(180deg,#000,transparent 75%);mask-image:linear-gradient(180deg,#000,transparent 75%)}
+/* Emerald Forest */
+html[data-skin=emerald]{--bg:#03110a;--bg2:#0a2416;--sky:#0c3b22;--txt:#ecfdf3;--mut:#93b8a2;--mut2:#628771;
+  --c1:#34d399;--c2:#a3e635;--c3:#22c55e;--c4:#facc15;--o1:#059669;--o2:#65a30d;--o3:#10b981;--tint:#34d399;--kb:#05200f;
+  --line:rgba(52,211,153,.18);--line-soft:rgba(52,211,153,.09);--grid:rgba(163,230,53,.08);--axis:#8aae97}
+html[data-skin=emerald] .orbs::before{background:radial-gradient(60% 40% at 50% 110%,rgba(163,230,53,.12),transparent 70%),
+  radial-gradient(2px 2px at 20% 30%,rgba(190,242,100,.5),transparent),radial-gradient(2px 2px at 70% 20%,rgba(190,242,100,.4),transparent),
+  radial-gradient(2px 2px at 85% 60%,rgba(190,242,100,.35),transparent),radial-gradient(2px 2px at 35% 70%,rgba(190,242,100,.35),transparent)}
+/* Solar Ember */
+html[data-skin=ember]{--bg:#120503;--bg2:#2a0d06;--sky:#4a1406;--txt:#fff4ec;--mut:#d0a48e;--mut2:#94705f;
+  --c1:#fb923c;--c2:#f43f5e;--c3:#fbbf24;--c4:#fde047;--o1:#ea580c;--o2:#dc2626;--o3:#f59e0b;--tint:#fb923c;--kb:#2a0b05;
+  --line:rgba(251,146,60,.2);--line-soft:rgba(251,146,60,.1);--grid:rgba(251,146,60,.09);--axis:#c49a85}
+html[data-skin=ember] .orbs::before{background:radial-gradient(80% 45% at 50% 115%,rgba(249,115,22,.28),transparent 70%),radial-gradient(40% 30% at 80% 105%,rgba(244,63,94,.18),transparent 70%)}
+/* Sakura Dreams */
+html[data-skin=sakura]{--bg:#12060f;--bg2:#2a0f22;--sky:#4a1838;--txt:#fff0f7;--mut:#d3a5bf;--mut2:#966f86;
+  --c1:#f9a8d4;--c2:#c4b5fd;--c3:#fda4af;--c4:#fde68a;--o1:#ec4899;--o2:#a78bfa;--o3:#fb7185;--tint:#f9a8d4;--kb:#2a0c20;
+  --line:rgba(249,168,212,.2);--line-soft:rgba(249,168,212,.1);--grid:rgba(249,168,212,.09);--axis:#c79db5}
+html[data-skin=sakura] .orbs::before{background:
+  radial-gradient(5px 3px at 12% 22%,rgba(251,207,232,.55),transparent),radial-gradient(4px 3px at 28% 64%,rgba(251,207,232,.45),transparent),
+  radial-gradient(5px 3px at 47% 12%,rgba(251,207,232,.4),transparent),radial-gradient(4px 3px at 63% 48%,rgba(251,207,232,.45),transparent),
+  radial-gradient(5px 3px at 82% 28%,rgba(251,207,232,.5),transparent),radial-gradient(4px 3px at 91% 76%,rgba(251,207,232,.4),transparent),
+  radial-gradient(5px 3px at 8% 84%,rgba(251,207,232,.4),transparent),radial-gradient(4px 3px at 38% 88%,rgba(251,207,232,.35),transparent)}
+
+/* Light skins: they share the "Light glass" rules (data-theme=light) and change the palette */
+html[data-skin=studio]{--bg:#f3f4f8;--txt:#14161f;--mut:#4b5065;--mut2:#80869c;--c1:#2563eb;--c2:#7c3aed;--c3:#059669;--c4:#b45309;
+  --o1:#93c5fd;--o2:#c4b5fd;--o3:#a7f3d0;--line:rgba(20,22,40,.13);--line-soft:rgba(20,22,40,.07);--grid:rgba(20,22,40,.08);--axis:#5d6278;--tint:#2563eb;--rk-glow:.5}
+html[data-skin=studio] .orbs i{opacity:.28}
+html[data-skin=studio] .glass{background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(255,255,255,.8));border-color:rgba(20,22,40,.09)}
+html[data-skin=arctic]{--bg:#e3eef7;--txt:#0f2235;--mut:#45607a;--mut2:#7891a8;--c1:#0284c7;--c2:#6366f1;--c3:#0d9488;--c4:#b45309;
+  --o1:#7dd3fc;--o2:#c7d2fe;--o3:#a5f3fc;--line:rgba(15,60,100,.14);--line-soft:rgba(15,60,100,.08);--grid:rgba(15,60,100,.08);--axis:#5b748c;--tint:#0ea5e9}
+html[data-skin=arctic] .glass{background:linear-gradient(145deg,rgba(248,252,255,.82),rgba(219,236,250,.55));border-color:rgba(255,255,255,.9);
+  box-shadow:0 22px 50px -26px rgba(14,80,140,.35),inset 0 1px 0 #fff}
+html[data-skin=arctic] .orbs{background:radial-gradient(1400px 900px at 50% -20%,#ffffff 0%,#d4e7f5 45%,var(--bg) 70%)}
+html[data-skin=arctic] .orbs::before{background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.55) 45%,transparent 55%),linear-gradient(65deg,transparent 60%,rgba(255,255,255,.4) 70%,transparent 78%)}
+html[data-theme=light] .lvl-chip{background:linear-gradient(135deg,color-mix(in srgb,var(--rk) 14%,#fff),rgba(255,255,255,.7))}
+html[data-theme=light] .lc-bar,html[data-theme=light] .xpbar{background:rgba(30,32,80,.1)}
+html[data-theme=light] #p-profile .sc,html[data-theme=light] .pf-tile,html[data-theme=light] .ach,html[data-theme=light] .pf-item{background:rgba(255,255,255,.55)}
+html[data-theme=light] .pf-hero{background:radial-gradient(120% 140% at 0% 0%,color-mix(in srgb,var(--rk) 16%,transparent),transparent 60%),rgba(255,255,255,.6)!important}
+html[data-theme=light] .pf-title{color:color-mix(in srgb,var(--rk) 70%,#000)}
+html[data-theme=light] .pf-lv b{background:linear-gradient(180deg,var(--txt),color-mix(in srgb,var(--rk) 60%,#000));-webkit-background-clip:text;background-clip:text}
+html[data-theme=light] .rk-chip{color:var(--txt)}
+html[data-theme=light] .ach.got .meta span:first-child{color:#92400e}
+html[data-theme=light] .ach .ai,html[data-theme=light] .pf-pick button,html[data-theme=light] .th-card{background:rgba(255,255,255,.7)}
+html[data-theme=light] .lvl-up{background:radial-gradient(120% 120% at 50% 0%,color-mix(in srgb,var(--rk) 30%,#fff),rgba(255,255,255,.96))}
+html[data-theme=light] .lvl-up b{color:var(--txt);text-shadow:0 0 24px var(--rk)}
+html[data-theme=light] .lvl-up span{color:var(--txt)} html[data-theme=light] .lvl-up em{color:var(--mut)}
+html[data-theme=light] .toast.ach small{color:#92400e}
+html[data-theme=light] .xp-float{color:#047857;text-shadow:none}
+html[data-theme=light] .th-prev{border-color:rgba(20,22,40,.12)}
+html[data-theme=light] .pf-brk span{background:rgba(255,255,255,.7)}
+html.hc .lvl-chip{background:#0a0a16;border-color:rgba(255,255,255,.7)}
+html[data-theme=light].hc .lvl-chip{background:#fff;border-color:#1b1d33}
+@media(max-width:700px){.lvl-chip{min-width:0}.lc-txt small{max-width:90px}}
+
+/* ---------- rolling numbers (own tag names, so no existing span styles apply) ---------- */
+.rc{display:inline-block;position:relative;white-space:pre;clip-path:inset(0 -.15em);vertical-align:baseline}
+.rc>x-rn{display:inline-block;white-space:pre;animation:rcIn .42s cubic-bezier(.2,.8,.25,1) both;animation-delay:calc(var(--rd,0ms) + var(--i,0) * 45ms)}
+.rc::before{content:attr(data-o);position:absolute;left:0;right:0;top:0;text-align:center;white-space:pre;
+  animation:rcOut .42s cubic-bezier(.2,.8,.25,1) both;animation-delay:calc(var(--rd,0ms) + var(--i,0) * 45ms)}
+.rc.dn>x-rn{animation-name:rcInDn}.rc.dn::before{animation-name:rcOutDn}
+@keyframes rcIn{from{transform:translateY(105%);opacity:.15}to{transform:none;opacity:1}}
+@keyframes rcOut{from{transform:none;opacity:1}to{transform:translateY(-105%);opacity:0}}
+@keyframes rcInDn{from{transform:translateY(-105%);opacity:.15}to{transform:none;opacity:1}}
+@keyframes rcOutDn{from{transform:none;opacity:1}to{transform:translateY(105%);opacity:0}}
+/* numbers drawn with gradient text: each rolling digit carries the gradient itself */
+.card b .rc,.card b .rc>x-rn,.card b .rc::before,.clk-time .rc,.clk-time .rc>x-rn,.clk-time .rc::before,.pf-lv b .rc,.pf-lv b .rc>x-rn,.pf-lv b .rc::before{
+  background:inherit;-webkit-background-clip:text;background-clip:text;color:transparent}
+@media (prefers-reduced-motion:reduce){.rc>x-rn,.rc::before{animation:none}.rc::before{display:none}}
+html.calm .rc>x-rn,html.calm .rc::before,html.lite .rc>x-rn,html.lite .rc::before{animation:none}
+html.calm .rc::before,html.lite .rc::before{display:none}
+
+/* ---------- XP in the header chip ---------- */
+.lc-bot{display:flex;align-items:center;gap:7px;min-width:0}
+.lc-bot .lc-bar{flex:1 1 auto;min-width:46px}
+.lc-xp{font-size:10.5px;font-weight:700;color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1}
+.pf-tile b,.pf-xp-row,#pfXpTotal{font-variant-numeric:tabular-nums}
+
 </style>
 </head>
 <body>
@@ -797,10 +1117,15 @@ td.up{color:var(--ok)} td.down{color:var(--bad)}
       <div class="clk-row"><span class="clk-time" id="clkTime">--:--:--</span><span class="clk-zone" id="clkZone"></span></div>
       <span class="clk-date" id="clkDate"></span>
     </div>
+    <button type="button" class="lvl-chip" id="lvlChip" aria-label="Open your profile">
+      <span class="lc-em" id="lcEm" aria-hidden="true">🎹</span>
+      <span class="lc-txt"><b id="lcLv">Lv 1</b><small id="lcRank">Beginner</small></span>
+      <span class="lc-bot"><span class="lc-bar" aria-hidden="true"><i id="lcBar"></i></span><small class="lc-xp" id="lcXp"></small></span>
+    </button>
     <div class="midi-ctl">
       <div class="pill" id="statusPill" data-s="idle"><span class="dot"></span><span id="statusText">Starting…</span><span class="led" id="led"></span></div>
       <select id="deviceSel" title="Which MIDI input to listen to"><option value="all">All MIDI inputs</option></select>
-      <button class="btn icon" id="btnPal" title="Search all actions (Ctrl+K)" aria-label="Search all actions">🔍</button><button class="btn icon" id="btnFocus" title="Focus mode: only the piano" aria-label="Focus mode">🧘</button><button class="btn icon" id="btnSet" title="Appearance &amp; layout" aria-label="Appearance and layout settings">⚙️</button><button class="btn icon" id="btnFs" title="Fullscreen" aria-label="Fullscreen">⛶</button><button class="btn guide" id="btnGuide" title="How to use this site" aria-label="How to use this site">?</button><button class="btn primary" id="btnConnect">Connect MIDI</button>
+      <button class="btn icon" id="btnPal" title="Search all actions (Ctrl+K)" aria-label="Search all actions">🔍</button><button class="btn icon" id="btnFocus" title="Focus mode: only the piano" aria-label="Focus mode">🧘</button><button class="btn icon" id="btnThemes" title="Themes" aria-label="Choose a theme">🎨</button><button class="btn icon" id="btnSet" title="Appearance &amp; layout" aria-label="Appearance and layout settings">⚙️</button><button class="btn icon" id="btnFs" title="Fullscreen" aria-label="Fullscreen">⛶</button><button class="btn guide" id="btnGuide" title="How to use this site" aria-label="How to use this site">?</button><button class="btn primary" id="btnConnect">Connect MIDI</button>
     </div>
   </header>
 
@@ -932,6 +1257,7 @@ td.up{color:var(--ok)} td.down{color:var(--bad)}
   <div class="tabs-wrap" data-sec="tabs" data-title="📑 Dashboard, history &amp; studio">
   <nav class="tabs" id="tabs" aria-label="Sections">
     <button class="tab" data-tab="dash" aria-selected="true">Dashboard</button>
+    <button class="tab" data-tab="profile" aria-selected="false">Profile 🎮</button>
     <button class="tab" data-tab="hist" aria-selected="false">History</button>
     <button class="tab" data-tab="keys" aria-selected="false">Key statistics</button>
     <button class="tab" data-tab="analysis" aria-selected="false">Analysis 🔬</button>
@@ -941,6 +1267,51 @@ td.up{color:var(--ok)} td.down{color:var(--bad)}
     <button class="tab" data-tab="help" aria-selected="false">Help</button>
   </nav>
 
+  <section class="glass panel" id="p-profile">
+   <div class="pf-top">
+    <div class="sc pf-hero" id="pfHero">
+     <div class="pf-av" id="pfAv"><span id="pfEm">🎹</span></div>
+     <div class="pf-id">
+      <input id="pfName" type="text" maxlength="24" spellcheck="false" autocomplete="off" aria-label="Your display name (click to edit)" title="Click to edit your name">
+      <div class="pf-title" id="pfTitle">Beginner</div>
+      <div class="pf-rank"><span class="rk-chip" id="pfRank">🌱 Beginner</span><span class="sub" id="pfNextRank"></span></div>
+     </div>
+     <div class="pf-lv"><small>LEVEL</small><b id="pfLv">1</b></div>
+     <div class="pf-xp">
+      <div class="xpbar" id="pfXpBar" role="progressbar" aria-label="Progress to the next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="pfXpFill"></i></div>
+      <div class="pf-xp-row"><span id="pfXpInto">0 / 100 XP</span><span id="pfXpNext"></span></div>
+      <div class="sub" id="pfXpTotal"></div>
+     </div>
+    </div>
+    <div class="sc"><h2>📈 Lifetime</h2><div class="pf-tiles" id="pfTiles"></div><p class="sub" id="pfSince"></p></div>
+   </div>
+   <div class="pf-mid">
+    <div class="sc"><h2>🎯 Next up</h2><div id="pfNext"></div></div>
+    <div class="sc"><h2>✨ Recently unlocked</h2><div id="pfRecent"></div></div>
+   </div>
+   <div class="sc">
+    <div class="pf-ach-head"><h2>🏆 Achievements <span class="sub" id="pfAchCount"></span></h2>
+     <div class="seg" id="pfAchSeg" role="group" aria-label="Show achievements"><button type="button" data-f="all" class="on">All</button><button type="button" data-f="got">Unlocked</button><button type="button" data-f="locked">Locked</button></div></div>
+    <div id="pfAch"></div>
+   </div>
+   <div class="sc"><h2>🎨 Customize</h2>
+    <div class="pf-cust">
+     <div><h3>Emblem</h3><div class="pf-pick" id="pfEmblems"></div></div>
+     <div><h3>Frame</h3><div class="pf-pick" id="pfFrames"></div></div>
+     <div><h3>Title</h3><select id="pfTitleSel" aria-label="Title shown under your name"></select>
+      <p class="sub">Higher levels and some achievements unlock more emblems, frames and titles. Locked ones show 🔒 — hover them to see how to get them.</p>
+      <p style="margin-top:10px"><button type="button" class="btn" id="pfThemesBtn">🎨 Choose a theme…</button></p></div>
+    </div>
+   </div>
+   <div class="sc"><h2>🪜 Ranks</h2><div class="pf-ranks" id="pfRanks"></div></div>
+   <details class="sc pf-rules"><summary><h2>❓ How XP works</h2></summary>
+    <div class="tbl-wrap"><table><thead><tr><th>Source</th><th>Rules</th><th>XP</th></tr></thead><tbody id="pfRulesBody"></tbody></table></div>
+    <p><b>Your XP so far:</b></p><div class="pf-brk" id="pfBrk"></div>
+    <p class="sub">XP is always worked out again from your saved key presses, so it can never be counted twice, and a refresh never adds or removes anything. Your past playing counts too. There are no penalties for breaks. Song auto-play and ear-training notes are not logged, so they earn nothing. XP moves the moment you release each key; above the daily amounts, notes and playing time keep earning at half rate.</p>
+    <p class="sub">Your profile (name, emblem, frame, title and achievement dates) is saved in this browser on this device only. It is not a cloud backup. Because XP comes from your log, restoring a log backup on another device brings your level back.</p>
+    <p style="margin-top:12px"><button type="button" class="btn danger" id="pfReset">Reset profile…</button></p>
+   </details>
+  </section>
   <section class="glass panel" id="p-studio">
  <div class="sgrid">
   <div class="sc"><h2>🎯 Goals and streak</h2>
@@ -948,7 +1319,7 @@ td.up{color:var(--ok)} td.down{color:var(--bad)}
     <div><b id="goalTxt" style="font-size:22px">0</b><div class="sub">presses today</div><div class="sub" id="streakTxt"></div><label class="sub">Daily goal <input type="number" id="goalIn" min="10" step="50" style="width:84px"></label></div></div>
    <div class="wk"><div class="wk-top"><span>This week</span><b id="wkTxt">0</b></div><div class="pbar"><i id="wkBar"></i></div><label class="sub">Weekly goal <input type="number" id="wkIn" min="50" step="100" style="width:96px"></label></div>
   </div>
-  <div class="sc span2"><h2>🏅 Badges</h2><div id="badges"></div></div>
+  <div class="sc span2"><h2>🏅 Badges <button type="button" class="btn small" id="toAch" style="margin-left:auto">All achievements →</button></h2><div id="badges"></div></div>
   <div class="sc full"><h2>📅 Calendar heatmap (last 26 weeks)</h2><div class="cal" id="cal"></div></div>
   <div class="sc"><h2>⏱ Metronome &amp; timing</h2>
    <div class="row"><input type="number" id="bpm" value="100" min="30" max="240" style="width:80px" aria-label="Beats per minute"> BPM <button class="btn small" id="btnMet">Start</button><button class="btn small" id="btnTap" title="Tap 3–4 times to set the tempo">Tap</button>
@@ -1233,7 +1604,8 @@ const noteName = m => NS[m % 12] + (Math.floor(m / 12) - 1);
 const prettySharp = m => NS[m % 12].replace('#','♯') + (Math.floor(m / 12) - 1);
 const prettyFlat  = m => NF[m % 12] + (Math.floor(m / 12) - 1);
 const isBlack = m => [1,3,6,8,10].includes(m % 12);
-const hueOf = m => (m % 12) * 30;
+let NOTE_HUES = null;                                  // set by the theme gallery (null = classic rainbow)
+const hueOf = m => NOTE_HUES ? NOTE_HUES[m % 12] : (m % 12) * 30;
 const pad = (n, l = 2) => String(n).padStart(l, '0');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2359,8 +2731,8 @@ const GUIDE_HTML = `<div class="guide">
 <nav class="g-toc">
 <a href="#g-start">1. Getting started</a><a href="#g-play">2. Playing</a><a href="#g-sound">3. Sound &amp; instruments</a><a href="#g-setup">4. Transpose, split &amp; layers</a>
 <a href="#g-bend">5. Pitch bend &amp; mod wheel</a><a href="#g-live">6. Live panels &amp; speed</a><a href="#g-practice">7. Practice songs</a><a href="#g-ear">8. Ear training</a>
-<a href="#g-studio">9. Studio</a><a href="#g-dash">10. Dashboard</a><a href="#g-analysis">11. Analysis</a><a href="#g-report">12. Monthly PDF report</a>
-<a href="#g-hist">13. History &amp; key stats</a><a href="#g-data">14. Backup &amp; your data</a><a href="#g-look">15. Look &amp; layout</a><a href="#g-keys">16. Shortcuts</a><a href="#g-fix">17. Troubleshooting</a>
+<a href="#g-studio">9. Studio</a><a href="#g-profile">10. Profile, XP &amp; achievements</a><a href="#g-themes">11. Themes</a><a href="#g-dash">12. Dashboard</a><a href="#g-analysis">13. Analysis</a><a href="#g-report">14. Monthly PDF report</a>
+<a href="#g-hist">15. History &amp; key stats</a><a href="#g-data">16. Backup &amp; your data</a><a href="#g-look">17. Look &amp; layout</a><a href="#g-keys">18. Shortcuts</a><a href="#g-fix">19. Troubleshooting</a>
 </nav>
 
 <h3 id="g-start">1. Getting started</h3>
@@ -2441,7 +2813,37 @@ const GUIDE_HTML = `<div class="guide">
 <li><b>Add-ons:</b> load your own small <code>.js</code> scripts. Download the example to see how. They can use <code>PianoLogger.on('noteon', fn)</code>, <code>addPanel(title)</code>, <code>toast()</code> and <code>stats()</code>. Only add files you trust.</li>
 </ul>
 
-<h3 id="g-dash">10. Dashboard</h3>
+<h3 id="g-profile">10. Profile, XP &amp; achievements (Profile 🎮 tab)</h3>
+<ol>
+<li>The <b>level chip</b> in the top bar shows your emblem, level, title and progress to the next level. Click it to open the <b>Profile 🎮</b> tab.</li>
+<li>You earn <b>XP</b> only from real playing that is saved in your log:
+<ul>
+<li><b>Notes:</b> 1 XP per note. The same key again within 120 ms, or a 5th+ press of one key in a row, earns nothing. After 3,000 notes in a day, notes earn 1 XP per 2 notes. There is no daily limit.</li>
+<li><b>Playing time:</b> 10 XP a minute. Pauses over 2 s are skipped. After 60 minutes in a day it earns 5 XP a minute. There is no daily limit.</li>
+<li><b>Practice day:</b> 50 XP for any day with 50+ presses.</li>
+<li><b>Session:</b> 25 XP for a session of 2+ minutes and 100+ presses. Max 8 a day.</li>
+<li><b>Variety:</b> 2 XP for each different key you play in a day.</li>
+<li><b>Achievements:</b> 10 – 1,500 XP each, once.</li>
+</ul></li>
+<li>XP is <b>worked out from your saved key presses</b>, so your past playing counts. It goes up the moment you release each key, and achievements are checked every few seconds. Nothing is counted twice, and refreshing changes nothing. There are no penalties for missing days.</li>
+<li>There are <b>100 levels</b> and <b>12 ranks</b>: Beginner → Key Explorer (3) → Note Apprentice (6) → Rhythm Adept (10) → Melody Crafter (15) → Harmony Artisan (20) → Chord Architect (30) → Virtuoso (40) → Master Pianist (50) → Grand Maestro (65) → Legendary Maestro (80) → Immortal Composer (100).</li>
+<li>When you level up, a short card appears for about 3 seconds. It never blocks the keys or MIDI. With <b>calm mode</b> or your system's “reduce motion” setting it appears without the burst animation.</li>
+<li><b>Achievements</b> (over 45) cover practice, notes, exploring the keyboard, streaks and ranks. Locked ones show your progress. Use <b>All / Unlocked / Locked</b> to filter. A small card pops up when you unlock one.</li>
+<li><b>Customize:</b> click your name to rename yourself. Choose an <b>emblem</b>, a <b>frame</b> and a <b>title</b>. More unlock with levels and achievements. Hover a 🔒 item to see what it needs.</li>
+<li><b>Where it is saved:</b> your profile is kept in this browser on this device (it is not a cloud backup). Your XP always comes from your log, so restoring a log backup brings your level back. <b>Reset profile…</b> (under “How XP works”) clears your name, looks and achievement dates, but never your log.</li>
+<li><b>Rolling numbers:</b> counters, XP, playing time and the clock roll digit by digit when they change. Calm mode, lite effects or your system's “reduce motion” setting turn this off.</li>
+</ol>
+
+<h3 id="g-themes">11. Themes</h3>
+<ol>
+<li>Click <b>🎨</b> in the top bar (or press <kbd>Ctrl</kbd>+<kbd>K</kbd> and type “theme”) to open the theme gallery. Every card shows a colour preview. Click one to switch instantly.</li>
+<li><b>New themes:</b> Midnight Neon, Cyberpunk, Aurora Borealis, Synthwave, Ocean Depths, Emerald Forest, Solar Ember, Sakura Dreams, Arctic Glass (light) and Studio Light (light).</li>
+<li><b>Original themes:</b> Aurora Classic, Sunset, Ocean, Forest, Midnight, Rose and Light Glass are unchanged.</li>
+<li>A theme changes the whole page: background, glass panels, buttons, tabs, charts, the profile, the piano keys and the falling-note colours. Untick <b>“Colour the notes and keys to match the theme”</b> to keep the classic rainbow note colours.</li>
+<li>Your theme is remembered on this device. Switching themes never touches your log, your MIDI connection or your progress.</li>
+</ol>
+
+<h3 id="g-dash">12. Dashboard</h3>
 <ul>
 <li>Choose <b>Show statistics for</b> (all inputs or one) and a <b>Period</b> (all time, today, 7 / 30 days, this month, this year, custom).</li>
 <li>Cards show totals, velocity, longest / shortest notes and more. <b>Insights</b> compare this week / month with the same point last week / month and show hand balance, favourite and least-played keys, streaks and your favourite hour.</li>
@@ -2450,7 +2852,7 @@ const GUIDE_HTML = `<div class="guide">
 <li><b>🎁 Year in review</b> makes a picture you can download or share. <b>📄 Monthly report</b> prints this month's PDF report straight away.</li>
 </ul>
 
-<h3 id="g-analysis">11. Analysis tab</h3>
+<h3 id="g-analysis">13. Analysis tab</h3>
 <p>Choose a <b>Period</b> and an <b>Input</b>, then one of the four views:</p>
 <ul>
 <li><b>🎼 Chords &amp; keys:</b> notes that start within 60 ms of each other (3 or more) count as a chord. You get your most-played chords, the <b>key of each session</b> (from all the notes you played, with how sure it is), your <b>progressions</b> by chord name and in <b>Roman numerals</b> (for example I – V – vi, the same pattern in any key), and the most common chord changes.</li>
@@ -2458,20 +2860,20 @@ const GUIDE_HTML = `<div class="guide">
 <li><b>🎚 Dynamics &amp; expression:</b> softest to loudest, your usual range, average and spread, the share of notes at each level (pp, p, mp, mf, f, ff), <b>evenness</b> (0–100: how similar the loudness is from note to note in quick runs; higher = more even touch), left vs right hand, velocity per key and per week, evenness per session, and the <b>pitch-bend / mod-wheel log</b>. MIDI-keyboard notes are used when available, because PC keys always send the same velocity.</li>
 </ul>
 
-<h3 id="g-report">12. Monthly PDF report</h3>
+<h3 id="g-report">14. Monthly PDF report</h3>
 <ol>
 <li>Go to <b>Analysis → 📄 Monthly report</b> and pick a month. A preview appears on the page.</li>
 <li>Press <b>Save as PDF / Print</b>. In the print window set <b>Destination</b> to <b>Save as PDF</b> and click Save. (Dashboard → <b>📄 Monthly report</b> does the same for the current month in one click.)</li>
 <li>The report includes totals compared with last month, days played, playing time, sessions, speed, keys used, hand balance, daily activity chart, top keys, chords, keys and progressions, dynamics and a sessions table.</li>
 </ol>
 
-<h3 id="g-hist">13. History &amp; Key statistics</h3>
+<h3 id="g-hist">15. History &amp; Key statistics</h3>
 <ul>
 <li><b>History</b> lists every press. Search by note (<code>C#4</code>, <code>Db3</code>, <code>C</code>), MIDI number (<code>60</code>) or text (<code>screen</code>), and filter by dates, input and minimum velocity. Export the filtered list as CSV (opens in Excel) or JSON.</li>
 <li><b>Key statistics</b> has one row per key. Click a column header to sort. Keys never pressed are listed above the table.</li>
 </ul>
 
-<h3 id="g-data">14. Backup &amp; your data</h3>
+<h3 id="g-data">16. Backup &amp; your data</h3>
 <ul>
 <li>Everything is stored only in this browser on this computer, nothing is uploaded. Press <b>Ask browser to protect data</b> so it is not cleared automatically.</li>
 <li><b>Create backup file</b> downloads one JSON file with every press. <b>Restore</b> it with <i>Merge</i> (adds missing presses, skips duplicates) or <i>Replace everything</i>.</li>
@@ -2479,14 +2881,14 @@ const GUIDE_HTML = `<div class="guide">
 <li><b>Rebuild statistics</b> recalculates all totals from the logs. <b>Erase all data</b> deletes everything (type DELETE to confirm), so make a backup first.</li>
 </ul>
 
-<h3 id="g-look">15. Look &amp; layout</h3>
+<h3 id="g-look">17. Look &amp; layout</h3>
 <ul>
-<li>⚙️ <b>Appearance &amp; layout:</b> 7 themes (including Light glass), your own accent colours or background image, text size, high contrast, compact mode, calm mode (fewer animations) and a 12-hour clock.</li>
+<li>⚙️ <b>Appearance &amp; layout:</b> 17 themes (see section 11), your own accent colours or background image, text size, high contrast, compact mode, calm mode (fewer animations) and a 12-hour clock.</li>
 <li>Hover a section: <b>⠿</b> drags it to a new place, <b>▾</b> folds it away. In ⚙️ → Sections you can hide sections or reorder them with arrows; <b>Reset layout</b> restores everything.</li>
 <li>🧘 <b>Focus mode</b> shows only the piano (Esc to leave). ⛶ is fullscreen. The <b>clock</b> (your own local time) switches between 12 and 24 hours when clicked.</li>
 </ul>
 
-<h3 id="g-keys">16. Shortcuts</h3>
+<h3 id="g-keys">18. Shortcuts</h3>
 <table class="g-tbl">
 <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Quick search for any action (theme, record, transpose, report…)</td></tr>
 <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>PC keyboard octave down / up (on a tab: switch tabs)</td></tr>
@@ -2495,7 +2897,7 @@ const GUIDE_HTML = `<div class="guide">
 <tr><td>Double-click timeline</td><td>Clear the recorder selection</td></tr>
 </table>
 
-<h3 id="g-fix">17. Troubleshooting</h3>
+<h3 id="g-fix">19. Troubleshooting</h3>
 <ul>
 <li><b>MIDI keyboard not found:</b> use a data USB cable, connect before opening the page, close other programs that use MIDI (DAWs, Synthesia, other tabs), then press Connect MIDI again. If permission was blocked, use the icon left of the address bar → Site settings → MIDI → Allow and reload.</li>
 <li><b>No sound:</b> click the page once; check Volume and the two “Sound:” switches; with MIDI out, untick “Silence built-in sound while sending”.</li>
@@ -3998,7 +4400,7 @@ applyX = function () { const th = HTML.dataset.theme; _ax3(); if (th && th !== X
 const SEC_NAMES = () => secs().map(s => [s.dataset.sec, s.dataset.title]);
 function openSettings() {
   const opt = (v, l, cur) => '<option value="' + v + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + l + '</option>';
-  const themes = [['aurora', 'Aurora'], ['sunset', 'Sunset'], ['ocean', 'Ocean'], ['forest', 'Forest'], ['midnight', 'Midnight'], ['rose', 'Rose'], ['light', 'Light glass']];
+  const themes = THEME_LIST.map(t => [t.id, t.name]);
   const a = X2.accent || { c1: cssv('--c1') || '#22d3ee', c2: cssv('--c2') || '#e879f9' };
   openModal('<h2 style="font-size:20px">⚙ Appearance &amp; layout</h2><div class="set-grid">' +
     '<label>Theme <select id="stTheme">' + themes.map(([v, l]) => opt(v, l, X.theme)).join('') + '</select></label>' +
@@ -4071,8 +4473,8 @@ function commands() {
     ['Appearance & layout settings', 'View', openSettings], ['Compact mode on/off', 'View', () => { X2.compact = !X2.compact; saveX2(); applyX2(); }],
     ['High contrast on/off', 'View', () => { X2.hc = !X2.hc; saveX2(); applyX2(); }],
     ['Bigger text', 'View', () => { X2.ui = Math.min(130, X2.ui + 15); saveX2(); applyX2(); }], ['Smaller text', 'View', () => { X2.ui = Math.max(90, X2.ui - 15); saveX2(); applyX2(); }]);
-  [['aurora', 'Aurora'], ['sunset', 'Sunset'], ['ocean', 'Ocean'], ['forest', 'Forest'], ['midnight', 'Midnight'], ['rose', 'Rose'], ['light', 'Light glass']]
-    .forEach(([v, l]) => C.push(['Theme: ' + l, 'Theme', () => { X.theme = v; applyX(); }]));
+  THEME_LIST.map(t => [t.id, t.name])
+    .forEach(([v, l]) => C.push(['Theme: ' + l, 'Theme', () => setTheme(v)]));
   C.push(['Play with PC keyboard on/off', 'Toggle', () => chk('optPcKeys')], ['Sound for screen/PC keys on/off', 'Toggle', () => chk('optSoundScreen')],
     ['Sound for MIDI keys on/off', 'Toggle', () => chk('optSoundMidi')], ['Key heatmap on/off', 'Toggle', () => chk('xHeat')], ['Space = sustain pedal on/off', 'Toggle', () => chk('xSust')],
     ['Hit effects on/off', 'Toggle', () => chk('xFx')], ['Lite effects on/off', 'Toggle', () => chk('optLite')], ['C labels on/off', 'Toggle', () => chk('optLabels')]);
@@ -5092,6 +5494,621 @@ $('#gbox').addEventListener('click', e => {
     HTML.classList.add('printing'); setTimeout(() => window.print(), 60);
   }
 });
+
+
+/* =====================================================================
+   ROLLING NUMBERS — when a number changes, only the digits that changed roll:
+   the old digit slides up and out while the new one slides up from below
+   (downwards when a number falls). Calm mode, lite mode and "reduce motion" turn it off.
+   The real text stays in the element (old digits are drawn from an attribute),
+   so screen readers and copy/paste always get the current value.
+   ===================================================================== */
+const ROLL = { step: 45, life: 1000, el: new WeakMap(), key: new Map() };
+const rollCalm = () => HTML.classList.contains('calm') || HTML.classList.contains('lite') ||
+  !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const rollDigits = t => { const d = String(t).replace(/\D/g, ''); return d ? Number(d.slice(-15)) : NaN; };
+function rollPaint(el, from, to, ago) {
+  const a = Array.from(from), b = Array.from(to), x = rollDigits(from), y = rollDigits(to), down = x > y;
+  const parts = []; let k = 0;
+  for (let i = b.length - 1; i >= 0; i--) {                              // right-aligned, so units stay over units
+    const oi = a.length - b.length + i, o = oi >= 0 ? a[oi] : '';
+    if (o === b[i]) { parts.push(esc(b[i])); continue; }
+    parts.push('<x-rc class="rc' + (down ? ' dn' : '') + '" style="--i:' + Math.min(k++, 6) + '" data-o="' + esc(o) + '"><x-rn>' + esc(b[i]) + '</x-rn></x-rc>');
+  }
+  el.innerHTML = parts.reverse().join('');
+  el.style.setProperty('--rd', -Math.round(ago || 0) + 'ms');            // continue an animation if the element was rebuilt mid-roll
+  el.classList.add('rl');
+}
+// st remembers {text, from, at, node} for one number
+function rollCore(el, st, text) {
+  const now = performance.now();
+  if (st.text === undefined || rollCalm()) {                             // first time seen (or motion off): just show it
+    st.text = text; st.from = null; if (el.textContent !== text) el.textContent = text; return;
+  }
+  if (text !== st.text) { st.from = st.text; st.text = text; st.at = now; rollPaint(el, st.from, text, 0); st.node = el.firstChild; return; }
+  if (st.from != null && now - st.at < ROLL.life) {                      // same value, but the element was rewritten mid-roll
+    if (el.firstChild !== st.node) { rollPaint(el, st.from, text, now - st.at); st.node = el.firstChild; }
+  } else if (el.textContent !== text) el.textContent = text;
+}
+// for elements this code writes itself
+function rollTo(el, text) {
+  if (!el) return; text = String(text);
+  let st = ROLL.el.get(el); if (!st) ROLL.el.set(el, st = {});
+  rollCore(el, st, text);
+}
+// numbers written by the original page code are picked up by an observer, so that code stays unchanged
+const rollObs = new MutationObserver(recs => {
+  const seen = new Set();
+  recs.forEach(r => { let t = r.target; while (t && !t._roll) t = t.parentNode; if (t) seen.add(t); });
+  seen.forEach(t => {
+    if (t._roll === 'grid') t.querySelectorAll('.card').forEach(c => {           // card grids are rebuilt every time: remember values by card label
+      const b = c.querySelector('b'), l = c.querySelector('span'); if (!b || !l || b.children.length && !b.classList.contains('rl')) return;
+      const text = b.textContent; if (!text.trim()) return;
+      const key = t.id + '|' + l.textContent; let st = ROLL.key.get(key); if (!st) ROLL.key.set(key, st = {});
+      rollCore(b, st, text);
+    });
+    else rollTo(t, t.textContent);
+  });
+  rollObs.takeRecords();                                                  // ignore our own rewrites
+});
+function rollWatch(sel, grid) {
+  const el = $(sel); if (!el || el._roll) return;
+  el._roll = grid ? 'grid' : 'one';
+  if (!grid) ROLL.el.set(el, { text: el.textContent });
+  rollObs.observe(el, { childList: true, characterData: true, subtree: true });
+}
+['#cLife', '#cSess', '#cHeld', '#cPoly', '#cNow', '#cPeakS', '#clkTime', '#liveSpd b'].forEach(s => rollWatch(s));
+['#cards', '#speedCards', '#liveCards'].forEach(s => rollWatch(s, true));
+/* =====================================================================
+   PROFILE & PROGRESSION — XP, levels and ranks, worked out from your real log
+   (nothing here writes to the log database; progress is saved in localStorage 'pll.profile')
+   ===================================================================== */
+const PF_KEY = 'pll.profile', PF_VER = 1, PF_MAX_LEVEL = 100;
+const PF_RULES = {
+  sameKeyGapMs: 120,  // the same key pressed again within 120 ms earns no XP (stops mashing)
+  repeatRun: 4,       // only the first 4 presses of one key in a row earn XP
+  noteDayFull: 3000,  // the first 3,000 counted notes of a day earn 1 XP each …
+  notesPerXpAfter: 2, // … after that, 1 XP per 2 notes (XP never stops)
+  msPerXp: 6000,      // 1 XP for every 6 s of real playing (pauses over 2 s are not counted) …
+  timeDayFullMs: 3600000, msPerXpAfter: 12000,                        // … after 60 minutes in a day, 1 XP per 12 s
+  dayMinPresses: 50, dayXp: 50,                                       // practice-day bonus
+  sessMinMs: 120000, sessMinPresses: 100, sessXp: 25, sessDayCap: 8,   // practice-session bonus
+  varietyXp: 2        // per different key played in a day
+};
+const PF_RANKS = [
+  [1, 'Beginner', '🌱', '#94a3b8'], [3, 'Key Explorer', '🧭', '#38bdf8'], [6, 'Note Apprentice', '🎵', '#22d3ee'],
+  [10, 'Rhythm Adept', '🥁', '#2dd4bf'], [15, 'Melody Crafter', '🎼', '#4ade80'], [20, 'Harmony Artisan', '🎻', '#a3e635'],
+  [30, 'Chord Architect', '🏛', '#facc15'], [40, 'Virtuoso', '🔥', '#fb923c'], [50, 'Master Pianist', '🎹', '#f472b6'],
+  [65, 'Grand Maestro', '👑', '#c084fc'], [80, 'Legendary Maestro', '🌟', '#e879f9'], [100, 'Immortal Composer', '💎', '#67e8f9']
+];
+// XP needed to go from level L to L+1 grows gently: 100, 280, 520, 800 …
+const pfStep = L => Math.round(100 * Math.pow(L, 1.5) / 10) * 10;
+const PF_TABLE = (() => { const t = [0, 0]; for (let L = 1; L < PF_MAX_LEVEL; L++) t.push(t[L] + pfStep(L)); return t; })();  // PF_TABLE[L] = total XP to reach level L
+function pfLevelInfo(xp) {
+  xp = Math.max(0, Math.floor(+xp || 0));
+  let L = 1; while (L < PF_MAX_LEVEL && xp >= PF_TABLE[L + 1]) L++;
+  const base = PF_TABLE[L], next = L < PF_MAX_LEVEL ? PF_TABLE[L + 1] : base, span = next - base;
+  return { xp, level: L, into: xp - base, need: span, toNext: Math.max(0, next - xp), pct: span ? (xp - base) / span : 1, max: L >= PF_MAX_LEVEL };
+}
+const pfRank = L => { let r = PF_RANKS[0]; PF_RANKS.forEach(x => { if (L >= x[0]) r = x; }); return { min: r[0], name: r[1], icon: r[2], color: r[3] }; };
+
+function pfDefault() {
+  return { v: PF_VER, name: 'Pianist', emblem: '🎹', xp: 0, level: 1, seenLevel: 0, achXp: 0, ach: {}, frame: 'none', title: '', breakdown: {}, stats: {}, since: 0, updatedAt: 0 };
+}
+function pfLoad() {
+  const p = pfDefault(), s = LS.get(PF_KEY, null);
+  if (s && typeof s === 'object') {
+    if (typeof s.name === 'string' && s.name.trim()) p.name = s.name.trim().slice(0, 24);
+    if (typeof s.emblem === 'string' && s.emblem) p.emblem = s.emblem.slice(0, 8);
+    ['xp', 'level', 'seenLevel', 'achXp', 'since', 'updatedAt'].forEach(k => { const v = Math.floor(+s[k]); if (Number.isFinite(v) && v >= 0) p[k] = v; });
+    if (s.breakdown && typeof s.breakdown === 'object') p.breakdown = s.breakdown;
+    if (s.stats && typeof s.stats === 'object') p.stats = s.stats;
+    if (s.ach && typeof s.ach === 'object') p.ach = s.ach;
+    if (typeof s.frame === 'string') p.frame = s.frame;
+    if (typeof s.title === 'string') p.title = s.title.slice(0, 60);
+    Object.keys(s).forEach(k => { if (!(k in p)) p[k] = s[k]; });       // keep fields added by later versions
+  }
+  p.v = PF_VER; p.level = pfLevelInfo(p.xp).level;                       // level always follows XP
+  return p;
+}
+const PF = { p: pfLoad(), busy: false, at: 0, timer: null, life: -1, warned: false };
+function pfSave() {
+  if (!LS.set(PF_KEY, PF.p) && !PF.warned) { PF.warned = true; toast('Could not save your profile progress (browser storage is full or blocked).', 'bad'); }
+}
+
+// Reads logged presses (oldest → newest). The log is only read, never changed.
+// After the first full read, only presses newer than the last one seen are read; a count check
+// (in the same read transaction) detects restores / erases and triggers a full re-read.
+// upTo: presses at or after the oldest key still held down (or still waiting to be saved) are left for the next
+// read, because a held key is saved later with an older time — reading past it would break the incremental count.
+function pfFetch(afterTs, upTo) {
+  return new Promise((res, rej) => {
+    if (!db) return res({ rows: [], count: 0 });
+    const tx = db.transaction('logs'), st = tx.objectStore('logs'), ix = st.index('startTs'), out = {}, lim = Number.isFinite(upTo);
+    const rg = afterTs == null ? (lim ? IDBKeyRange.upperBound(upTo) : null)
+      : lim ? (upTo > afterTs ? IDBKeyRange.bound(afterTs, upTo, true, false) : null) : IDBKeyRange.lowerBound(afterTs, true);
+    if (afterTs != null && lim && upTo <= afterTs) out.rows = [];
+    else { const rq = ix.getAll(rg); rq.onsuccess = () => { out.rows = rq.result; }; }
+    const cq = lim ? ix.count(IDBKeyRange.upperBound(upTo)) : st.count(); cq.onsuccess = () => { out.count = cq.result; };
+    tx.oncomplete = () => res(out); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+  });
+}
+function pfNewState() {
+  return { n: 0, days: new Map(), lastCounted: new Map(), runKey: -1, run: 0, prevT: null, sStart: 0, sN: 0, sDay: null,
+    sessions: 0, goodSessions: 0, longestMs: 0, activeMs: 0, lo: 999, hi: -1, keys: new Set(), firstTs: 0, lastTs: null };
+}
+const pfDay = (S, k) => S.days.get(k) || (S.days.set(k, { n: 0, nx: 0, ms: 0, sess: 0, keys: new Set() }), S.days.get(k));
+const pfGoodSess = (S, end) => end - S.sStart >= PF_RULES.sessMinMs && S.sN >= PF_RULES.sessMinPresses;
+function pfFeed(S, rows) {
+  const R = PF_RULES;
+  for (const r of rows) {
+    S.n++;
+    const t = +r.startTs, m = +r.midi; if (!Number.isFinite(t) || !Number.isFinite(m)) continue;
+    if (!S.firstTs) S.firstTs = t;
+    const day = r.date || localParts(t).date, d = pfDay(S, day);
+    d.n++; d.keys.add(m); S.keys.add(m); if (m < S.lo) S.lo = m; if (m > S.hi) S.hi = m;
+    if (m === S.runKey) S.run++; else { S.runKey = m; S.run = 1; }
+    const lc = S.lastCounted.get(m);
+    if (S.run <= R.repeatRun && (lc === undefined || t - lc >= R.sameKeyGapMs)) { d.nx++; S.lastCounted.set(m, t); }
+    if (S.prevT !== null && t - S.prevT <= GAP_PLAY) { d.ms += t - S.prevT; S.activeMs += t - S.prevT; }
+    if (S.prevT === null || t - S.prevT > GAP_SESSION) {
+      if (S.sDay !== null) {                                   // close the previous session
+        S.sessions++; S.longestMs = Math.max(S.longestMs, S.prevT - S.sStart);
+        if (pfGoodSess(S, S.prevT)) { pfDay(S, S.sDay).sess++; S.goodSessions++; }
+      }
+      S.sStart = t; S.sN = 0; S.sDay = day;
+    }
+    S.sN++; S.prevT = t; if (S.lastTs === null || t > S.lastTs) S.lastTs = t;
+  }
+}
+// full rate up to the daily amount, half rate after it — playing always earns something
+const pfNoteXp = nx => nx <= PF_RULES.noteDayFull ? nx : PF_RULES.noteDayFull + Math.floor((nx - PF_RULES.noteDayFull) / PF_RULES.notesPerXpAfter);
+const pfTimeXp = ms => Math.floor(Math.min(ms, PF_RULES.timeDayFullMs) / PF_RULES.msPerXp) + Math.floor(Math.max(0, ms - PF_RULES.timeDayFullMs) / PF_RULES.msPerXpAfter);
+function pfResult(S) {                                       // read-only: the session still in progress is counted as if it ended now
+  const R = PF_RULES, open = S.sDay !== null, openGood = open && pfGoodSess(S, S.prevT);
+  const b = { notes: 0, time: 0, days: 0, sessions: 0, variety: 0 };
+  let daysPlayed = 0, practiceDays = 0;
+  S.days.forEach((d, k) => {
+    daysPlayed++;
+    b.notes += pfNoteXp(d.nx);
+    b.time += pfTimeXp(d.ms);
+    if (d.n >= R.dayMinPresses) { b.days += R.dayXp; practiceDays++; }
+    b.sessions += Math.min(R.sessDayCap, d.sess + (openGood && k === S.sDay ? 1 : 0)) * R.sessXp;
+    b.variety += d.keys.size * R.varietyXp;
+  });
+  return {
+    xp: b.notes + b.time + b.days + b.sessions + b.variety, breakdown: b,
+    stats: { presses: S.n, activeMs: S.activeMs, sessions: S.sessions + (open ? 1 : 0), goodSessions: S.goodSessions + (openGood ? 1 : 0),
+      longestMs: Math.max(S.longestMs, open ? S.prevT - S.sStart : 0), daysPlayed, practiceDays, keysUsed: S.keys.size,
+      lowest: S.hi < 0 ? null : S.lo, highest: S.hi < 0 ? null : S.hi, firstTs: S.firstTs }
+  };
+}
+// one-shot helper (also handy for checking): XP from a list of rows
+function pfCompute(rows) { const S = pfNewState(); pfFeed(S, rows); return pfResult(S); }
+
+/* ---------- achievements ---------- */
+const pfFmtHM = ms => { const m = Math.floor((ms || 0) / 60000); return m < 1 ? Math.round((ms || 0) / 1000) + ' s' : m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; };
+// [id, category, icon, name, description, value(ctx), goal (number or ctx => number), xp reward, unlockable title]
+const ACH = [
+  ['first', 'Practice', '🎹', 'First Notes', 'Play your first note.', c => c.s.presses, 1, 10],
+  ['warm', 'Practice', '☕', 'Warming Up', 'Finish a real practice session (2+ minutes, 100+ presses).', c => c.s.goodSessions, 1, 40],
+  ['days3', 'Practice', '📅', 'Regular Player', 'Play on 3 different days.', c => c.s.daysPlayed, 3, 60],
+  ['days7', 'Practice', '🗓', 'Week of Music', 'Play on 7 different days.', c => c.s.daysPlayed, 7, 120],
+  ['days30', 'Practice', '🌙', 'Month of Music', 'Play on 30 different days.', c => c.s.daysPlayed, 30, 400, 'The Devoted'],
+  ['days100', 'Practice', '💯', 'Hundred Days', 'Play on 100 different days.', c => c.s.daysPlayed, 100, 1000, 'Lifelong Learner'],
+  ['hour1', 'Practice', '⏱', 'Hour of Practice', '1 hour of real playing time (pauses skipped).', c => Math.floor(c.s.activeMs / 60000), 60, 80],
+  ['hour10', 'Practice', '🎓', 'Dedicated Musician', '10 hours of real playing time.', c => Math.floor(c.s.activeMs / 60000), 600, 300, 'Dedicated Musician'],
+  ['hour50', 'Practice', '🏅', 'Seasoned Performer', '50 hours of real playing time.', c => Math.floor(c.s.activeMs / 60000), 3000, 800, 'Seasoned Performer'],
+  ['marathon', 'Practice', '🏃', 'Marathon Session', 'One session lasting 30 minutes or more.', c => Math.floor(c.s.longestMs / 60000), 30, 150, 'Marathoner'],
+  ['goalDay', 'Practice', '🎯', 'Daily Goal', 'Reach your daily goal (set in the Studio tab).', c => c.today, () => X.goal, 50],
+  ['goalWeek', 'Practice', '📆', 'Weekly Goal', 'Reach your weekly goal (set in the Studio tab).', c => c.wk, () => X2.weekGoal, 100],
+  ['n100', 'Notes', '🌱', '100 Notes', 'Play 100 notes.', c => c.s.presses, 100, 25],
+  ['n1k', 'Notes', '🎵', '1,000 Notes', 'Play 1,000 notes.', c => c.s.presses, 1000, 60],
+  ['n10k', 'Notes', '🎹', '10,000 Notes', 'Play 10,000 notes.', c => c.s.presses, 10000, 200],
+  ['n50k', 'Notes', '🌈', '50,000 Notes', 'Play 50,000 notes.', c => c.s.presses, 50000, 400],
+  ['n100k', 'Notes', '💎', '100,000 Notes', 'Play 100,000 notes.', c => c.s.presses, 100000, 700, 'Centurion'],
+  ['n250k', 'Notes', '🚀', '250,000 Notes', 'Play 250,000 notes.', c => c.s.presses, 250000, 1000],
+  ['n1m', 'Notes', '🌌', 'One Million Notes', 'Play 1,000,000 notes.', c => c.s.presses, 1000000, 1500, 'Million-Note Legend'],
+  ['oct3', 'Exploration', '🧭', 'Octave Explorer', 'Play notes spanning 3 octaves (lowest to highest).', c => c.s.highest == null ? 0 : c.s.highest - c.s.lowest, 36, 60],
+  ['keys24', 'Exploration', '🎼', 'Note Collector', 'Play 24 different keys.', c => c.s.keysUsed, 24, 60],
+  ['keys48', 'Exploration', '🗺', 'Wide Explorer', 'Play 48 different keys.', c => c.s.keysUsed, 48, 120],
+  ['keys61', 'Exploration', '🌍', 'Full-Range Explorer', 'Play 61 different keys (a whole 61-key keyboard).', c => c.s.keysUsed, 61, 200],
+  ['keys88', 'Exploration', '🏆', 'All 88 Keys', 'Play every key on the piano.', c => c.s.keysUsed, 88, 500, 'Explorer of 88'],
+  ['poly5', 'Exploration', '🖐', 'Both Hands', 'Hold 5 keys down at once.', c => c.poly, 5, 40],
+  ['poly10', 'Exploration', '🙌', 'Ten Fingers', 'Hold 10 keys down at once.', c => c.poly, 10, 120, 'Chord Crusher'],
+  ['owl', 'Exploration', '🦉', 'Night Owl', 'Play 300 notes between midnight and 5 am.', c => c.night, 300, 80, 'Night Owl'],
+  ['bird', 'Exploration', '🐦', 'Early Bird', 'Play 300 notes between 5 and 8 am.', c => c.early, 300, 80, 'Early Bird'],
+  ['st3', 'Consistency', '🔥', 'On a Roll', 'Play 3 days in a row.', c => c.best, 3, 60],
+  ['st7', 'Consistency', '⭐', 'Week Streak', 'Play 7 days in a row.', c => c.best, 7, 150, 'The Persistent'],
+  ['st14', 'Consistency', '⚡', 'Fortnight Streak', 'Play 14 days in a row.', c => c.best, 14, 300],
+  ['st30', 'Consistency', '👑', 'Month Streak', 'Play 30 days in a row.', c => c.best, 30, 600, 'Unstoppable'],
+  ['st100', 'Consistency', '🌟', 'Hundred-Day Streak', 'Play 100 days in a row.', c => c.best, 100, 1500, 'Living Legend'],
+  ...PF_RANKS.slice(1).map(([lv, nm, ic]) => ['lv' + lv, 'Ranks', ic, nm, 'Reach level ' + lv + ' and earn the rank “' + nm + '”.', c => c.level, lv, 0]),
+  ['col10', 'Ranks', '🗃', 'Collector', 'Unlock 10 achievements.', c => c.count, 10, 0],
+  ['col25', 'Ranks', '🏛', 'Curator', 'Unlock 25 achievements.', c => c.count, 25, 0, 'The Curator'],
+  ['col40', 'Ranks', '🎖', 'Hall of Fame', 'Unlock 40 achievements.', c => c.count, 40, 0, 'Hall of Famer']
+].map(([id, cat, icon, name, desc, val, goal, xp, title]) => ({ id, cat, icon, name, desc, val, goal, xp, title }));
+const ACH_BY = Object.fromEntries(ACH.map(a => [a.id, a]));
+const achGoal = a => Math.max(1, typeof a.goal === 'function' ? +a.goal() || 1 : a.goal);
+function pfCtx(stats, level, count) {
+  const g = (cache && cache.g) || {}, days = g.days || {}, st = streaks(days), hrs = g.hours || [];
+  const dow = (new Date().getDay() + 6) % 7; let wk = 0; for (let i = 0; i <= dow; i++) wk += days[dayStr(i)] || 0;
+  const sum = hs => hs.reduce((a, h) => a + (hrs[h] || 0), 0);
+  return { s: stats, level, count, poly: g.maxPoly || 0, best: st.best, today: days[dayStr(0)] || 0, wk, night: sum([0, 1, 2, 3, 4]), early: sum([5, 6, 7]) };
+}
+const achVal = (a, c) => { try { return Math.max(0, +a.val(c) || 0); } catch (e) { return 0; } };
+
+/* ---------- cosmetics ---------- */
+// requirement: a number = level needed; a string = achievement id needed
+const EMBLEMS = [['🎹', 0], ['🎵', 0], ['🎶', 0], ['🎼', 0], ['🎧', 2], ['⭐', 5], ['🌙', 8], ['🔥', 12], ['⚡', 15], ['🌊', 20], ['🌸', 25], ['🐉', 30],
+  ['🦉', 'owl'], ['🐦', 'bird'], ['🏃', 'marathon'], ['🙌', 'poly10'], ['👑', 50], ['🌌', 65], ['💎', 80], ['🪐', 100]];
+const FRAMES = [['none', 'None', 0], ['ring', 'Glow ring', 3], ['pulse', 'Neon pulse', 10], ['rank', 'Rank aura', 15], ['laurel', 'Gold laurel', 30],
+  ['prism', 'Prism', 'st30'], ['halo', 'Celestial halo', 80]];
+const reqOk = (req, p) => typeof req === 'number' ? p.level >= req : !!(p.ach && p.ach[req]);
+const reqText = req => typeof req === 'number' ? 'Unlocks at level ' + req : 'Unlock “' + (ACH_BY[req] ? ACH_BY[req].name : req) + '”';
+function pfTitles(p) {
+  const t = [['', 'Rank title (' + pfRank(p.level).name + ')']];
+  PF_RANKS.forEach(r => { if (p.level >= r[0]) t.push(['rank:' + r[1], 'Rank: ' + r[1]]); });
+  ACH.forEach(a => { if (a.title && p.ach[a.id]) t.push(['ach:' + a.id, a.title]); });
+  return t;
+}
+function pfTitleText(p) {
+  const v = p.title || '';
+  if (v.startsWith('rank:')) { const r = PF_RANKS.find(x => 'rank:' + x[1] === v); if (r && p.level >= r[0]) return r[1]; }
+  if (v.startsWith('ach:')) { const a = ACH_BY[v.slice(4)]; if (a && a.title && p.ach[a.id]) return a.title; }
+  return pfRank(p.level).name;
+}
+function pfUnlocksAt(level) {                                   // cosmetics that a given level unlocks (for the level-up card)
+  const out = [];
+  EMBLEMS.forEach(([e, r]) => { if (r === level) out.push(e + ' emblem'); });
+  FRAMES.forEach(([, n, r]) => { if (r === level) out.push(n + ' frame'); });
+  return out;
+}
+
+/* ---------- recalculation (replaces the simple version) ---------- */
+function pfCleanAch(p) {
+  const a = {}; if (p.ach && typeof p.ach === 'object') Object.keys(p.ach).forEach(k => { const v = +p.ach[k]; if (Number.isFinite(v) && v > 0) a[k] = v; });
+  p.ach = a; return a;
+}
+const pfAchXp = p => ACH.reduce((s, a) => s + (p.ach[a.id] ? a.xp : 0), 0);
+async function pfRecalc() {
+  if (!db || PF.busy) return;
+  PF.busy = true;
+  try {
+    const life = lifetime;
+    const upTo = pfSafeTs();
+    let S = PF.S, got = await pfFetch(S ? S.lastTs : null, upTo);
+    if (S && S.n + got.rows.length !== got.count) { S = null; got = await pfFetch(null, upTo); }    // restore / erase: start over
+    if (!S) S = pfNewState();
+    pfFeed(S, got.rows); PF.S = S;
+    const c = pfResult(S), p = PF.p, un = pfCleanAch(p);
+    const beforeXp = p.xp, beforeLevel = pfLevelInfo(p.xp).level, first = !p.updatedAt, fresh = [];
+    p.stats = c.stats; p.breakdown = c.breakdown;
+    for (let pass = 0; pass < 6; pass++) {                         // unlocking can raise the level, which can unlock more
+      p.achXp = pfAchXp(p); p.xp = Math.max(0, c.xp + p.achXp); p.level = pfLevelInfo(p.xp).level;
+      const ctx = pfCtx(c.stats, p.level, Object.keys(un).filter(k => ACH_BY[k]).length);
+      let added = false;
+      ACH.forEach(a => { if (!un[a.id] && achVal(a, ctx) >= achGoal(a)) { un[a.id] = Date.now(); fresh.push(a); added = true; } });
+      if (!added) break;
+    }
+    p.achXp = pfAchXp(p); p.xp = Math.max(0, c.xp + p.achXp); p.level = pfLevelInfo(p.xp).level;
+    if (!p.since) p.since = Date.now(); p.updatedAt = Date.now();
+    if (first || !p.seenLevel || p.level < p.seenLevel) p.seenLevel = p.level;     // first run: your history counts, without a flood of pop-ups
+    Object.assign(PF, { at: Date.now(), life });
+    pfSave(); pfLiveCalc();
+    emit('profile', { profile: p, first, fresh, gained: first ? 0 : p.xp - beforeXp, before: beforeLevel, info: pfLevelInfo(p.xp), rank: pfRank(p.level) });
+  } catch (e) { console.error('[piano-logger] profile', e); }
+  finally { PF.busy = false; if (PF.life !== lifetime) pfSchedule(); }
+}
+// oldest press that may still be saved with an older time than presses already saved (a key held down, or a press in the save queue)
+function pfSafeTs() {
+  let m = Infinity;
+  active.forEach(n => { if (n.startTs < m) m = n.startTs; });
+  queue.forEach(r => { if (r.startTs < m) m = r.startTs; });
+  return m - 1;
+}
+function pfSchedule(now) {                                // achievements are checked every 3 s while you play (XP itself moves on every note, see below)
+  if (!db) return;
+  clearTimeout(PF.timer);
+  if (!now && PF.life === lifetime && PF.at) return;
+  const wait = now ? 0 : 3000 - (Date.now() - PF.at);
+  PF.timer = setTimeout(pfRecalc, Math.max(0, PF.busy ? 1000 : wait));
+}
+const _lsPf = loadStats;
+loadStats = async function () { await _lsPf(); pfSchedule(); };
+
+/* ---------- live XP: every saved press moves XP straight away ----------
+   The 3-second recalculation above stays the source of truth. In between, presses that were just saved are added
+   to a copy of its state, using exactly the same rules, so the numbers move with every note and never jump back. */
+const PFL = { pend: [], xp: null, c: null, timer: null, at: 0 };
+const _enqPf = enqueue;
+enqueue = function (rec) { _enqPf(rec); PFL.pend.push(rec); pfLiveSoon(); };
+function pfLiveSoon() {                                     // at most ~12 updates a second, however fast you play
+  if (PFL.timer) return;
+  PFL.timer = setTimeout(() => { PFL.timer = null; pfLiveCalc(); pfLiveUI(); }, Math.max(0, 80 - (performance.now() - PFL.at)));
+}
+function pfLiveCalc() {
+  const S = PF.S; if (!S) return;
+  PFL.at = performance.now();
+  const pend = PFL.pend = PFL.pend.filter(r => S.lastTs === null || r.startTs > S.lastTs);
+  let L = S;
+  if (pend.length) {
+    L = Object.assign({}, S, { days: new Map(S.days), lastCounted: new Map(S.lastCounted), keys: new Set(S.keys) });
+    new Set(pend.map(r => r.date)).forEach(k => { const d = S.days.get(k); if (d) L.days.set(k, Object.assign({}, d, { keys: new Set(d.keys) })); });
+    pfFeed(L, pend.slice().sort((a, b) => a.startTs - b.startTs));
+  }
+  const c = pfResult(L), xp = Math.max(0, c.xp + (PF.p.achXp || 0));
+  // never shows a step back while playing; after a restore, erase or profile reset (a fresh full read) any value is taken
+  PFL.xp = PFL.S === S && PFL.xp != null ? Math.max(PFL.xp, xp) : xp; PFL.S = S; PFL.c = c;
+}
+const pfXpNow = () => PFL.xp != null ? PFL.xp : PF.p.xp;
+const pfStatsNow = () => (PFL.c && PFL.c.stats) || PF.p.stats || {};
+function pfLiveUI() {
+  pfChip();
+  const p = PF.p, lv = pfLevelInfo(pfXpNow()).level;
+  if (p.updatedAt && lv > p.seenLevel) { pfLevelUp(p.seenLevel, lv); p.seenLevel = lv; pfSave(); }
+  if (activeTab() === 'profile') { if (lv !== PFL.lv) renderProfile(); else pfNums(); }
+  PFL.lv = lv;
+}
+
+/* ---------- header chip, notifications, level-up ---------- */
+function pfChip() {
+  const p = PF.p, xp = pfXpNow(), info = pfLevelInfo(xp), rk = pfRank(info.level), chip = $('#lvlChip'); if (!chip) return;
+  chip.style.setProperty('--rk', rk.color);
+  $('#lcEm').textContent = p.emblem; rollTo($('#lcLv'), 'Lv ' + info.level); $('#lcRank').textContent = pfTitleText(p);
+  $('#lcBar').style.width = (info.pct * 100).toFixed(1) + '%';
+  rollTo($('#lcXp'), info.max ? fmtInt(xp) + ' XP' : fmtInt(info.into) + ' / ' + fmtInt(info.need) + ' XP');
+  chip.title = p.name + ' · ' + rk.name + ' · ' + fmtInt(xp) + ' XP' + (info.max ? ' (max level)' : ' · ' + fmtInt(info.toNext) + ' XP to level ' + (info.level + 1));
+  chip.setAttribute('aria-label', 'Your profile: level ' + info.level + ', ' + rk.name + '. Open profile');
+}
+function pfXpFloat(n) {
+  const chip = $('#lvlChip'); if (!chip || n <= 0 || HTML.classList.contains('calm')) return;
+  const f = document.createElement('span'); f.className = 'xp-float'; f.textContent = '+' + fmtInt(n) + ' XP'; chip.appendChild(f);
+  setTimeout(() => f.remove(), 1900);
+}
+function achToast(a) {
+  const t = document.createElement('div'); t.className = 'toast ach'; t.setAttribute('role', 'status');
+  t.innerHTML = '<span class="ti">' + a.icon + '</span><div><small>Achievement unlocked</small><b>' + esc(a.name) + '</b><em>' + esc(a.desc) + (a.xp ? ' · +' + a.xp + ' XP' : '') + '</em></div>';
+  $('#toasts').appendChild(t); setTimeout(() => t.remove(), 5200);
+}
+function pfLevelUp(from, to) {
+  const rk = pfRank(to), old = pfRank(from), el = document.createElement('div'), unl = [];
+  for (let L = from + 1; L <= to; L++) unl.push(...pfUnlocksAt(L));
+  el.className = 'lvl-up'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); el.style.setProperty('--rk', rk.color);
+  let h = '<small>LEVEL UP' + (to - from > 1 ? ' ×' + (to - from) : '') + '</small><b>' + to + '</b><span>' + rk.icon + ' ' + esc(rk.name) + (rk.name !== old.name ? ' · new rank!' : '') + '</span>' +
+    (unl.length ? '<em>Unlocked: ' + esc(unl.join(', ')) + '</em>' : '');
+  const cols = [rk.color, cssv('--c1') || '#22d3ee', cssv('--c2') || '#e879f9', '#fde047'];
+  for (let i = 0; i < 22; i++) { const a = i / 22 * Math.PI * 2, d = 90 + (i % 3) * 45; h += '<i style="--x:' + Math.round(Math.cos(a) * d * 1.6) + 'px;--y:' + Math.round(Math.sin(a) * d) + 'px;--d:' + (i % 4) * 40 + 'ms;--pc:' + cols[i % 4] + '"></i>'; }
+  el.innerHTML = h; document.body.appendChild(el);
+  setTimeout(() => el.classList.add('out'), 2800); setTimeout(() => el.remove(), 3400);
+}
+onBus('profile', d => {
+  const p = d.profile;
+  pfChip();
+  if (d.first) {
+    if (p.stats.presses) toast('🎮 Your profile is ready: level ' + p.level + ' (' + pfRank(p.level).name + '), worked out from ' + fmtInt(p.stats.presses) + ' saved presses. Open the Profile tab to see it.', 'ok');
+  } else {
+    if (d.fresh.length > 3) toast('🏆 ' + d.fresh.length + ' achievements unlocked: ' + d.fresh.map(a => a.icon + ' ' + a.name).join(', '), 'ok');
+    else d.fresh.forEach(achToast);
+    const lv = pfLevelInfo(pfXpNow()).level;
+    if (lv > p.seenLevel) { pfLevelUp(p.seenLevel, lv); p.seenLevel = lv; pfSave(); }
+  }
+  if (activeTab() === 'profile') renderProfile();
+});
+
+/* ---------- profile tab ---------- */
+let pfFilter = 'all';
+const pfFmtHMS = ms => { const t = Math.floor((ms || 0) / 1000), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60;
+  return h ? h + ' h ' + pad(m) + ' min ' + pad(s) + ' s' : m ? m + ' min ' + pad(s) + ' s' : s + ' s'; };
+// the numbers in the profile header and the Lifetime tiles (called on every note while the Profile tab is open)
+function pfNums(ctx) {
+  const p = PF.p, xp = pfXpNow(), info = pfLevelInfo(xp), s = pfStatsNow(), g = (cache && cache.g) || {};
+  if (!ctx) ctx = pfCtx(s.presses != null ? s : {}, info.level, 0);
+  rollTo($('#pfLv'), String(info.level));
+  $('#pfXpFill').style.width = (info.pct * 100).toFixed(2) + '%';
+  $('#pfXpBar').setAttribute('aria-valuenow', Math.round(info.pct * 100));
+  $('#pfXpBar').setAttribute('aria-valuetext', fmtInt(info.into) + ' of ' + fmtInt(info.need) + ' XP');
+  rollTo($('#pfXpInto'), info.max ? 'Max level reached' : fmtInt(info.into) + ' / ' + fmtInt(info.need) + ' XP');
+  rollTo($('#pfXpNext'), info.max ? '' : fmtInt(info.toNext) + ' XP to level ' + (info.level + 1));
+  rollTo($('#pfXpTotal'), 'Total ' + fmtInt(xp) + ' XP' + (p.achXp ? ' (including ' + fmtInt(p.achXp) + ' from achievements)' : ''));
+  const T = [
+    ['presses', 'Lifetime presses', fmtInt(s.presses || 0), ''],
+    ['time', 'Playing time', pfFmtHMS(s.activeMs), 'pauses over 2 s skipped'],
+    ['sess', 'Sessions', fmtInt(s.sessions || 0), fmtInt(s.goodSessions || 0) + ' of 2+ min & 100+ presses'],
+    ['days', 'Days played', fmtInt(s.daysPlayed || 0), 'best streak ' + ctx.best + ' day' + (ctx.best === 1 ? '' : 's')],
+    ['keys', 'Keys used', fmtInt(s.keysUsed || 0) + ' / 88', s.highest != null ? prettySharp(s.lowest) + ' – ' + prettySharp(s.highest) : ''],
+    ['poly', 'Most keys at once', fmtInt(g.maxPoly || 0), 'longest session ' + pfFmtHM(s.longestMs)]];
+  const box = $('#pfTiles');
+  if (box.children.length !== T.length) box.innerHTML = T.map(t => '<div class="pf-tile" data-k="' + t[0] + '"><span>' + t[1] + '</span><b></b><em></em></div>').join('');
+  T.forEach(t => { const el = box.querySelector('[data-k=' + t[0] + ']'); rollTo(el.querySelector('b'), t[2]); const em = el.querySelector('em'); if (em.textContent !== t[3]) em.textContent = t[3]; em.hidden = !t[3]; });
+}
+function renderProfile() {
+  const p = PF.p, info = pfLevelInfo(pfXpNow()), rk = pfRank(info.level), s = pfStatsNow();
+  const ctx = pfCtx(s.presses != null ? s : { presses: 0, activeMs: 0, sessions: 0, goodSessions: 0, longestMs: 0, daysPlayed: 0, keysUsed: 0, lowest: null, highest: null }, info.level, Object.keys(p.ach || {}).filter(k => ACH_BY[k]).length);
+  const hero = $('#pfHero'); hero.style.setProperty('--rk', rk.color); $('#p-profile').style.setProperty('--rk', rk.color);
+  // validate cosmetics (a choice may be locked again after a reset)
+  if (!EMBLEMS.some(([e, r]) => e === p.emblem && reqOk(r, p))) p.emblem = '🎹';
+  const fr = FRAMES.find(f => f[0] === p.frame && reqOk(f[2], p)) ? p.frame : 'none';
+  $('#pfAv').className = 'pf-av fr-' + fr; $('#pfEm').textContent = p.emblem;
+  if (document.activeElement !== $('#pfName')) $('#pfName').value = p.name;
+  $('#pfTitle').textContent = pfTitleText(p);
+  $('#pfRank').textContent = rk.icon + ' ' + rk.name;
+  const nx = PF_RANKS.find(r => r[0] > info.level);
+  $('#pfNextRank').textContent = nx ? 'Next rank: ' + nx[2] + ' ' + nx[1] + ' at level ' + nx[0] : 'Highest rank reached';
+  pfNums(ctx);
+  $('#pfSince').textContent = s.firstTs ? 'Everything here is worked out from your saved key presses since ' + localParts(s.firstTs).date + '.' : 'Play a few notes to start your profile.';
+  // next up: closest locked achievements
+  const locked = ACH.filter(a => !p.ach[a.id] && a.cat !== 'Ranks').map(a => ({ a, v: achVal(a, ctx), t: achGoal(a) })).map(o => Object.assign(o, { r: Math.min(.999, o.v / o.t) }))
+    .sort((x, y) => y.r - x.r).slice(0, 4);
+  const item = (a, sub, right, bar) => '<div class="pf-item"><span class="ic">' + a.icon + '</span><div><b>' + esc(a.name) + '</b><small>' + sub + '</small>' +
+    (bar != null ? '<div class="pbar"><i style="width:' + (bar * 100).toFixed(1) + '%"></i></div>' : '') + '</div><span class="xp">' + right + '</span></div>';
+  $('#pfNext').innerHTML = locked.length ? '<div class="pf-list">' + locked.map(o => item(o.a, esc(o.a.desc) + ' · ' + fmtInt(Math.min(o.v, o.t)) + ' / ' + fmtInt(o.t), o.a.xp ? '+' + o.a.xp + ' XP' : '', o.r)).join('') + '</div>'
+    : '<p class="pf-empty">Every achievement is unlocked. Amazing!</p>';
+  const recent = Object.entries(p.ach).filter(([k]) => ACH_BY[k]).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  $('#pfRecent').innerHTML = recent.length ? '<div class="pf-list">' + recent.map(([k, ts]) => item(ACH_BY[k], 'Unlocked ' + localParts(ts).date, ACH_BY[k].xp ? '+' + ACH_BY[k].xp + ' XP' : '')).join('') + '</div>'
+    : '<p class="pf-empty">Nothing yet. Play your first notes to unlock “First Notes”.</p>';
+  // achievements gallery
+  const got = ACH.filter(a => p.ach[a.id]).length;
+  $('#pfAchCount').textContent = got + ' / ' + ACH.length + ' unlocked';
+  $$('#pfAchSeg button').forEach(b => { b.classList.toggle('on', b.dataset.f === pfFilter); b.setAttribute('aria-pressed', b.dataset.f === pfFilter); });
+  let h = '';
+  [...new Set(ACH.map(a => a.cat))].forEach(cat => {
+    const list = ACH.filter(a => a.cat === cat && (pfFilter === 'all' || (pfFilter === 'got') === !!p.ach[a.id]));
+    if (!list.length) return;
+    h += '<div class="ach-cat">' + cat + '</div><div class="ach-grid">' + list.map(a => {
+      const on = !!p.ach[a.id], t = achGoal(a), v = on ? t : Math.min(t, achVal(a, ctx));
+      return '<div class="ach' + (on ? ' got' : '') + '" title="' + esc(a.desc) + '"><span class="ai">' + a.icon + '</span><b>' + esc(a.name) + '</b><p>' + esc(a.desc) +
+        (a.title ? ' Unlocks the title “' + esc(a.title) + '”.' : '') + '</p><div class="pbar"><i style="width:' + (v / t * 100).toFixed(1) + '%"></i></div>' +
+        '<div class="meta"><span>' + (on ? '✓ Unlocked ' + localParts(p.ach[a.id]).date : fmtInt(v) + ' / ' + fmtInt(t)) + '</span><span>' + (a.xp ? '+' + a.xp + ' XP' : '') + '</span></div>' +
+        (on ? '' : '<span class="lock" aria-hidden="true">🔒</span>') + '</div>';
+    }).join('') + '</div>';
+  });
+  $('#pfAch').innerHTML = h || '<p class="pf-empty">Nothing to show for this filter.</p>';
+  // customisation
+  $('#pfEmblems').innerHTML = EMBLEMS.map(([e, r]) => { const ok = reqOk(r, p);
+    return '<button type="button" data-em="' + e + '" aria-pressed="' + (p.emblem === e) + '"' + (ok ? '' : ' aria-disabled="true"') + ' title="' + (ok ? 'Use this emblem' : esc(reqText(r))) + '" aria-label="Emblem ' + e + (ok ? '' : ', locked: ' + esc(reqText(r))) + '">' + e + '</button>'; }).join('');
+  $('#pfFrames').innerHTML = FRAMES.map(([id, n, r]) => { const ok = reqOk(r, p);
+    return '<button type="button" class="txt" data-fr="' + id + '" aria-pressed="' + (fr === id) + '"' + (ok ? '' : ' aria-disabled="true"') + ' title="' + (ok ? 'Use this frame' : esc(reqText(r))) + '">' + n + '</button>'; }).join('');
+  const titles = pfTitles(p);
+  $('#pfTitleSel').innerHTML = titles.map(([v, l]) => '<option value="' + esc(v) + '"' + ((p.title || '') === v ? ' selected' : '') + '>' + esc(l) + '</option>').join('');
+  if (!titles.some(t => t[0] === (p.title || ''))) $('#pfTitleSel').value = '';
+  $('#pfRanks').innerHTML = PF_RANKS.map(([lv, nm, ic, col]) => '<div class="pf-rk' + (info.level >= lv ? ' got' : '') + (rk.name === nm ? ' cur' : '') + '" style="--c:' + col + '"><span>' + ic + '</span><div><b>' + nm + '</b><small>Level ' + lv + (rk.name === nm ? ' · you are here' : '') + '</small></div></div>').join('');
+  const b = p.breakdown || {};
+  $('#pfBrk').innerHTML = [['🎹 Notes', b.notes], ['⏱ Playing time', b.time], ['📅 Practice days', b.days], ['☕ Sessions', b.sessions], ['🎼 Variety', b.variety], ['🏆 Achievements', p.achXp]]
+    .map(([l, v]) => '<span>' + l + ' <b>' + fmtInt(v || 0) + '</b></span>').join('');
+}
+$('#pfAchSeg').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (!b) return; pfFilter = b.dataset.f; renderProfile(); });
+$('#pfEmblems').addEventListener('click', e => {
+  const b = e.target.closest('button[data-em]'); if (!b) return;
+  if (b.getAttribute('aria-disabled') === 'true') return toast('🔒 ' + b.title);
+  PF.p.emblem = b.dataset.em; pfSave(); pfChip(); renderProfile();
+});
+$('#pfFrames').addEventListener('click', e => {
+  const b = e.target.closest('button[data-fr]'); if (!b) return;
+  if (b.getAttribute('aria-disabled') === 'true') return toast('🔒 ' + b.title);
+  PF.p.frame = b.dataset.fr; pfSave(); renderProfile();
+});
+$('#pfTitleSel').onchange = e => { PF.p.title = e.target.value; pfSave(); pfChip(); renderProfile(); };
+const pfSetName = () => { const v = $('#pfName').value.replace(/\s+/g, ' ').trim().slice(0, 24); PF.p.name = v || 'Pianist'; $('#pfName').value = PF.p.name; pfSave(); pfChip(); };
+$('#pfName').addEventListener('change', pfSetName);
+$('#pfName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#pfName').blur(); } if (e.key === 'Escape') { $('#pfName').value = PF.p.name; $('#pfName').blur(); } });
+$('#pfReset').onclick = () => {
+  if (!confirm('Reset your profile?\n\nThis clears your name, emblem, frame, title and the saved achievement dates. Your key-press log is NOT touched, so XP and achievements are worked out again from it straight away.')) return;
+  PF.p = pfDefault(); LS.set(PF_KEY, PF.p); PF.at = 0; PF.life = -1; PF.S = null; pfChip(); pfSchedule(true); toast('Profile reset. Recalculating from your log…', 'ok');
+};
+$('#pfThemesBtn').onclick = () => openThemes();
+$('#lvlChip').onclick = () => { showTab('profile'); $('#tabs').scrollIntoView({ behavior: X2.calm ? 'auto' : 'smooth', block: 'start' }); };
+$('#toAch').onclick = () => { showTab('profile'); setTimeout(() => $('#pfAch').scrollIntoView({ behavior: X2.calm ? 'auto' : 'smooth', block: 'start' }), 30); };
+const _showPf = showTab;
+showTab = function (n) { _showPf(n); if (n === 'profile') renderProfile(); };
+tabName.profile = 'Profile';
+// the XP rules table (built from PF_RULES so the numbers shown are the numbers used)
+$('#pfRulesBody').innerHTML = [
+  ['🎹 Each note you play', '1 XP', 'the same key again within ' + PF_RULES.sameKeyGapMs + ' ms, or a 5th+ press of one key in a row, earns nothing · after ' + fmtInt(PF_RULES.noteDayFull) + ' notes in a day: 1 XP per ' + PF_RULES.notesPerXpAfter + ' notes (no limit)'],
+  ['⏱ Real playing time', '10 XP / minute', 'pauses over 2 s are not counted · after ' + PF_RULES.timeDayFullMs / 60000 + ' minutes in a day: 5 XP / minute (no limit)'],
+  ['📅 Practice day', PF_RULES.dayXp + ' XP', 'any day with ' + PF_RULES.dayMinPresses + '+ presses'],
+  ['☕ Practice session', PF_RULES.sessXp + ' XP', 'a session of 2+ minutes and ' + PF_RULES.sessMinPresses + '+ presses · max ' + PF_RULES.sessDayCap + ' a day'],
+  ['🎼 Variety', PF_RULES.varietyXp + ' XP per key', 'each different key you play in a day'],
+  ['🏆 Achievements', '10 – 1,500 XP', 'once per achievement']
+].map(r => '<tr><td>' + r[0] + '</td><td>' + esc(r[2]) + '</td><td><b>' + r[1] + '</b></td></tr>').join('');
+
+/* =====================================================================
+   THEMES — a gallery of complete skins on top of the existing theme system
+   ===================================================================== */
+const hueRun = (a, b) => Array.from({ length: 12 }, (_, i) => ((Math.round(a + (b - a) * i / 11) % 360) + 360) % 360);
+const THEME_LIST = [
+  { id: 'aurora', name: 'Aurora Classic', desc: 'The original cyan & magenta glass', mode: 'Dark', grp: 'Original', sw: ['#05050f', '#22d3ee', '#e879f9', '#a3e635'] },
+  { id: 'sunset', name: 'Sunset', desc: 'Original glass, orange & rose accents', mode: 'Dark', grp: 'Original', sw: ['#05050f', '#fb923c', '#f43f5e', '#facc15'] },
+  { id: 'ocean', name: 'Ocean', desc: 'Original glass, sky & indigo accents', mode: 'Dark', grp: 'Original', sw: ['#05050f', '#38bdf8', '#6366f1', '#2dd4bf'] },
+  { id: 'forest', name: 'Forest', desc: 'Original glass, green & cyan accents', mode: 'Dark', grp: 'Original', sw: ['#05050f', '#4ade80', '#22d3ee', '#facc15'] },
+  { id: 'midnight', name: 'Midnight', desc: 'Original glass, indigo & violet accents', mode: 'Dark', grp: 'Original', sw: ['#05050f', '#818cf8', '#c084fc', '#38bdf8'] },
+  { id: 'rose', name: 'Rose', desc: 'Original glass, rose & pink accents', mode: 'Dark', grp: 'Original', sw: ['#05050f', '#fb7185', '#f9a8d4', '#fda4af'] },
+  { id: 'light', name: 'Light Glass', desc: 'The original bright frosted theme', mode: 'Light', grp: 'Original', sw: ['#e9ecf8', '#0891b2', '#c026d3', '#65a30d'] },
+  { id: 'neon', skin: 1, name: 'Midnight Neon', desc: 'Dark glass, luminous cyan & electric blue', mode: 'Dark', grp: 'New', sw: ['#030614', '#22d3ee', '#3b82f6', '#7dd3fc'], hues: hueRun(175, 255) },
+  { id: 'cyberpunk', skin: 1, name: 'Cyberpunk', desc: 'Magenta, purple & cyan city at night', mode: 'Dark', grp: 'New', sw: ['#0a0214', '#ff2bd6', '#00e5ff', '#c084fc'], hues: hueRun(320, 180) },
+  { id: 'borealis', skin: 1, name: 'Aurora Borealis', desc: 'Deep night with flowing northern lights', mode: 'Dark', grp: 'New', sw: ['#020b14', '#34d399', '#a78bfa', '#22d3ee'], hues: hueRun(140, 290) },
+  { id: 'synthwave', skin: 1, name: 'Synthwave', desc: 'Retro sun, neon grid, pink & violet', mode: 'Dark', grp: 'New', sw: ['#0d0221', '#ff6ec7', '#9d7bff', '#00d4ff'], hues: hueRun(330, 190) },
+  { id: 'abyss', skin: 1, name: 'Ocean Depths', desc: 'Deep navy with teal & aqua light', mode: 'Dark', grp: 'New', sw: ['#010d1a', '#2dd4bf', '#38bdf8', '#5eead4'], hues: hueRun(160, 225) },
+  { id: 'emerald', skin: 1, name: 'Emerald Forest', desc: 'Dark green, emerald & lime glow', mode: 'Dark', grp: 'New', sw: ['#03110a', '#34d399', '#a3e635', '#22c55e'], hues: hueRun(75, 175) },
+  { id: 'ember', skin: 1, name: 'Solar Ember', desc: 'Warm orange, amber & red glow', mode: 'Dark', grp: 'New', sw: ['#120503', '#fb923c', '#f43f5e', '#fbbf24'], hues: hueRun(-10, 52) },
+  { id: 'sakura', skin: 1, name: 'Sakura Dreams', desc: 'Elegant pink, rose & lavender', mode: 'Dark', grp: 'New', sw: ['#12060f', '#f9a8d4', '#c4b5fd', '#fda4af'], hues: hueRun(265, 365) },
+  { id: 'arctic', skin: 1, base: 'light', name: 'Arctic Glass', desc: 'Ice blue, silver & frosted glass', mode: 'Light', grp: 'New', sw: ['#e3eef7', '#0284c7', '#6366f1', '#0d9488'], hues: hueRun(180, 250) },
+  { id: 'studio', skin: 1, base: 'light', name: 'Studio Light', desc: 'Clean, bright and high contrast', mode: 'Light', grp: 'New', sw: ['#f3f4f8', '#2563eb', '#7c3aed', '#059669'] }
+];
+const THEMES = Object.fromEntries(THEME_LIST.map(t => [t.id, t]));
+const LOOK = Object.assign({ themeNotes: true }, LS.get('pll.look', {}));
+// fill the Theme dropdown in the Tools bar with every theme
+$('#xTheme').innerHTML = ['Original', 'New'].map(gp => '<optgroup label="' + gp + '">' + THEME_LIST.filter(t => t.grp === gp).map(t => '<option value="' + t.id + '">' + esc(t.name) + '</option>').join('') + '</optgroup>').join('');
+function skinApply() {
+  if (!THEMES[X.theme]) X.theme = 'aurora';
+  const t = THEMES[X.theme];
+  HTML.dataset.theme = t.base || t.id;
+  if (t.skin) HTML.dataset.skin = t.id; else delete HTML.dataset.skin;
+  const hues = LOOK.themeNotes && t.hues ? t.hues : null;
+  if (hues !== NOTE_HUES) { NOTE_HUES = hues; for (let m = FIRST; m <= LAST; m++) KEY[m].el.style.setProperty('--h', hueOf(m)); }
+  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = t.sw[0];
+  if ($('#xTheme').value !== X.theme) $('#xTheme').value = X.theme;
+}
+const _axSkin = applyX;
+applyX = function () {
+  const t = THEMES[X.theme];
+  if (t && HTML.dataset.theme === (t.base || t.id)) HTML.dataset.theme = X.theme;     // lets the original code see "no change" and skip a redraw
+  _axSkin(); skinApply();
+};
+function setTheme(id) {
+  if (!THEMES[id] || id === X.theme) return;
+  HTML.classList.add('theme-x'); clearTimeout(setTheme.t); setTheme.t = setTimeout(() => HTML.classList.remove('theme-x'), 450);
+  X.theme = id; applyX();
+}
+function openThemes() {
+  const card = t => '<button type="button" class="th-card" data-th="' + t.id + '" aria-pressed="' + (X.theme === t.id) + '">' +
+    '<span class="th-prev" style="--a:' + t.sw[0] + ';--b:' + t.sw[1] + ';--c:' + t.sw[2] + ';--d:' + t.sw[3] + ';--g:' + (t.mode === 'Light' ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.1)') + '"><i></i><i></i><i></i></span>' +
+    '<b>' + esc(t.name) + '</b><small>' + esc(t.desc) + '</small><span class="th-tag">' + t.mode + '</span></button>';
+  openModal('<div class="th-head"><h2 style="font-size:20px">🎨 Themes</h2><span class="sub">' + THEME_LIST.length + ' themes · saved on this device</span></div>' +
+    '<p class="sub">Pick a look. It changes the whole page — background, glass panels, buttons, charts, piano keys and note colours. Your logs, MIDI connection and progress are not touched.</p>' +
+    ['New', 'Original'].map(gp => '<div class="th-grp">' + (gp === 'New' ? '✨ New themes' : '🌌 Original themes') + '</div><div class="th-grid">' + THEME_LIST.filter(t => t.grp === gp).map(card).join('') + '</div>').join('') +
+    '<div class="th-opts"><label><input type="checkbox" id="thNotes"' + (LOOK.themeNotes ? ' checked' : '') + '> Colour the notes and keys to match the theme</label></div>' +
+    '<p class="sub" style="margin-top:8px">Off = the classic rainbow (each note name has its own colour). Original themes always use the rainbow.</p>' +
+    '<div class="actions"><button class="btn primary" data-act="close">Done</button><button class="btn" id="thSettings">⚙ More appearance settings</button></div>');
+  const box = $('#gbox');
+  box.querySelectorAll('.th-card').forEach(b => b.onclick = () => { setTheme(b.dataset.th); box.querySelectorAll('.th-card').forEach(x => x.setAttribute('aria-pressed', x.dataset.th === X.theme)); });
+  $('#thNotes').onchange = e => { LOOK.themeNotes = e.target.checked; LS.set('pll.look', LOOK); skinApply(); };
+  $('#thSettings').onclick = () => openSettings();
+  const cur = box.querySelector('.th-card[aria-pressed=true]'); if (cur) cur.focus();
+}
+$('#btnThemes').onclick = openThemes;
+const _cmdPf = commands;
+commands = function () {
+  const C = _cmdPf();
+  C.push(['Open my profile (level, XP, achievements)', 'Profile', () => $('#lvlChip').click()], ['Browse themes', 'Theme', openThemes]);
+  return C;
+};
+TOUR.splice(Math.max(0, TOUR.findIndex(t => t[0] === '#istClock') + 1), 0,
+  ['#lvlChip', '🎮 Your level', 'Every real note you play earns XP. Level up through 12 musical ranks, unlock achievements, emblems, frames and titles. Click here to open your profile.']);
+TOUR.splice(TOUR.length - 1, 0, ['#btnThemes', '🎨 Themes', '17 complete themes, from Cyberpunk and Synthwave to Sakura Dreams and a clean Studio Light. Your choice is remembered.']);
+skinApply(); pfChip();
+
+/* ---------- dashboard: playing time moves live (with seconds) between the full speed recalculations ---------- */
+const LPT = { at: -1, extra: 0, last: 0, shown: 0, base: '' };
+onBus('noteon', () => {
+  const now = Date.now(), gap = LPT.last ? now - LPT.last : Infinity; LPT.last = now;
+  if (LPT.at !== SPD.at) { LPT.at = SPD.at; LPT.extra = 0; }
+  if (SPD.at && now > SPD.at) LPT.extra += gap <= GAP_PLAY ? gap : 300;   // same rule as the speed statistics
+});
+const fmtLongS = ms => { const t = Math.floor(ms / 1000), d = Math.floor(t / 86400), h = Math.floor(t / 3600) % 24, m = Math.floor(t / 60) % 60, s = t % 60;
+  return (d ? d + 'd ' : '') + (d || h ? h + 'h ' : '') + (d || h || m ? m + 'm ' : '') + s + 's'; };
+function ptFix() {
+  if (!SPD.s || !SPD.s.n) return;
+  const card = [...$$('#speedCards .card')].find(c => { const l = c.querySelector('span'); return l && l.textContent === 'Playing time'; }); if (!card) return;
+  const rg = dashRangeBounds(), today = localParts(Date.now()).date, live = dashView === 'all' && (!rg || (rg.from <= today && rg.to >= today));
+  let v = SPD.s.active + (live ? LPT.extra : 0);
+  if (LPT.base === SPD.base && v < LPT.shown && LPT.shown - v < 60000) v = LPT.shown;   // never steps back while you play
+  LPT.shown = v; LPT.base = SPD.base;
+  const b = card.querySelector('b'), txt = fmtLongS(v); if (b && b.textContent !== txt) b.textContent = txt;
+}
+const _dsPt = drawSpeed;
+drawSpeed = function (s, rg) { _dsPt(s, rg); ptFix(); };
+setInterval(() => { if (activeTab() === 'dash') ptFix(); }, 250);
 
 })();
 </script>
