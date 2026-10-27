@@ -1,0 +1,40 @@
+{
+  "name": "piano-logger",
+  "productName": "Piano Logger",
+  "version": "6.0.0",
+  "description": "Piano MIDI visualizer and lifetime key logger for Windows",
+  "author": "kosandra0",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64 --ia32 --publish never"
+  },
+  "devDependencies": {
+    "electron": "43.3.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.kosandra0.pianologger",
+    "productName": "Piano Logger",
+    "copyright": "kosandra0",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "page/**", "build/icon.png"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64", "ia32"] }],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Piano Logger",
+      "uninstallDisplayName": "Piano Logger",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Piano-Logger-Setup.${ext}"
+    }
+  }
+}
