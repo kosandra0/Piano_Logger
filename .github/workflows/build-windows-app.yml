@@ -10,10 +10,13 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
+      - name: Put the newest website page inside the app
+        shell: bash
+        run: cp index.html desktop/page/piano-logger.html
       - run: npm install
         working-directory: desktop
       - run: npm run dist
@@ -23,4 +26,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "app-v6.0" desktop/dist/Piano-Logger-Setup.exe --latest --title "Piano Logger app 6.0" --notes "Windows installer" || gh release upload "app-v6.0" desktop/dist/Piano-Logger-Setup.exe --clobber
+          V=$(node -p "require('./desktop/package.json').version")
+          gh release create "app-v$V" desktop/dist/Piano-Logger-Setup.exe --latest --title "Piano Logger app $V" --notes "Windows installer for Windows 10 and 11 (64-bit and 32-bit)" || gh release upload "app-v$V" desktop/dist/Piano-Logger-Setup.exe --clobber
