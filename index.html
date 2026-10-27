@@ -2779,8 +2779,15 @@
       display: none !important
     }
 
+    /* focus mode: the stage fills the whole window and the piano sits at the bottom,
+       so the notes have the full height to rise (or fall) */
     html.perf [data-sec=stage] {
-      display: block !important
+      display: flex !important;
+      flex-direction: column;
+      height: calc(100vh - 20px);
+      height: calc(100dvh - 20px);
+      box-sizing: border-box;
+      margin: 0 !important
     }
 
     html.perf [data-sec=stage]>.sec-ctl,
@@ -2797,12 +2804,27 @@
       padding-top: 10px
     }
 
-    html.perf #roll {
-      height: calc(100vh - clamp(130px, 17vw, 200px) - 70px)
+    html.perf .stage-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column
     }
 
+    html.perf .stage {
+      flex: 1 1 auto;
+      min-height: 0
+    }
+
+    html.perf #roll,
     html.perf .song-bar:not([hidden])~.stage-scroll #roll {
-      height: calc(100vh - clamp(130px, 17vw, 200px) - 130px)
+      flex: 1 1 0;
+      min-height: 80px;
+      height: 0 !important
+    }
+
+    html.perf .piano {
+      flex: none
     }
 
     .perf-bar {
@@ -5650,16 +5672,37 @@
       color: transparent
     }
 
+    /* "Rolling numbers: Follow system" turns them off when Windows/phone asks for less motion */
     @media (prefers-reduced-motion:reduce) {
 
-      .rc>x-rn,
-      .rc::before {
+      html.roll-auto .rc>x-rn,
+      html.roll-auto .rc::before {
         animation: none
       }
 
-      .rc::before {
+      html.roll-auto .rc::before {
         display: none
       }
+    }
+
+    /* "Rolling numbers: On" (default): they roll even when Windows "Animation effects" is off,
+       which switches every other animation off (that is why they did not roll on some PCs) */
+    html.roll-on .rc>x-rn {
+      animation: rcIn .42s cubic-bezier(.2, .8, .25, 1) both !important;
+      animation-delay: calc(var(--rd, 0ms) + var(--i, 0) * 45ms) !important
+    }
+
+    html.roll-on .rc::before {
+      animation: rcOut .42s cubic-bezier(.2, .8, .25, 1) both !important;
+      animation-delay: calc(var(--rd, 0ms) + var(--i, 0) * 45ms) !important
+    }
+
+    html.roll-on .rc.dn>x-rn {
+      animation-name: rcInDn !important
+    }
+
+    html.roll-on .rc.dn::before {
+      animation-name: rcOutDn !important
     }
 
     html.calm .rc>x-rn,
@@ -6060,6 +6103,139 @@
 
     #btnNews {
       position: relative
+    }
+
+    /* ---------- v6: "Download app" button and the app panels ---------- */
+    .btn.dl-app {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px 5px 10px;
+      text-decoration: none;
+      border-color: color-mix(in srgb, var(--c1) 55%, transparent);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--c1) 22%, transparent), color-mix(in srgb, var(--c2) 18%, transparent))
+    }
+
+    .btn.dl-app>span:first-child {
+      font-size: 17px
+    }
+
+    .dl-app .dl-t {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+      text-align: left
+    }
+
+    .dl-app .dl-t b {
+      font-size: 12.5px
+    }
+
+    .dl-app .dl-t small {
+      font-size: 10px;
+      opacity: .8;
+      font-weight: 500
+    }
+
+    @media(max-width:700px) {
+      .dl-app .dl-t {
+        display: none
+      }
+    }
+
+    #gbox a.btn {
+      text-decoration: none
+    }
+
+    .app-feats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 8px
+    }
+
+    .app-feat {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 9px 11px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .app-feat>span {
+      font-size: 20px;
+      line-height: 1.2
+    }
+
+    .app-feat b {
+      display: block;
+      font-size: 13.5px
+    }
+
+    .app-feat small {
+      display: block;
+      opacity: .78;
+      font-size: 12px;
+      line-height: 1.4
+    }
+
+    .app-steps {
+      margin: 10px 0 0 18px;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1.55
+    }
+
+    .app-steps li {
+      margin: 4px 0
+    }
+
+    .app-panel h3 {
+      margin: 16px 0 8px;
+      font-size: 15px
+    }
+
+    .app-panel h3:first-child {
+      margin-top: 4px
+    }
+
+    .app-sf {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px
+    }
+
+    .app-sf-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .app-sf-row>span {
+      flex: 1;
+      min-width: 0
+    }
+
+    .app-sf-row small {
+      display: block;
+      opacity: .7;
+      font-size: 11.5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .app-upd {
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--c3, #a3e635) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--c3, #a3e635) 40%, transparent)
     }
 
     #btnNews .news-dot {
@@ -9354,7 +9530,7 @@
 <nav class="g-toc">
 <a href="#g-start">1. Getting started</a><a href="#g-play">2. Playing</a><a href="#g-sound">3. Sound &amp; instruments</a><a href="#g-setup">4. Transpose, split &amp; layers</a>
 <a href="#g-bend">5. Pitch bend &amp; mod wheel</a><a href="#g-live">6. Live panels &amp; speed</a><a href="#g-practice">7. Practice songs</a><a href="#g-ear">8. Ear training</a>
-<a href="#g-studio">9. Studio</a><a href="#g-profile">10. Profile, XP &amp; achievements</a><a href="#g-themes">11. Themes</a><a href="#g-gfx">12. Graphics settings</a><a href="#g-sounds">13. Sound library</a><a href="#g-quests">14. Daily quests</a><a href="#g-routines">15. Practice routines</a><a href="#g-explorer">16. Scale &amp; chord explorer</a><a href="#g-card">17. Player card &amp; journal</a><a href="#g-news">18. What’s new</a><a href="#g-sessions">19. Session statistics</a><a href="#g-sustain">20. Sustain fade</a><a href="#g-boards">21. XP boosts &amp; quest boards</a><a href="#g-dlc">22. DLC packs</a><a href="#g-dash">19. Dashboard</a><a href="#g-analysis">20. Analysis</a><a href="#g-report">21. Monthly PDF report</a>
+<a href="#g-studio">9. Studio</a><a href="#g-profile">10. Profile, XP &amp; achievements</a><a href="#g-themes">11. Themes</a><a href="#g-gfx">12. Graphics settings</a><a href="#g-sounds">13. Sound library</a><a href="#g-quests">14. Daily quests</a><a href="#g-routines">15. Practice routines</a><a href="#g-explorer">16. Scale &amp; chord explorer</a><a href="#g-card">17. Player card &amp; journal</a><a href="#g-news">18. What’s new</a><a href="#g-sessions">19. Session statistics</a><a href="#g-sustain">20. Sustain fade</a><a href="#g-boards">21. XP boosts &amp; quest boards</a><a href="#g-dlc">22. DLC packs</a><a href="#g-app">23. Windows app</a><a href="#g-sf">24. SoundFont instruments</a><a href="#g-focus">25. Focus mode &amp; rolling numbers</a><a href="#g-dash">19. Dashboard</a><a href="#g-analysis">20. Analysis</a><a href="#g-report">21. Monthly PDF report</a>
 <a href="#g-hist">22. History &amp; key stats</a><a href="#g-data">23. Backup &amp; your data</a><a href="#g-look">24. Look &amp; layout</a><a href="#g-keys">25. Shortcuts</a><a href="#g-fix">26. Troubleshooting</a>
 </nav>
 
@@ -9455,7 +9631,7 @@
 <li><b>Customize:</b> click your name to rename yourself. Choose an <b>emblem</b>, a <b>frame</b> and a <b>title</b>. More unlock with levels and achievements. Hover a 🔒 item to see what it needs.</li>
 <li><b>Daily quests</b> give extra XP every day (see section 14), and <b>📇 Share my player card</b> makes a picture of your level (see section 17).</li>
 <li><b>Where it is saved:</b> your profile is kept in this browser on this device (it is not a cloud backup). Your XP always comes from your log, so restoring a log backup brings your level back. <b>Reset profile…</b> (under “How XP works”) clears your name, looks and achievement dates, but never your log.</li>
-<li><b>Rolling numbers:</b> counters, XP, playing time and the clock roll digit by digit when they change. Calm mode, lite effects or your system's “reduce motion” setting turn this off.</li>
+<li><b>Rolling numbers:</b> counters, XP, playing time and the clock roll digit by digit when they change. Turn them on or off in Settings → Graphics → Rolling numbers.</li>
 </ol>
 
 <h3 id="g-themes">11. Themes</h3>
@@ -9565,6 +9741,38 @@
 <li><b>👑 Prestige Pack</b> (level 25, or finish a weekly quest board): animated profile frames, emblems and titles, in Profile → Customize.</li>
 </ul></li>
 <li>Switch a pack <b>Off</b> or <b>On</b> again at any time. <b>Open</b> takes you straight to its content. Visual packs follow your Graphics settings, Calm mode and “reduce motion”.</li>
+</ol>
+
+<h3 id="g-app">23. Windows app (download for extra features)</h3>
+<ol>
+<li>Click <b>⬇ Download app</b> in the top bar, then <b>Download for Windows</b>. It works on Windows 10 and 11, 64-bit and 32-bit: one installer picks the right version.</li>
+<li>Open <b>Piano-Logger-Setup.exe</b>. If Windows says “Windows protected your PC”, click <b>More info → Run anyway</b> (the app is new and not signed by a company). Choose a folder and finish; open <b>Piano Logger</b> from the desktop or Start menu.</li>
+<li><b>Bring your history:</b> the app keeps its own copy of your data. On the website go to <b>Data → Create backup file</b>; in the app go to <b>Data → Restore</b>, choose the file and press Restore. XP, levels and quests are worked out again from it.</li>
+<li>In the app, the <b>🖥</b> button in the top bar opens <b>App features</b>:
+<ul>
+<li><b>🎹 SoundFont instruments:</b> add .sf2 files (see the next section).</li>
+<li><b>💾 Automatic backups:</b> every day the app saves a backup of your whole history into <b>Documents → Piano Logger Backups</b> without asking, and keeps the newest 30. <b>Back up now</b> makes one straight away. To restore one, use <b>Data → Restore</b> as usual.</li>
+<li><b>📌 Always on top</b> keeps the window above other windows (handy over a video lesson). <b>🚀 Start with Windows</b> opens the app when you sign in.</li>
+<li><b>🔄 Updates:</b> each time it starts, the app looks for a newer version on the website and downloads it; restart the app to use it. Without internet it simply uses the version it has.</li>
+</ul></li>
+<li>Also in the app: sound, the visualizer and logging keep running while the window is minimised or behind other windows; your MIDI keyboard is allowed without a pop-up; the window remembers its size and position. Keys: <kbd>F11</kbd> full screen, <kbd>F5</kbd> reload.</li>
+<li>Everything else works exactly like the website. Your data in the app is stored in the app (it is kept when you update or reinstall the app). To remove the app, use Windows <b>Settings → Apps → Piano Logger → Uninstall</b>.</li>
+</ol>
+
+<h3 id="g-sf">24. SoundFont instruments (app)</h3>
+<ol>
+<li>A <b>SoundFont</b> (.sf2) is one file that holds a recorded (sampled) instrument, for example a whole grand piano. Many are free: search the web for <i>free piano sf2</i>, for example “Salamander Grand Piano sf2” or “YDP Grand Piano sf2”, and download the .sf2 file (unzip it first if it comes in a .zip).</li>
+<li>In the app click <b>🖥 → Add .sf2 files…</b> and choose one or more files. They are copied into the app, so you can delete the download afterwards.</li>
+<li>Every instrument inside the file appears in the <b>🎻 sound library</b> under “SoundFont: <i>name</i>”, and in Sound setup for the left hand (split) and layers. <b>Play it</b> next to a file picks its first instrument straight away.</li>
+<li>SoundFonts follow everything else: transpose, pitch bend, the mod wheel, rooms and the <b>sustain fade</b> (notes held by the pedal fade within about 1.5 s with “Natural”).</li>
+<li><b>VST plugins</b> (.dll or .vst3 files, such as Keyzone Classic) cannot be loaded: they are programs that need a music program (a “DAW”) to run them. Look for the same kind of instrument as a .sf2 file instead.</li>
+<li><b>Remove</b> moves a file to the Recycle Bin. Big SoundFonts (hundreds of MB) take a few seconds to load the first time you play them; until then the built-in piano plays.</li>
+</ol>
+
+<h3 id="g-focus">25. Focus mode &amp; rolling numbers</h3>
+<ol>
+<li><b>🧘 Focus mode</b> (top bar) hides everything except the piano. The piano sits at the <b>bottom</b> of the screen and the notes rise through the full height above it (with “fall down from keys” the piano is at the top). <kbd>Esc</kbd> or <b>Exit focus mode</b> leaves it; ⛶ makes it full screen.</li>
+<li><b>Rolling numbers:</b> counters, XP, playing time and the clock slide up digit by digit when they grow (and down when they fall). Choose in <b>Settings → Graphics → Rolling numbers</b>: <b>On</b> (default, rolls on every device, even when Windows “Animation effects” is off), <b>Follow system “reduce motion”</b> (also turned off by Calm mode and Lite effects) or <b>Off</b>.</li>
 </ol>
 
 <h3 id="g-dash">19. Dashboard</h3>
@@ -12318,9 +12526,18 @@ PianoLogger.on('noteon', e => {
          The real text stays in the element (old digits are drawn from an attribute),
          so screen readers and copy/paste always get the current value.
          ===================================================================== */
-      const ROLL = { step: 45, life: 1000, el: new WeakMap(), key: new Map() };
-      const rollCalm = () => HTML.classList.contains('calm') || HTML.classList.contains('lite') ||
-        !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+      const ROLL = { step: 45, life: 1000, el: new WeakMap(), key: new Map(), mode: 'on' };
+      try { const m = JSON.parse(localStorage.getItem('pll.roll') || '"on"'); if (['on', 'auto', 'off'].includes(m)) ROLL.mode = m; } catch (e) { }
+      const ROLL_MODES = [['on', 'On (always roll)'], ['auto', 'Follow system “reduce motion”'], ['off', 'Off']];
+      function rollMode(m) {
+        if (m) { ROLL.mode = m; try { localStorage.setItem('pll.roll', JSON.stringify(m)); } catch (e) { } }
+        HTML.classList.toggle('roll-on', ROLL.mode === 'on'); HTML.classList.toggle('roll-auto', ROLL.mode === 'auto');
+      }
+      rollMode();
+      document.addEventListener('change', e => { if (e.target && e.target.id === 'gfRoll') { rollMode(e.target.value); toast('Rolling numbers: ' + ROLL_MODES.find(x => x[0] === ROLL.mode)[1], 'ok'); } });
+      // On: always roll (only "Page animations: Off" stops them). Follow system: also Calm mode, Lite effects and the system's reduce-motion setting stop them.
+      const rollCalm = () => ROLL.mode === 'off' || HTML.classList.contains('anim-off') || (ROLL.mode === 'auto' && (HTML.classList.contains('calm') || HTML.classList.contains('lite') ||
+        !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)));
       const rollDigits = t => { const d = String(t).replace(/\D/g, ''); return d ? Number(d.slice(-15)) : NaN; };
       function rollPaint(el, from, to, ago) {
         const a = Array.from(from), b = Array.from(to), x = rollDigits(from), y = rollDigits(to), down = x > y;
@@ -13387,6 +13604,7 @@ PianoLogger.on('noteon', e => {
             sel('gfFps', 'Frame rate', [[30, '30 fps (saves battery)'], [60, '60 fps'], [0, 'Match my screen']], GFX.fps) +
             chk('gfBlur', 'Frosted-glass blur on panels', GFX.blur, 'Turn off on slow computers') +
             sel('gfAnim', 'Page animations', [['full', 'Full'], ['reduced', 'Reduced'], ['off', 'Off']], GFX.anim) +
+            sel('gfRoll', 'Rolling numbers', ROLL_MODES, ROLL.mode, 'Counters and XP slide up when they grow') +
             '</div><p class="sub">“Lite effects” in the Tools bar, Calm mode and your system’s “reduce motion” setting still turn heavy effects off. Graphics never change what is logged.</p>' +
             '<div class="row" style="margin-top:10px"><button type="button" class="btn" id="gfDemo">▶ Preview on the piano roll</button></div>';
           const set = (k, v) => { GFX[k] = v; GFX.preset = 'custom'; saveGfx(); applyGfx(); gfx.querySelectorAll('[data-pre]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pre === 'custom')); };
@@ -13678,7 +13896,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '5.1';
+      const APP_VERSION = '6.0';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -14156,7 +14374,7 @@ PianoLogger.on('noteon', e => {
         const set = $('#btnSet'); if (set) {
           const b = document.createElement('button'); b.className = 'btn icon'; b.id = 'btnNews'; b.type = 'button'; b.title = 'What’s new (update log)'; b.setAttribute('aria-label', 'What’s new: update log');
           b.innerHTML = '🆕<i class="news-dot" aria-hidden="true"></i>'; b.onclick = openNews; set.before(b);
-          if (LS.get('pll.seenVer', '') !== APP_VERSION) { b.classList.add('new'); if (LS.get('pll.tour', null) || localStorage.getItem('pll.tour')) setTimeout(() => toast('✨ Updated to v' + APP_VERSION + ': session stats, natural sustain, weekly → yearly quests, XP boosts and DLC packs. Click 🆕 to see what’s new.', 'ok'), 2500); }
+          if (LS.get('pll.seenVer', '') !== APP_VERSION) { b.classList.add('new'); if (LS.get('pll.tour', null) || localStorage.getItem('pll.tour')) setTimeout(() => toast('✨ Updated to v' + APP_VERSION + ': Windows app with SoundFonts and auto-backup, focus mode with the piano at the bottom, rolling numbers on every PC. Click 🆕 to see what’s new.', 'ok'), 2500); }
         }
       }
       { const h1 = $('.brand h1'); if (h1) { const v = document.createElement('button'); v.type = 'button'; v.className = 'ver-tag'; v.textContent = 'v' + APP_VERSION; v.title = 'What’s new'; v.onclick = openNews; h1.after(v); } }
@@ -14892,6 +15110,15 @@ PianoLogger.on('noteon', e => {
           '🦶 Pedal resonance (its echo and extra string sound) now fades within about 1.5 seconds too',
           '⚙ Sound setup → Sustain fade: Natural (about 1.5 s), Short (about 1 s), Long (about 4 s) or Hold until the pedal is released']
       });
+      VERSIONS.unshift({
+        v: '6.0', date: '2026-10-27', title: 'Windows app, focus mode & rolling numbers', items: [
+          '⬇ New “Download app” button: a free Windows app (Windows 10 and 11, 64-bit and 32-bit) with extra features. Same page, same features, installed with one .exe',
+          '🎹 App: load your own SoundFont (.sf2) instruments, for example free sampled grand pianos. Every instrument in a file appears in the 🎻 sound library and works with split, layers, pitch bend and the sustain fade',
+          '💾 App: automatic daily backup of your whole history into Documents → Piano Logger Backups (the newest 30 are kept), plus “Back up now”',
+          '📌 App: always on top, 🚀 start with Windows, sound and logging keep running when minimised, no permission pop-ups for your MIDI keyboard, works offline, and updates itself from the website',
+          '🧘 Fixed: in focus mode the piano now sits at the bottom of the screen and the notes use the full height above it',
+          '🔢 Fixed: rolling numbers did not roll on PCs where Windows “Animation effects” is off. They now roll everywhere; choose On, Follow system or Off in Settings → Graphics → Rolling numbers']
+      });
       {
         const hn = $('#p-help .help-new');
         if (hn) {
@@ -14924,6 +15151,376 @@ PianoLogger.on('noteon', e => {
       TOUR.splice(TOUR.length - 1, 0,
         ['#btnDlc', '🧩 DLC packs', DLC_PACKS.length + ' free expansion packs (songs, instruments, effects, backgrounds, animated themes, profile frames) that unlock as you level up.'],
         ['#dashRange', '🕘 Sessions', 'Pick “Current session” or any past session here to see the stats for just that session.']);
+
+      /* =====================================================================
+         v6.0 — the Windows desktop app.
+         On the website: a "Download app" button that explains what the app adds.
+         Inside the app (window.pianoApp exists): SoundFont (.sf2) instruments, automatic
+         backups into a folder, always on top, start with Windows and updates from the website.
+         Nothing here writes to the key-press log; it is only read (for backups).
+         ===================================================================== */
+      const APPX = window.pianoApp && window.pianoApp.isApp ? window.pianoApp : null;
+      const APP_DL = {
+        page: 'https://github.com/kosandra0/Piano_Logger/releases/latest',
+        file: 'https://github.com/kosandra0/Piano_Logger/releases/latest/download/Piano-Logger-Setup.exe'
+      };
+      HTML.classList.toggle('is-app', !!APPX);
+      const APP_FEATURES = [
+        ['🎹', 'Your own instruments', 'Load SoundFont (.sf2) files: free sampled grand pianos, electric pianos, strings and more. Every instrument inside a file appears in the 🎻 sound library.'],
+        ['💾', 'Automatic backups', 'A backup of your whole history is saved every day into Documents → Piano Logger Backups, without asking. The newest 30 are kept.'],
+        ['📌', 'Always on top', 'Keep the piano window above other windows, for example over a video lesson or sheet music.'],
+        ['🚀', 'Start with Windows', 'Open Piano Logger automatically when you sign in to your PC.'],
+        ['🔊', 'Plays in the background', 'Sound, the visualizer and logging keep running when the window is minimised or behind other windows.'],
+        ['🔌', 'No pop-ups for your keyboard', 'Your MIDI keyboard is allowed straight away, every time.'],
+        ['📴', 'Works offline', 'Everything is inside the app. When you are online it fetches the newest version from the website by itself.'],
+        ['🪟', 'Its own window', 'A taskbar icon, Start menu and desktop shortcuts, and it remembers its size and position.']
+      ];
+
+      /* ---------- top-bar button: "Download app" on the website, "App" inside the app ---------- */
+      {
+        const set = $('#btnSet');
+        if (set) {
+          const b = document.createElement('button'); b.type = 'button'; b.id = 'btnApp';
+          if (APPX) { b.className = 'btn icon'; b.textContent = '🖥'; b.title = 'App features: SoundFonts, backups, always on top…'; b.setAttribute('aria-label', 'App features'); b.onclick = () => openAppPanel(); }
+          else {
+            b.className = 'btn dl-app'; b.title = 'For additional features, download the Windows app'; b.setAttribute('aria-label', 'Download the Windows app for additional features');
+            b.innerHTML = '<span aria-hidden="true">⬇</span><span class="dl-t"><b>Download app</b><small>for extra features</small></span>'; b.onclick = () => openDownload();
+          }
+          set.before(b);
+        }
+      }
+      function openDownload() {
+        const win = /Windows/i.test(navigator.userAgent);
+        openModal('<div class="th-head"><h2 style="font-size:20px">⬇ Piano Logger for Windows</h2><span class="sub">Windows 10 &amp; 11 · 64-bit and 32-bit</span></div>' +
+          '<p class="sub">For additional features, download the app. It is the same Piano Logger you use here, with these extras:</p>' +
+          '<div class="app-feats">' + APP_FEATURES.map(([i, t, d]) => '<div class="app-feat"><span>' + i + '</span><div><b>' + esc(t) + '</b><small>' + esc(d) + '</small></div></div>').join('') + '</div>' +
+          '<div class="row" style="margin:14px 0 6px;flex-wrap:wrap;gap:8px"><a class="btn primary" id="dlGo" href="' + APP_DL.file + '" target="_blank" rel="noopener">⬇ Download for Windows (free)</a>' +
+          '<a class="btn" href="' + APP_DL.page + '" target="_blank" rel="noopener">All versions</a></div>' +
+          (win ? '' : '<p class="sub">⚠ This download is for Windows PCs. On other devices keep using the website.</p>') +
+          '<ol class="app-steps"><li>Open the downloaded <b>Piano-Logger-Setup.exe</b>. One installer works on 64-bit and 32-bit Windows; it picks the right version itself.</li>' +
+          '<li>If Windows shows “Windows protected your PC”, click <b>More info → Run anyway</b>. This appears because the app is new and not signed by a company.</li>' +
+          '<li>Choose where to install, then open <b>Piano Logger</b> from the desktop or Start menu.</li>' +
+          '<li><b>Bring your history:</b> the app keeps its own copy of your data. Here on the website go to <b>Data → Create backup file</b>, then in the app go to <b>Data → Restore</b> and pick that file. Your XP and level are worked out again from it.</li></ol>' +
+          '<div class="actions"><button class="btn primary" data-act="close">Close</button><button class="btn" id="dlGuide">📖 Read the app guide</button></div>');
+        $('#dlGuide').onclick = () => { $('#gm').hidden = true; guideTo('g-app'); };
+      }
+      function guideTo(id) { const g = $('#btnGuide'); if (!g) return; g.click(); setTimeout(() => { const t = $('#gbox').querySelector('#' + id); if (t) t.scrollIntoView({ block: 'start' }); }, 60); }
+
+      /* ---------- SoundFont (.sf2) reader ---------- */
+      // reads the parts of a SoundFont that are needed to play it: presets → instruments → samples
+      function sf2Parse(u8) {
+        const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+        const str = (o, n) => { let s = ''; for (let i = 0; i < n; i++) { const c = u8[o + i]; if (!c) break; s += String.fromCharCode(c); } return s.replace(/\s+$/, ''); };
+        if (u8.length < 12 || str(0, 4) !== 'RIFF' || str(8, 4) !== 'sfbk') throw new Error('not a SoundFont (.sf2) file');
+        const ch = {}; let name = '';
+        const end = Math.min(u8.length, 8 + dv.getUint32(4, true));
+        for (let p = 12; p + 8 <= end;) {
+          const id = str(p, 4), size = dv.getUint32(p + 4, true), body = p + 8;
+          if (id === 'LIST') {
+            const type = str(body, 4), qe = Math.min(end, body + size);
+            for (let q = body + 4; q + 8 <= qe;) {
+              const cid = str(q, 4), cs = dv.getUint32(q + 4, true);
+              ch[cid] = { o: q + 8, n: Math.min(cs, u8.length - q - 8) };
+              if (type === 'INFO' && cid === 'INAM') name = str(q + 8, Math.min(cs, 256));
+              q += 8 + cs + (cs & 1);
+            }
+          }
+          p = body + size + (size & 1);
+        }
+        ['phdr', 'pbag', 'pgen', 'inst', 'ibag', 'igen', 'shdr', 'smpl'].forEach(k => { if (!ch[k]) throw new Error('damaged SoundFont (no ' + k + ' chunk)'); });
+        const rec = (k, sz, f) => { const out = [], n = Math.floor(ch[k].n / sz); for (let i = 0; i < n; i++) out.push(f(ch[k].o + i * sz)); return out; };
+        const phdr = rec('phdr', 38, o => ({ name: str(o, 20), preset: dv.getUint16(o + 20, true), bank: dv.getUint16(o + 22, true), bag: dv.getUint16(o + 24, true) }));
+        const pbag = rec('pbag', 4, o => dv.getUint16(o, true)), ibag = rec('ibag', 4, o => dv.getUint16(o, true));
+        const gen = o => { const op = dv.getUint16(o, true); return [op, op === 41 || op === 53 ? dv.getUint16(o + 2, true) : dv.getInt16(o + 2, true), u8[o + 2], u8[o + 3]]; };
+        const pgen = rec('pgen', 4, gen), igen = rec('igen', 4, gen);
+        const inst = rec('inst', 22, o => ({ name: str(o, 20), bag: dv.getUint16(o + 20, true) }));
+        const shdr = rec('shdr', 46, o => ({ name: str(o, 20), start: dv.getUint32(o + 20, true), end: dv.getUint32(o + 24, true), ls: dv.getUint32(o + 28, true), le: dv.getUint32(o + 32, true),
+          rate: dv.getUint32(o + 36, true), pitch: u8[o + 40], corr: dv.getInt8(o + 41), type: dv.getUint16(o + 44, true) }));
+        // zones: each has its generators, key & velocity range and what it points to (instrument or sample)
+        const zones = (b0, b1, bags, gens, refOp) => {
+          const out = [];
+          for (let b = b0; b < b1 && b + 1 < bags.length; b++) {
+            const z = { g: {}, kr: null, vr: null, ref: -1 };
+            for (let i = bags[b]; i < bags[b + 1] && i < gens.length; i++) {
+              const [op, v, lo, hi] = gens[i];
+              if (op === 43) z.kr = [lo, hi]; else if (op === 44) z.vr = [lo, hi]; else if (op === refOp) z.ref = v; else z.g[op] = v;
+            }
+            out.push(z);
+          }
+          return out;
+        };
+        const presets = phdr.slice(0, -1).map((h, i) => ({ name: h.name, bank: h.bank, preset: h.preset, zones: zones(h.bag, phdr[i + 1].bag, pbag, pgen, 41) }));
+        const insts = inst.slice(0, -1).map((h, i) => ({ name: h.name, zones: zones(h.bag, inst[i + 1].bag, ibag, igen, 53) }));
+        return { name, presets, insts, shdr: shdr.slice(0, -1), u8, dv, smpl: ch.smpl, bufs: new Map() };
+      }
+      const SF_DEF = { 8: 13500, 21: -12000, 33: -12000, 34: -12000, 35: -12000, 36: -12000, 37: 0, 38: -12000, 48: 0, 51: 0, 52: 0, 56: 100, 58: -1, 17: 0, 9: 0, 39: 0, 40: 0, 54: 0 };
+      const SF_NOADD = new Set([0, 1, 2, 3, 4, 12, 45, 46, 47, 50, 54, 57, 58]);       // sample settings a preset may not change
+      const inZone = (z, gz, k, v) => { const kr = z.kr || (gz && gz.kr) || [0, 127], vr = z.vr || (gz && gz.vr) || [0, 127]; return k >= kr[0] && k <= kr[1] && v >= vr[0] && v <= vr[1]; };
+      function sfRegions(sf, P, key, vel) {
+        const out = [], pz = P.zones, pg = pz.length && pz[0].ref < 0 ? pz[0] : null;
+        for (const z of pz) {
+          if (z.ref < 0 || !sf.insts[z.ref] || !inZone(z, pg, key, vel)) continue;
+          const iz = sf.insts[z.ref].zones, ig = iz.length && iz[0].ref < 0 ? iz[0] : null;
+          for (const y of iz) {
+            if (y.ref < 0 || !sf.shdr[y.ref] || !inZone(y, ig, key, vel)) continue;
+            const g = Object.assign({}, SF_DEF, ig ? ig.g : null, y.g), add = Object.assign({}, pg ? pg.g : null, z.g);
+            for (const op in add) if (!SF_NOADD.has(+op)) g[op] = (g[op] || 0) + add[op];
+            out.push({ g, s: sf.shdr[y.ref], si: y.ref });
+            if (out.length >= 4) return out;
+          }
+        }
+        return out;
+      }
+      function sfBuffer(c, sf, r) {
+        const g = r.g, s = r.s, start = s.start + (g[0] || 0) + (g[4] || 0) * 32768, end = s.end + (g[1] || 0) + (g[12] || 0) * 32768;
+        const key = r.si + ':' + start + ':' + end; let b = sf.bufs.get(key); if (b) return b;
+        const total = Math.floor(sf.smpl.n / 2), a = Math.max(0, Math.min(start, total)), e = Math.max(a, Math.min(end, total)), len = e - a;
+        if (len < 2) return null;
+        const rate = clamp(s.rate || 44100, 3000, 384000), buf = c.createBuffer(1, len, rate), d = buf.getChannelData(0), o = sf.smpl.o + a * 2;
+        for (let i = 0; i < len; i++) d[i] = sf.dv.getInt16(o + i * 2, true) / 32768;
+        b = { buf, start: a, rate }; sf.bufs.set(key, b); return b;
+      }
+      const tcSec = tc => tc <= -12000 ? 0 : Math.pow(2, tc / 1200);
+      // plays one note from a SoundFont preset, wired like every other sound (pitch bend, sustain fade, voice limit)
+      function sfVoice(id, midi, vel, sf, P, mul) {
+        const regs = sfRegions(sf, P, midi, vel); if (!regs.length) return false;
+        const c = ensureAudio(); if (!c) return false;
+        const t = c.currentTime, a = vel / 127, out = c.createGain(), nodes = [], g0 = regs[0].g;
+        for (const r of regs) {
+          const g = r.g, sb = sfBuffer(c, sf, r); if (!sb) continue;
+          const src = c.createBufferSource(); src.buffer = sb.buf;
+          const root = g[58] >= 0 ? g[58] : (r.s.pitch > 127 ? 60 : r.s.pitch);
+          src.playbackRate.value = Math.pow(2, ((midi - root) * g[56] + g[51] * 100 + g[52] + r.s.corr) / 1200); src._d0 = 0;
+          const mode = g[54] & 3, ls = r.s.ls + (g[2] || 0) + (g[45] || 0) * 32768 - sb.start, le = r.s.le + (g[3] || 0) + (g[50] || 0) * 32768 - sb.start;
+          if ((mode === 1 || mode === 3) && le > ls + 1 && ls >= 0) { src.loop = true; src.loopStart = ls / sb.rate; src.loopEnd = Math.min(le, sb.buf.length) / sb.rate; }
+          let node = src;
+          if (g[8] < 13490) { const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = clamp(8.176 * Math.pow(2, g[8] / 1200), 20, 20000); lp.Q.value = clamp(g[9] / 10, 0, 30); node.connect(lp); node = lp; }
+          if (g[17] && c.createStereoPanner) { const pn = c.createStereoPanner(); pn.pan.value = clamp(g[17] / 500, -1, 1); node.connect(pn); node = pn; }
+          const rg = c.createGain(); rg.gain.value = Math.pow(10, -Math.max(0, g[48]) * 0.04 / 20); node.connect(rg); rg.connect(out);
+          nodes.push(src);
+        }
+        if (!nodes.length) return false;
+        // volume envelope of the first zone (delay, attack, hold, decay to the sustain level)
+        const peak = (Math.pow(a, 1.5) * 0.85 + 0.03) * 0.9, kd = Math.pow(2, (60 - midi) * (g0[40] || 0) / 1200), kh = Math.pow(2, (60 - midi) * (g0[39] || 0) / 1200);
+        const dly = tcSec(g0[33]), att = Math.max(0.002, tcSec(g0[34])), hold = tcSec(g0[35]) * kh, dec = tcSec(g0[36]) * kd, sus = Math.pow(10, -clamp(g0[37], 0, 1440) / 200);
+        const t1 = t + dly;
+        out.gain.setValueAtTime(0, t); out.gain.setValueAtTime(0, t1); out.gain.linearRampToValueAtTime(peak, t1 + att);
+        if (dec > 0.001 && sus < 0.999) out.gain.setTargetAtTime(Math.max(peak * sus, 0.00001), t1 + att + hold, dec * 0.0869);
+        const rel = clamp(tcSec(g0[38]), 0.06, 2.5);
+        return finishVoice(c, id, out, nodes, rel, mul, t);
+      }
+
+      /* ---------- SoundFont library (app only) ---------- */
+      const SFL = new Map();                                      // file → { state, sf, p, used }
+      const SFCAT = Object.assign({}, LS.get('pll.sfLib', {}));   // file → { name, presets: [[bank, preset, name]] } (so the sound list is ready at once)
+      const sfVal = (file, bank, preset) => 'sf:' + encodeURIComponent(file) + '|' + bank + '|' + preset;
+      const sfParse = v => { const m = /^sf:([^|]+)\|(\d+)\|(\d+)$/.exec(v || ''); return m ? { file: decodeURIComponent(m[1]), bank: +m[2], preset: +m[3] } : null; };
+      function sfLoad(file) {
+        let L = SFL.get(file);
+        if (L && L.state !== 'failed') return L.p;
+        L = { state: 'loading', sf: null, used: Date.now() }; SFL.set(file, L);
+        L.p = (async () => {
+          try {
+            if (!APPX) throw new Error('SoundFonts work in the desktop app');
+            engineInfo('⬇ Loading ' + file + '…');
+            const u8 = await APPX.sf.read(file);
+            L.sf = sf2Parse(u8 instanceof Uint8Array ? u8 : new Uint8Array(u8)); L.state = 'ready';
+            SFCAT[file] = { name: L.sf.name || file.replace(/\.sf2$/i, ''), presets: L.sf.presets.map(p => [p.bank, p.preset, p.name]) }; LS.set('pll.sfLib', SFCAT);
+            engineInfo('✓ ' + SFCAT[file].name + ' ready'); setTimeout(() => engineInfo(''), 2200);
+            [...SFL.entries()].filter(([, x]) => x.state === 'ready').sort((x, y) => y[1].used - x[1].used).slice(3).forEach(([f]) => SFL.delete(f));   // keep at most 3 in memory
+          } catch (e) {
+            L.state = 'failed'; engineInfo('');
+            toast('Could not load “' + file + '”: ' + (e && e.message || e) + '. The built-in piano plays instead.', 'bad');
+          }
+          if (activeSoundsOpen()) paintSounds();
+          return L;
+        })();
+        return L.p;
+      }
+      function sfOn(id, midi, vel, v, mul) {
+        const q = sfParse(v); if (!q) return false;
+        const L = SFL.get(q.file);
+        if (!L || L.state === 'failed') { if (APPX) sfLoad(q.file); return false; }
+        if (L.state !== 'ready') return false;
+        L.used = Date.now();
+        const P = L.sf.presets.find(p => p.bank === q.bank && p.preset === q.preset) || L.sf.presets[0]; if (!P) return false;
+        try { return sfVoice(id, midi, vel, L.sf, P, mul); } catch (e) { return false; }
+      }
+      const _engSf = engineOn;
+      engineOn = function (id, midi, vel, E = X2.engine, mul = 1) {
+        if (E && String(E).startsWith('sf:')) return sfOn(id, midi, vel, E, mul) || _engSf(id, midi, vel, 'synth', mul);
+        return _engSf(id, midi, vel, E, mul);
+      };
+      const _prepSf = soundPrep;
+      soundPrep = function (v) { const q = sfParse(v); if (q) { if (APPX) sfLoad(q.file); return; } return _prepSf(v); };
+      const _stateSf = soundState;
+      soundState = function (v) { const q = sfParse(v); if (!q) return _stateSf(v); const L = SFL.get(q.file); return L && L.state === 'loading' ? 'loading' : 'ready'; };
+      const _pvSf = previewSound;
+      previewSound = function (v) { const q = sfParse(v); if (q && APPX) { const p = sfLoad(q.file); return p.then(() => _pvSf(v)); } return _pvSf(v); };
+      // every preset of every SoundFont becomes a sound in the pickers and the 🎻 library
+      function sfSync() {
+        for (let i = SOUNDS.length - 1; i >= 0; i--) if (SOUNDS[i][4] === 'sf') SOUNDS.splice(i, 1);
+        for (let i = ENGINES.length - 1; i >= 0; i--) if (String(ENGINES[i][0]).startsWith('sf:')) ENGINES.splice(i, 1);
+        Object.keys(SOUND_BY).forEach(k => { if (k.startsWith('sf:')) delete SOUND_BY[k]; });
+        if (APPX) Object.keys(SFCAT).sort().forEach(f => {
+          const c = SFCAT[f], grp = '🎹 SoundFont: ' + (c.name || f);
+          [...c.presets].sort((x, y) => x[0] - y[0] || x[1] - y[1]).forEach(([bank, pre, nm]) => {
+            const s = [sfVal(f, bank, pre), (nm || 'Preset ' + pre) + (bank ? ' (bank ' + bank + ')' : ''), grp, bank === 128 ? '🥁' : '🎹', 'sf'];
+            SOUNDS.push(s); SOUND_BY[s[0]] = s; ENGINES.push([s[0], s[1]]);
+          });
+        });
+        if (sfParse(X2.engine) && !SOUND_BY[X2.engine]) { X2.engine = 'synth'; saveX2(); }   // its file was removed
+        if (sfParse(X3.leftEngine) && !SOUND_BY[X3.leftEngine]) X3.leftEngine = 'synth';
+        if (sfParse(X3.layerEngine) && !SOUND_BY[X3.layerEngine]) X3.layerEngine = 'strings';
+        saveX3(); fillSoundSelects();
+        const sb = $('#btnSounds'); if (sb) sb.textContent = '🎻 ' + SOUNDS.length + ' sounds';
+      }
+      async function sfRefresh() {                                // match the list with the files really in the SoundFonts folder
+        if (!APPX) return;
+        let files = []; try { files = await APPX.sf.list(); } catch (e) { return; }
+        const names = new Set(files.map(f => f.file));
+        Object.keys(SFCAT).forEach(f => { if (!names.has(f)) { delete SFCAT[f]; SFL.delete(f); } });
+        for (const f of files) if (!SFCAT[f.file]) await sfLoad(f.file);   // a new file: read it once to list its instruments
+        LS.set('pll.sfLib', SFCAT); sfSync();
+        return files;
+      }
+      if (APPX) {
+        sfSync();
+        sfRefresh().then(() => [X2.engine, X3.leftEngine, X3.layerEngine].forEach(v => { const q = sfParse(v); if (q && SFCAT[q.file]) sfLoad(q.file); }));
+      }
+
+      /* ---------- automatic backups (app only) ---------- */
+      const APPS = Object.assign({ autoBk: true }, LS.get('pll.app', {}));
+      const saveApps = () => LS.set('pll.app', APPS);
+      async function appBackup(manual) {
+        if (!APPX || !db) return;
+        try {
+          const { rows } = await scanLogs({}); rows.reverse();
+          if (!rows.length) { if (manual) toast('Nothing to back up yet: play a few notes first.', 'bad'); return; }
+          const f = await APPX.backup.save('piano-log-backup-' + stampName() + '.json', toJson(rows, 'backup').join(''));
+          LS.set('pll.appBk', Date.now());
+          try { localStorage.setItem('pll.lastBackup', String(Date.now())); } catch (e) { }
+          if (typeof showBackupInfo === 'function') showBackupInfo();
+          if (manual) toast('💾 Backup saved: ' + f, 'ok');
+        } catch (e) { toast('Automatic backup failed: ' + (e && e.message || e), 'bad'); }
+        if (appPanelOpen()) paintAppPanel();
+      }
+      if (APPX) {
+        const due = () => { if (APPS.autoBk && Date.now() - (+LS.get('pll.appBk', 0) || 0) > 864e5) appBackup(false); };
+        setTimeout(due, 30000); setInterval(due, 36e5);
+      }
+
+      /* ---------- the App panel (app only) ---------- */
+      const appPanelOpen = () => !$('#gm').hidden && !!$('#appPanel');
+      let appUpd = null;                                          // a newer page downloaded from the website, waiting for a restart
+      async function paintAppPanel() {
+        const box = $('#appPanel'); if (!box || !APPX) return;
+        let info = {}, files = [], bk = {};
+        try { [info, files, bk] = await Promise.all([APPX.info(), APPX.sf.list(), APPX.backup.list()]); } catch (e) { }
+        if (!$('#appPanel')) return;
+        const mb = n => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB';
+        box.innerHTML =
+          '<h3>🎹 SoundFont instruments</h3>' +
+          (files.length ? '<div class="app-sf">' + files.map(f => { const c = SFCAT[f.file]; return '<div class="app-sf-row"><span><b>' + esc(c && c.name || f.file) + '</b><small>' + esc(f.file) + ' · ' + mb(f.size) + (c ? ' · ' + c.presets.length + ' instrument' + (c.presets.length === 1 ? '' : 's') : '') + '</small></span>' +
+            '<button type="button" class="btn small" data-sfuse="' + esc(f.file) + '">Play it</button><button type="button" class="btn small" data-sfdel="' + esc(f.file) + '" title="Move to the Recycle Bin">Remove</button></div>'; }).join('') + '</div>'
+            : '<p class="sub">No SoundFonts yet. A SoundFont (.sf2) is one file with a sampled instrument, for example a grand piano. Search the web for “free piano sf2” (for example <i>Salamander Grand Piano sf2</i> or <i>YDP Grand Piano sf2</i>) and add the .sf2 file here.</p>') +
+          '<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" id="apSfAdd">➕ Add .sf2 files…</button><button type="button" class="btn" id="apSfDir">📂 Open SoundFonts folder</button><button type="button" class="btn" id="apSnd">🎻 Sound library</button></div>' +
+          '<p class="sub">Each instrument inside a file appears in the 🎻 sound library under “SoundFont”, and in Sound setup for split and layers. VST plugins (.dll / .vst3), such as Keyzone Classic, cannot be loaded; look for the same instrument as a .sf2 file instead.</p>' +
+          '<h3>💾 Automatic backups</h3><div class="set-grid"><label><input type="checkbox" id="apBk"' + (APPS.autoBk ? ' checked' : '') + '> Back up my history every day</label></div>' +
+          '<p class="sub">Folder: ' + esc(info.backupDir || bk.dir || '') + ' · ' + (bk.count ? bk.count + ' backup' + (bk.count === 1 ? '' : 's') + ' (the newest 30 are kept)' : 'no backups yet') + (LS.get('pll.appBk', 0) ? ' · last: ' + fmtStamp(+LS.get('pll.appBk', 0)) : '') + '</p>' +
+          '<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="apBkNow">💾 Back up now</button><button type="button" class="btn" id="apBkDir">📂 Open backups folder</button></div>' +
+          '<h3>🪟 Window</h3><div class="set-grid"><label><input type="checkbox" id="apTop"' + (info.onTop ? ' checked' : '') + '> 📌 Always on top of other windows</label>' +
+          '<label><input type="checkbox" id="apStart"' + (info.startup ? ' checked' : '') + '> 🚀 Start Piano Logger with Windows</label></div>' +
+          '<p class="sub">Sound, the visualizer and logging keep running while the window is minimised. Keys: <kbd>F11</kbd> full screen, <kbd>F5</kbd> reload.</p>' +
+          '<h3>🔄 Updates</h3><p class="sub">App ' + esc(info.appVersion || '') + ' · page version ' + esc(info.pageVersion || APP_VERSION) + (info.pageSource === 'website' ? ' (downloaded from the website)' : ' (built in)') +
+          ' · ' + esc(info.arch === 'ia32' ? '32-bit' : info.arch === 'x64' ? '64-bit' : info.arch || '') + ' Windows. The app checks the website for a newer version each time it starts.</p>' +
+          (appUpd ? '<p class="app-upd">✨ Version ' + esc(appUpd) + ' is ready. <button type="button" class="btn small primary" id="apRestart">Restart to update</button></p>' : '') +
+          '<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="apUpd">🔄 Check for updates now</button><button type="button" class="btn" id="apData">📂 Open the app’s data folder</button><button type="button" class="btn" id="apGuide">📖 App guide</button></div>';
+        const busy = async (btn, fn) => { btn.disabled = true; try { await fn(); } finally { if (btn.isConnected) btn.disabled = false; } };
+        $('#apSfAdd').onclick = e => busy(e.currentTarget, async () => {
+          const r = await APPX.sf.add();
+          for (const f of r.added) { delete SFCAT[f]; SFL.delete(f); }   // a replaced file is read again
+          await sfRefresh();
+          if (r.added.length) toast('🎹 Added ' + r.added.length + ' SoundFont' + (r.added.length === 1 ? '' : 's') + '. Find the instruments in the 🎻 sound library.', 'ok');
+          if (r.skipped.length) toast('Not a SoundFont (.sf2): ' + r.skipped.join(', '), 'bad');
+          paintAppPanel();
+        });
+        $('#apSfDir').onclick = () => APPX.sf.openFolder();
+        $('#apSnd').onclick = () => { sndG = 'All'; openSounds(); };
+        box.querySelectorAll('[data-sfuse]').forEach(b => b.onclick = () => busy(b, async () => {
+          const f = b.dataset.sfuse, L = await sfLoad(f); if (!L || L.state !== 'ready') return;
+          const c = SFCAT[f], p = c && c.presets.slice().sort((x, y) => x[0] - y[0] || x[1] - y[1])[0]; if (!p) return;
+          const v = sfVal(f, p[0], p[1]); useSound(v, 'main'); previewSound(v); toast('🎹 ' + soundName(v), 'ok');
+        }));
+        box.querySelectorAll('[data-sfdel]').forEach(b => b.onclick = () => busy(b, async () => {
+          const f = b.dataset.sfdel; if (!confirm('Remove “' + f + '”? It goes to the Recycle Bin.')) return;
+          await APPX.sf.remove(f); await sfRefresh(); paintAppPanel();
+        }));
+        $('#apBk').onchange = e => { APPS.autoBk = e.target.checked; saveApps(); toast(APPS.autoBk ? '💾 Daily backups on' : 'Daily backups off', 'ok'); };
+        $('#apBkNow').onclick = e => busy(e.currentTarget, () => appBackup(true));
+        $('#apBkDir').onclick = () => APPX.backup.openFolder();
+        $('#apTop').onchange = async e => { const on = await APPX.setOnTop(e.target.checked); toast(on ? '📌 Always on top' : 'Not on top any more', 'ok'); };
+        $('#apStart').onchange = async e => { const on = await APPX.setStartup(e.target.checked); e.target.checked = on; toast(on ? '🚀 Piano Logger will start with Windows' : 'Will not start with Windows', 'ok'); };
+        $('#apUpd').onclick = e => busy(e.currentTarget, async () => {
+          const r = await APPX.checkUpdate();
+          if (!r.ok) toast('Could not check for updates (' + (r.error || 'offline?') + ').', 'bad');
+          else if (r.updated) { appUpd = r.latest; paintAppPanel(); }
+          else toast('✓ You have the newest version (' + r.current + ').', 'ok');
+        });
+        if ($('#apRestart')) $('#apRestart').onclick = () => APPX.restart();
+        $('#apData').onclick = () => APPX.openDataFolder();
+        $('#apGuide').onclick = () => guideTo('g-app');
+      }
+      function openAppPanel() {
+        if (!APPX) return openDownload();
+        openModal('<div class="th-head"><h2 style="font-size:20px">🖥 App features</h2><span class="sub">Piano Logger for Windows</span></div><div id="appPanel" class="app-panel"><p class="sub">Loading…</p></div>' +
+          '<div class="actions"><button class="btn primary" data-act="close">Done</button></div>');
+        paintAppPanel();
+      }
+      if (APPX) {
+        APPX.onUpdate(v => {
+          appUpd = v; if (appPanelOpen()) paintAppPanel();
+          toast('✨ Piano Logger ' + v + ' has been downloaded. Restart the app to use it (🖥 → Restart to update).', 'ok');
+        });
+        if (!LS.get('pll.appWelcome', 0)) {
+          LS.set('pll.appWelcome', Date.now());
+          setTimeout(() => {
+            openModal('<div class="th-head"><h2 style="font-size:20px">👋 Welcome to the Piano Logger app</h2></div>' +
+              '<p>Everything from the website is here, plus the extras in <b>🖥 App features</b> (top bar).</p>' +
+              '<p><b>Bring your history from the website:</b> on the website go to <b>Data → Create backup file</b>. Then here go to <b>Data → Restore</b>, choose that file and press Restore. Your XP and level are worked out again from it.</p>' +
+              '<div class="actions"><button class="btn primary" id="wlApp">🖥 Show app features</button><button class="btn" data-act="close">Later</button></div>');
+            $('#wlApp').onclick = openAppPanel;
+          }, 1800);
+        }
+      }
+
+      /* ---------- help tab, search and tour ---------- */
+      {
+        const h5 = $('#p-help .help-v5 h2'); if (h5) h5.textContent = '✨ New in v5';
+        const hn = $('#p-help .help-v5') || $('#p-help .help-new');
+        if (hn) {
+          hn.insertAdjacentHTML('beforebegin', '<div class="help-new help-v6"><h2>✨ New in v' + APP_VERSION + '</h2><div class="help-tiles">' +
+            [[APPX ? '🖥' : '⬇', APPX ? 'App features' : 'Windows app', APPX ? 'SoundFonts, backups, always on top' : 'Download for extra features', 'app'], ['🎹', 'SoundFonts', 'Your own .sf2 instruments (app)', 'sf'],
+            ['🧘', 'Focus mode', 'Piano at the bottom, full-height notes', 'focus'], ['🔢', 'Rolling numbers', 'Now roll on every PC · Settings → Graphics', 'roll']]
+              .map(([i, t, d, k]) => '<button type="button" class="help-tile" data-h6="' + k + '"><span>' + i + '</span><b>' + t + '</b><small>' + esc(d) + '</small></button>').join('') + '</div></div>');
+          $('#p-help .help-v6 .help-tiles').onclick = e => {
+            const b = e.target.closest('[data-h6]'); if (!b) return; const k = b.dataset.h6;
+            if (k === 'app') openAppPanel(); else if (k === 'sf') { if (APPX) openAppPanel(); else guideTo('g-app'); }
+            else if (k === 'focus') toggleFocus(true); else if (k === 'roll') openSettings('gfx');
+          };
+        }
+        const row = $('#p-help .row'); if (row) { row.insertAdjacentHTML('beforeend', '<button class="btn" id="helpApp">' + (APPX ? '🖥 App features' : '⬇ Download the app') + '</button>'); $('#helpApp').onclick = openAppPanel; }
+      }
+      const _cmdV6 = commands;
+      commands = function () {
+        const C = _cmdV6();
+        if (APPX) C.push(['App features (SoundFonts, backups, always on top)', 'App', openAppPanel], ['Add SoundFont instruments (.sf2)', 'App', async () => { await APPX.sf.add(); await sfRefresh(); openAppPanel(); }],
+          ['Back up now (into the backups folder)', 'App', () => appBackup(true)]);
+        else C.push(['Download the Windows app (extra features)', 'App', openDownload]);
+        C.push(['Rolling numbers on / off', 'Settings', () => openSettings('gfx')]);
+        return C;
+      };
+      TOUR.splice(TOUR.length - 1, 0, ['#btnApp', APPX ? '🖥 App features' : '⬇ Windows app', APPX ? 'SoundFont instruments, daily backups into a folder, always on top and start with Windows.' : 'For additional features, download the free Windows app: your own SoundFont instruments, automatic backups, always on top and more.']);
 
     })();
   </script>
