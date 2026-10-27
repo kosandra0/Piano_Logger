@@ -3,6 +3,9 @@ name: Build Windows app
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -15,8 +18,9 @@ jobs:
         working-directory: desktop
       - run: npm run dist
         working-directory: desktop
-      - run: |
-          gh release create "app-v6.0" "desktop/dist/Piano-Logger-Setup.exe" --latest || \
-          gh release upload "app-v6.0" "desktop/dist/Piano-Logger-Setup.exe" --clobber
+      - name: Publish the installer
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "app-v6.0" desktop/dist/Piano-Logger-Setup.exe --latest --title "Piano Logger app 6.0" --notes "Windows installer" || gh release upload "app-v6.0" desktop/dist/Piano-Logger-Setup.exe --clobber
