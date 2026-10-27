@@ -18,13 +18,15 @@ app.setAppUserModelId('com.kosandra0.pianologger');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096');   // room for very large histories
 
 const firstInstance = app.requestSingleInstanceLock();       // only one Piano Logger window at a time
 if (!firstInstance) app.quit();
 
 let win = null;
 const P = {};                                                   // folders, filled in when the app is ready
-let settings = { onTop: false, bounds: null, maximized: false };
+let settings = { onTop: false, bounds: null, maximized: false, lastCrash: null };
+const BK = new Map();                                           // backups being written piece by piece
 let served = { version: '0', source: 'bundled', file: '' };
 
 /* ---------- small helpers ---------- */
@@ -96,7 +98,11 @@ function createWindow() {
     else if (i.key === 'F11') { win.setFullScreen(!win.isFullScreen()); e.preventDefault(); }
     else if (i.control && i.shift && i.key.toLowerCase() === 'i') { win.webContents.toggleDevTools(); e.preventDefault(); }
   });
-  win.webContents.on('render-process-gone', () => { setTimeout(() => { if (win && !win.isDestroyed()) win.webContents.reload(); }, 800); });
+  win.webContents.on('render-process-gone', (_e, d) => {        // remember why the window stopped, then reopen it
+    settings.lastCrash = { at: Date.now(), reason: d && d.reason, exitCode: d && d.exitCode }; saveSettings();
+    fsp.appendFile(path.join(P.data, 'crash.log'), new Date().toISOString() + ' ' + JSON.stringify(settings.lastCrash) + '\n').catch(() => { });
+    setTimeout(() => { if (win && !win.isDestroyed()) win.webContents.reload(); }, 800);
+  });
   const keep = () => { if (!win || win.isDestroyed()) return; settings.maximized = win.isMaximized(); if (!settings.maximized && !win.isFullScreen()) settings.bounds = win.getBounds(); };
   win.on('resize', keep); win.on('move', keep);
   win.on('close', () => { keep(); saveSettings(); });
@@ -123,7 +129,7 @@ function registerIpc() {
   ipcMain.handle('app:info', async () => ({
     appVersion: app.getVersion(), pageVersion: served.version, pageSource: served.source, electron: process.versions.electron,
     arch: process.arch, os: process.getSystemVersion ? process.getSystemVersion() : '', dataDir: P.data, backupDir: P.backups, sfDir: P.sf,
-    onTop: !!settings.onTop, startup: !!app.getLoginItemSettings().openAtLogin, site: SITE
+    onTop: !!settings.onTop, startup: !!app.getLoginItemSettings().openAtLogin, site: SITE, lastCrash: settings.lastCrash
   }));
   ipcMain.handle('sf:list', () => sfList());
   ipcMain.handle('sf:add', async () => {
@@ -153,6 +159,29 @@ function registerIpc() {
     for (const n of all.slice(0, Math.max(0, all.length - 30))) await fsp.unlink(path.join(P.backups, n)).catch(() => { });   // keep the newest 30
     return f;
   });
+  // big backups arrive in pieces: begin → write, write, … → end
+  ipcMain.handle('bk:begin', async (_e, name) => {
+    if (!/^piano-log-backup-[\w-]+\.json$/.test(name)) throw new Error('Bad backup name');
+    await fsp.mkdir(P.backups, { recursive: true });
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7), f = path.join(P.backups, name);
+    BK.set(id, { f, tmp: f + '.part', fh: await fsp.open(f + '.part', 'w') });
+    return id;
+  });
+  ipcMain.handle('bk:write', async (_e, id, data) => {
+    const b = BK.get(id); if (!b) throw new Error('This backup was already closed');
+    await b.fh.write(Buffer.from(data)); return true;
+  });
+  ipcMain.handle('bk:end', async (_e, id) => {
+    const b = BK.get(id); if (!b) throw new Error('This backup was already closed');
+    BK.delete(id); await b.fh.close(); await fsp.rename(b.tmp, b.f);
+    const all = (await fsp.readdir(P.backups)).filter(n => /^piano-log-backup-[\w-]+\.json$/.test(n)).sort();
+    for (const n of all.slice(0, Math.max(0, all.length - 30))) await fsp.unlink(path.join(P.backups, n)).catch(() => { });   // keep the newest 30
+    return b.f;
+  });
+  ipcMain.handle('bk:abort', async (_e, id) => {
+    const b = BK.get(id); if (!b) return false;
+    BK.delete(id); await b.fh.close().catch(() => { }); await fsp.unlink(b.tmp).catch(() => { }); return true;
+  });
   ipcMain.handle('bk:list', async () => {
     try {
       const all = (await fsp.readdir(P.backups)).filter(n => /^piano-log-backup-[\w-]+\.json$/.test(n)).sort();
@@ -165,6 +194,11 @@ function registerIpc() {
   ipcMain.handle('upd:check', () => checkUpdate());
   ipcMain.handle('app:restart', () => { app.relaunch(); app.exit(0); });
   ipcMain.handle('app:datadir', () => shell.openPath(P.data));
+  // "Repair storage": on the next start the database folder is moved aside (never deleted) and a fresh one is made
+  ipcMain.handle('app:repairStorage', async () => {
+    await fsp.writeFile(path.join(P.data, 'repair-storage.flag'), String(Date.now()));
+    app.relaunch(); app.exit(0);
+  });
 }
 
 /* ---------- start ---------- */
@@ -178,6 +212,12 @@ app.whenReady().then(async () => {
   P.settings = path.join(P.data, 'settings.json');
   P.backups = path.join(app.getPath('documents'), 'Piano Logger Backups');
   settings = await readJson(P.settings, settings);
+  try {                                                         // a repair was asked for: move the old database to a safe folder
+    await fsp.access(path.join(P.data, 'repair-storage.flag'));
+    const st = new Date().toISOString().replace(/[:.]/g, '-');
+    await fsp.rename(path.join(P.data, 'IndexedDB'), path.join(P.data, 'IndexedDB-old-' + st)).catch(() => { });
+    await fsp.unlink(path.join(P.data, 'repair-storage.flag')).catch(() => { });
+  } catch (e) { }
   await pickPage();
 
   protocol.handle(SCHEME, async req => {
