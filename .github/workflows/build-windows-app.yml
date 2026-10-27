@@ -15,8 +15,8 @@ jobs:
         working-directory: desktop
       - run: npm run dist
         working-directory: desktop
-      - run: gh release create "app-v${{ env.V }}" dist/Piano-Logger-Setup.exe --latest || gh release upload --clobber "app-v${{ env.V }}" dist/Piano-Logger-Setup.exe
-        working-directory: desktop
+      - run: |
+          gh release create "app-v6.0" "desktop/dist/Piano-Logger-Setup.exe" --latest || \
+          gh release upload "app-v6.0" "desktop/dist/Piano-Logger-Setup.exe" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          V: "6.0"
