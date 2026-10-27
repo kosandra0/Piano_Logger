@@ -1,7 +1,7 @@
 {
   "name": "piano-logger",
   "productName": "Piano Logger",
-  "version": "6.0.0",
+  "version": "6.1.0",
   "description": "Piano MIDI visualizer and lifetime key logger for Windows",
   "author": "kosandra0",
   "license": "UNLICENSED",
