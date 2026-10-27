@@ -7390,6 +7390,672 @@
       animation: none !important
     }
 
+
+    /* ======================= v6.1 ======================= */
+    /* toasts: no copies, a count instead, smooth exit, progress bars */
+    #toasts {
+      z-index: 2147483001;
+      max-width: calc(100vw - 32px)
+    }
+
+    .toast {
+      position: relative;
+      cursor: pointer;
+      transition: opacity .25s, transform .25s
+    }
+
+    .toast[data-count]::after {
+      content: attr(data-count);
+      position: absolute;
+      top: -8px;
+      right: -6px;
+      min-width: 22px;
+      padding: 2px 6px;
+      border-radius: 99px;
+      font: 700 11px/1.3 system-ui;
+      text-align: center;
+      color: #fff;
+      background: var(--bad);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .35)
+    }
+
+    .toast.ok[data-count]::after {
+      background: var(--ok);
+      color: #062012
+    }
+
+    .toast.bump {
+      animation: tBump .35s cubic-bezier(.2, 1.4, .4, 1)
+    }
+
+    .toast.out {
+      opacity: 0;
+      transform: translateX(24px) scale(.97)
+    }
+
+    @keyframes tBump {
+      40% {
+        transform: scale(1.04)
+      }
+    }
+
+    .toast.prog {
+      min-width: 260px;
+      cursor: default
+    }
+
+    .tp-t {
+      display: block;
+      font-variant-numeric: tabular-nums
+    }
+
+    .tp-bar,
+    .rs-bar {
+      display: block;
+      height: 6px;
+      margin-top: 8px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, .1);
+      overflow: hidden
+    }
+
+    .tp-bar b,
+    .rs-bar b {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--c1), var(--c2));
+      transition: width .25s ease
+    }
+
+    .tp-bar.ind b {
+      width: 40% !important;
+      animation: tpInd 1.1s ease-in-out infinite
+    }
+
+    @keyframes tpInd {
+      from {
+        transform: translateX(-100%)
+      }
+
+      to {
+        transform: translateX(250%)
+      }
+    }
+
+    /* restore progress */
+    .rs-prog {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid color-mix(in srgb, var(--c1) 35%, var(--line));
+      background: color-mix(in srgb, var(--c1) 8%, rgba(0, 0, 0, .2));
+      animation: in .3s ease
+    }
+
+    .rs-top {
+      display: flex;
+      justify-content: space-between;
+      font-variant-numeric: tabular-nums
+    }
+
+    .rs-pct {
+      color: var(--c1);
+      font-weight: 700
+    }
+
+    .rs-info {
+      margin: 8px 0 10px;
+      font-size: 12px;
+      color: var(--mut);
+      font-variant-numeric: tabular-nums
+    }
+
+    /* database problems: say why, and offer a fix */
+    #saveState .db-err {
+      display: block;
+      margin-top: 4px;
+      font-size: 11.5px;
+      color: var(--mut);
+      overflow-wrap: anywhere
+    }
+
+    #saveState .db-fix {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px
+    }
+
+    /* a period is loading */
+    #p-dash.rg-busy #cards,
+    #p-dash.rg-busy .chart {
+      opacity: .45;
+      filter: saturate(.5);
+      transition: opacity .2s, filter .2s
+    }
+
+    #p-dash.rg-busy #rangeNote {
+      background: linear-gradient(90deg, var(--mut) 0%, var(--c1) 50%, var(--mut) 100%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: rgShine 1.2s linear infinite
+    }
+
+    @keyframes rgShine {
+      to {
+        background-position: -200% 0
+      }
+    }
+
+    /* date boxes: our own calendar icon instead of the browser's */
+    input[type=date] {
+      cursor: pointer;
+      padding-right: 32px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23c9cbe0' stroke-width='1.4' stroke-linecap='round'%3E%3Crect x='2' y='3' width='12' height='11' rx='2.5'/%3E%3Cpath d='M2 6.5h12M5.5 1.8v2.4M10.5 1.8v2.4'/%3E%3Ccircle cx='8' cy='10' r='.6' fill='%23c9cbe0'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 15px;
+      min-height: 34px
+    }
+
+    html[data-theme=light] input[type=date] {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23555a78' stroke-width='1.4' stroke-linecap='round'%3E%3Crect x='2' y='3' width='12' height='11' rx='2.5'/%3E%3Cpath d='M2 6.5h12M5.5 1.8v2.4M10.5 1.8v2.4'/%3E%3Ccircle cx='8' cy='10' r='.6' fill='%23555a78'/%3E%3C/svg%3E")
+    }
+
+    input[type=date]::-webkit-calendar-picker-indicator {
+      display: none
+    }
+
+    input[type=date].dp-open {
+      border-color: var(--c1);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--c1) 25%, transparent)
+    }
+
+    input[type=date].dp-flash {
+      animation: dpFlash .6s ease
+    }
+
+    @keyframes dpFlash {
+      30% {
+        background-color: color-mix(in srgb, var(--c1) 22%, transparent)
+      }
+    }
+
+    /* the calendar */
+    .dp {
+      --dpA: var(--c1);
+      --dpB: var(--c2);
+      position: fixed;
+      z-index: 2147483000;
+      width: 316px;
+      padding: 14px 14px 12px;
+      border-radius: 20px;
+      color: var(--txt);
+      background:
+        radial-gradient(120% 70% at 0% 0%, color-mix(in srgb, var(--dpA) 16%, transparent), transparent 60%),
+        radial-gradient(90% 60% at 100% 100%, color-mix(in srgb, var(--dpB) 14%, transparent), transparent 60%),
+        color-mix(in srgb, var(--bg) 90%, #000 10%);
+      border: 1px solid color-mix(in srgb, var(--dpA) 32%, var(--line));
+      box-shadow: 0 24px 64px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .04) inset, 0 0 40px color-mix(in srgb, var(--dpA) 12%, transparent);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      backdrop-filter: blur(20px) saturate(160%);
+      opacity: 0;
+      transform: translateY(-6px) scale(.97);
+      transform-origin: top left;
+      transition: opacity .16s ease, transform .18s cubic-bezier(.2, 1.1, .4, 1);
+      user-select: none;
+      -webkit-user-select: none
+    }
+
+    .dp.up {
+      transform-origin: bottom left;
+      transform: translateY(6px) scale(.97)
+    }
+
+    .dp.show {
+      opacity: 1;
+      transform: none
+    }
+
+    html[data-theme=light] .dp {
+      background:
+        radial-gradient(120% 70% at 0% 0%, color-mix(in srgb, var(--dpA) 12%, transparent), transparent 60%),
+        color-mix(in srgb, var(--bg) 70%, #fff 30%);
+      box-shadow: 0 20px 50px rgba(20, 22, 50, .2), 0 0 0 1px rgba(255, 255, 255, .6) inset
+    }
+
+    .dp.sheet {
+      left: 50% !important;
+      top: auto !important;
+      bottom: 12px;
+      width: min(380px, calc(100vw - 24px));
+      translate: -50% 0;
+      transform: translateY(24px);
+      transform-origin: bottom center
+    }
+
+    .dp.sheet.show {
+      transform: none
+    }
+
+    .dp-cap {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 0 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--mut)
+    }
+
+    .dp-cap small {
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 600;
+      color: var(--dpA)
+    }
+
+    .dp-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px
+    }
+
+    .dp button {
+      font: inherit;
+      color: inherit;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent
+    }
+
+    .dp-title {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 11px;
+      font-weight: 700 !important;
+      font-size: 15px !important;
+      text-align: left;
+      transition: background .15s
+    }
+
+    .dp-title b {
+      margin-left: 6px;
+      font-size: 10px;
+      color: var(--mut);
+      display: inline-block;
+      transition: transform .2s
+    }
+
+    .dp-title:hover {
+      background: rgba(255, 255, 255, .07)
+    }
+
+    .dp-nav {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      font-size: 20px !important;
+      line-height: 1;
+      color: var(--mut) !important;
+      transition: background .15s, color .15s, transform .15s
+    }
+
+    .dp-nav:hover {
+      background: rgba(255, 255, 255, .08);
+      color: var(--txt) !important
+    }
+
+    .dp-nav:active {
+      transform: scale(.9)
+    }
+
+    .dp-body {
+      min-height: 248px
+    }
+
+    .dp-body.fade {
+      animation: dpFade .2s ease
+    }
+
+    .dp-body.sl-l {
+      animation: dpSlL .22s cubic-bezier(.2, .9, .3, 1)
+    }
+
+    .dp-body.sl-r {
+      animation: dpSlR .22s cubic-bezier(.2, .9, .3, 1)
+    }
+
+    @keyframes dpFade {
+      from {
+        opacity: 0;
+        transform: scale(.97)
+      }
+    }
+
+    @keyframes dpSlL {
+      from {
+        opacity: 0;
+        transform: translateX(22px)
+      }
+    }
+
+    @keyframes dpSlR {
+      from {
+        opacity: 0;
+        transform: translateX(-22px)
+      }
+    }
+
+    .dp-wd,
+    .dp-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      row-gap: 2px
+    }
+
+    .dp-wd span {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--mut);
+      padding: 4px 0 6px;
+      opacity: .8
+    }
+
+    .dp-d {
+      position: relative;
+      height: 36px;
+      font-size: 13.5px !important;
+      font-variant-numeric: tabular-nums;
+      display: grid;
+      place-items: center
+    }
+
+    .dp-d span {
+      position: relative;
+      z-index: 1;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      transition: background .12s, transform .12s, box-shadow .12s
+    }
+
+    .dp-d:hover span {
+      background: rgba(255, 255, 255, .09)
+    }
+
+    .dp-d:active span {
+      transform: scale(.9)
+    }
+
+    .dp-d:focus-visible {
+      outline: none
+    }
+
+    .dp-d:focus-visible span {
+      box-shadow: 0 0 0 2px var(--dpA)
+    }
+
+    .dp-d.out {
+      opacity: .32
+    }
+
+    .dp-d:disabled {
+      opacity: .18;
+      cursor: not-allowed
+    }
+
+    .dp-d.wd0,
+    .dp-d.wd6 {
+      color: color-mix(in srgb, var(--txt) 75%, var(--dpB))
+    }
+
+    .dp-d.today span {
+      box-shadow: inset 0 0 0 1.5px var(--dpA);
+      font-weight: 700
+    }
+
+    .dp-d.in::before {
+      content: '';
+      position: absolute;
+      inset: 2px 0;
+      background: color-mix(in srgb, var(--dpA) 16%, transparent)
+    }
+
+    .dp-d.in.r0::before {
+      left: 50%
+    }
+
+    .dp-d.in.r1::before {
+      right: 50%
+    }
+
+    .dp-d.in.r0.r1::before {
+      display: none
+    }
+
+    .dp-d.other span,
+    .dp-d.in.r0 span,
+    .dp-d.in.r1 span {
+      background: color-mix(in srgb, var(--dpA) 30%, transparent);
+      font-weight: 700
+    }
+
+    .dp-d.sel span {
+      background: linear-gradient(135deg, var(--dpA), var(--dpB)) !important;
+      color: var(--on-acc, #08080f);
+      font-weight: 800;
+      box-shadow: 0 6px 16px color-mix(in srgb, var(--dpA) 40%, transparent);
+      animation: dpPop .28s cubic-bezier(.2, 1.5, .4, 1)
+    }
+
+    @keyframes dpPop {
+      from {
+        transform: scale(.7)
+      }
+    }
+
+    .dp-d i {
+      position: absolute;
+      z-index: 2;
+      bottom: 4px;
+      left: 50%;
+      height: 3px;
+      border-radius: 3px;
+      translate: -50% 0;
+      background: var(--c3);
+      box-shadow: 0 0 6px color-mix(in srgb, var(--c3) 70%, transparent)
+    }
+
+    .dp-d i.lv1 {
+      width: 5px;
+      opacity: .55
+    }
+
+    .dp-d i.lv2 {
+      width: 9px;
+      opacity: .7
+    }
+
+    .dp-d i.lv3 {
+      width: 13px;
+      opacity: .85
+    }
+
+    .dp-d i.lv4 {
+      width: 17px
+    }
+
+    .dp-d.sel i {
+      background: currentColor;
+      box-shadow: none
+    }
+
+    .dp-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding-top: 6px
+    }
+
+    .dp-m {
+      height: 52px;
+      border-radius: 13px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, .04) !important;
+      transition: background .15s, transform .15s
+    }
+
+    .dp-m:hover {
+      background: rgba(255, 255, 255, .1) !important
+    }
+
+    .dp-m:active {
+      transform: scale(.95)
+    }
+
+    .dp-m.today {
+      box-shadow: inset 0 0 0 1.5px var(--dpA)
+    }
+
+    .dp-m.sel {
+      background: linear-gradient(135deg, var(--dpA), var(--dpB)) !important;
+      color: var(--on-acc, #08080f) !important;
+      font-weight: 800
+    }
+
+    .dp-quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 10px 0 4px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line)
+    }
+
+    .dp-quick button {
+      padding: 5px 10px;
+      border-radius: 99px;
+      font-size: 12px !important;
+      border: 1px solid var(--line) !important;
+      background: rgba(255, 255, 255, .03) !important;
+      transition: background .15s, border-color .15s, transform .15s
+    }
+
+    .dp-quick button:hover {
+      border-color: var(--dpA) !important;
+      background: color-mix(in srgb, var(--dpA) 14%, transparent) !important
+    }
+
+    .dp-quick button:active {
+      transform: scale(.95)
+    }
+
+    .dp-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px
+    }
+
+    .dp-link {
+      padding: 6px 8px;
+      border-radius: 9px;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      color: var(--dpA) !important
+    }
+
+    .dp-link:hover {
+      background: color-mix(in srgb, var(--dpA) 12%, transparent) !important
+    }
+
+    .dp-key {
+      font-size: 10.5px;
+      color: var(--mut);
+      opacity: .7
+    }
+
+    html.anim-off .dp,
+    html.anim-off .dp * {
+      transition: none !important;
+      animation: none !important
+    }
+
+    @media (pointer: coarse) {
+      .dp-key {
+        display: none
+      }
+
+      .dp-d {
+        height: 42px
+      }
+
+      .dp-d span {
+        width: 40px;
+        height: 40px
+      }
+    }
+
+    .dash-bar input[type=date] {
+      padding-right: 30px;
+      background-position: right 8px center;
+      background-size: 14px
+    }
+
+    .rs-prog.res.ok {
+      border-color: color-mix(in srgb, var(--ok) 45%, var(--line));
+      background: color-mix(in srgb, var(--ok) 9%, rgba(0, 0, 0, .2))
+    }
+
+    .rs-prog.res.ok .rs-pct,
+    .rs-prog.res.ok .rs-top b {
+      color: var(--ok)
+    }
+
+    .rs-prog.res.bad {
+      border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+      background: color-mix(in srgb, var(--bad) 9%, rgba(0, 0, 0, .2))
+    }
+
+    .rs-prog.res.bad .rs-top b,
+    .rs-prog.res.bad .rs-pct {
+      color: var(--bad)
+    }
+
+    .rs-prog.res .rs-info {
+      color: var(--txt)
+    }
+
+    html[data-theme=light] .dp-d.sel span,
+    html[data-theme=light] .dp-m.sel {
+      color: #fff !important
+    }
+
+    select {
+      text-overflow: ellipsis
+    }
+
+    /* routine descriptions: two lines instead of one cut-off line */
+    .rt-item small {
+      white-space: normal !important;
+      display: -webkit-box !important;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden
+    }
+
     /* confetti */
     .cf-cv {
       position: fixed;
@@ -8259,7 +8925,7 @@
               <label class="btn file-btn"><input type="file" id="restoreFile" accept=".json,application/json"><span
                   id="restoreName">Choose backup file…</span></label>
               <select id="restoreMode" aria-label="Restore mode">
-                <option value="merge">Merge (keep current, skip duplicates)</option>
+                <option value="merge">Merge (skip duplicates)</option>
                 <option value="replace">Replace everything</option>
               </select>
               <button class="btn" id="btnRestore">Restore</button>
@@ -8271,7 +8937,7 @@
             <p class="sub">Keeps a fresh backup without you having to remember. Pick a folder once (Chrome / Edge) and
               backups are saved there automatically while this page is open.</p>
             <label class="sub">Back up&nbsp;<select id="abFreq">
-                <option value="off">Only when I click (reminder after 7 days)</option>
+                <option value="off">Manual (reminder after 7 days)</option>
                 <option value="1">Every day</option>
                 <option value="7">Every week</option>
               </select></label>
@@ -8428,10 +9094,39 @@
       }
       function fmtStamp(ts) { if (!ts) return '—'; const p = localParts(ts); return p.date + ' ' + p.time.slice(0, 8); }
       function toast(msg, type = '') {
+        msg = String(msg);
+        const box = $('#toasts'), same = [...box.children].find(t => t.dataset.msg === msg && !t.classList.contains('out'));
+        if (same) {                                   // the same message again: count it instead of stacking copies
+          const n = (+same.dataset.n || 1) + 1; same.dataset.n = n; same.setAttribute('data-count', '×' + n);
+          same.classList.remove('bump'); void same.offsetWidth; same.classList.add('bump');
+          clearTimeout(same._t); same._t = setTimeout(() => toastOut(same), 5200); return same;
+        }
         const t = document.createElement('div');
-        t.className = 'toast ' + type; t.textContent = msg;
+        t.className = 'toast ' + type; t.textContent = msg; t.dataset.msg = msg;
+        t.setAttribute('role', type === 'bad' ? 'alert' : 'status');
+        t.onclick = () => toastOut(t);
+        box.appendChild(t);
+        const live = [...box.children].filter(x => !x.classList.contains('out'));
+        for (let i = 0; i < live.length - 5; i++) toastOut(live[i]);       // at most 5 at a time (older ones fade out)
+        t._t = setTimeout(() => toastOut(t), type === 'bad' ? 7000 : 5200);
+        return t;
+      }
+      function toastOut(t) { if (!t || t.classList.contains('out')) return; clearTimeout(t._t); t.classList.add('out'); setTimeout(() => t.remove(), 260); }
+      // a toast with a progress bar for long jobs (restore, export, rebuild); call .set(text, 0…1) and .done(text, type)
+      function toastProgress(msg) {
+        const t = document.createElement('div');
+        t.className = 'toast prog'; t.setAttribute('role', 'status');
+        t.innerHTML = '<span class="tp-t"></span><i class="tp-bar"><b></b></i>';
+        t.querySelector('.tp-t').textContent = msg;
         $('#toasts').appendChild(t);
-        setTimeout(() => t.remove(), 5200);
+        return {
+          set(text, frac) {
+            if (text != null) t.querySelector('.tp-t').textContent = text;
+            const b = t.querySelector('.tp-bar b');
+            if (frac == null) b.parentNode.classList.add('ind'); else { b.parentNode.classList.remove('ind'); b.style.width = (Math.max(0, Math.min(1, frac)) * 100).toFixed(1) + '%'; }
+          },
+          done(text, type = 'ok') { t.remove(); if (text) toast(text, type); }
+        };
       }
       function download(name, parts, type) {
         const url = URL.createObjectURL(new Blob(parts, { type }));
@@ -8594,10 +9289,25 @@
         if (queue.length) setTimeout(flush, 2000);
         else { scheduleRefresh(); try { bc && bc.postMessage('changed'); } catch (e) { } }
       }
+      let ssKey = '';
       function updateSaveState() {
         const el = $('#saveState');
-        if (!db) el.innerHTML = '<span style="color:var(--bad)">⚠ Storage unavailable — logs are NOT being saved</span>';
-        else if (queue.length) el.innerHTML = '<span style="color:var(--c4)">Saving… ' + queue.length + ' pending</span>';
+        if (!db) {
+          const k = 'x' + (dbError ? dbError.message || dbError : ''); if (ssKey === k) return; ssKey = k;
+          el.innerHTML = '<span style="color:var(--bad)">⚠ Storage unavailable — logs are NOT being saved</span>' + (dbError ? '<small class="db-err"></small>' : '') +
+            '<span class="db-fix"><button type="button" class="btn small" data-db="retry">↻ Try again</button>' +
+            (window.pianoApp && window.pianoApp.repairStorage ? '<button type="button" class="btn small" data-db="repair">🛠 Repair storage…</button>' : '') + '</span>';
+          if (dbError) el.querySelector('.db-err').textContent = 'Reason: ' + (dbError.name && dbError.name !== 'Error' ? dbError.name + ': ' : '') + (dbError.message || dbError);
+          el.querySelector('[data-db=retry]').onclick = () => location.reload();
+          const rp = el.querySelector('[data-db=repair]');
+          if (rp) rp.onclick = async () => {
+            if (!confirm('Repair storage?\n\nThe app will move its database to a safe folder (nothing is deleted) and start again with an empty one. Then restore your newest backup from the Data tab.\n\nContinue?')) return;
+            try { await window.pianoApp.repairStorage(); } catch (e) { toast('Repair failed: ' + (e && e.message || e), 'bad'); }
+          };
+          return;
+        }
+        ssKey = '';
+        if (queue.length) el.innerHTML = '<span style="color:var(--c4)">Saving… ' + queue.length + ' pending</span>';
         else el.innerHTML = '<span style="color:var(--ok)">✓ All presses saved to IndexedDB</span>';
       }
 
@@ -8636,6 +9346,12 @@
         if (hi !== null) return IDBKeyRange.upperBound(hi);
         return null;
       }
+      function knownTotal(f) {                 // presses in a date range, from the saved day totals (exact and instant)
+        if (f.fromTs != null || f.toTs != null || queue.length || !cache || !cache.g || !cache.g.days) return null;
+        const a = f.from || '', b = f.to || '9999-99-99'; let n = 0;
+        for (const d in cache.g.days) if (d >= a && d <= b) n += cache.g.days[d];
+        return n;
+      }
       function scanLogs(f, { offset = 0, limit = Infinity } = {}) {
         return new Promise((resolve, reject) => {
           if (!db) return resolve({ rows: [], total: 0 });
@@ -8643,11 +9359,10 @@
           const idx = tx.objectStore('logs').index('startTs');
           const range = rangeOf(f), test = makeTest(f);
           const rows = []; let total = 0;
-          if (!test) {                       // fast path: count + skip ahead
-            const cq = idx.count(range);
-            cq.onerror = () => reject(cq.error);
-            cq.onsuccess = () => {
-              total = cq.result;
+          if (!test) {                       // fast path: count + skip ahead (the count comes from the day totals when it can: counting millions of presses one by one is slow)
+            const known = knownTotal(f), cq = known == null ? idx.count(range) : null;
+            const go = () => {
+              total = cq ? cq.result : known;
               if (offset >= total || limit === 0) return resolve({ rows, total });
               let skipped = false;
               const rq = idx.openCursor(range, 'prev');
@@ -8662,45 +9377,198 @@
                 c.continue();
               };
             };
-          } else {                           // filtered path: scan the range
-            const rq = idx.openCursor(range, 'prev');
-            rq.onerror = () => reject(rq.error);
-            rq.onsuccess = () => {
-              const c = rq.result;
-              if (!c) return resolve({ rows, total });
-              if (test(c.value)) { if (total >= offset && rows.length < limit) rows.push(c.value); total++; }
-              c.continue();
-            };
+            if (cq) { cq.onerror = () => reject(cq.error); cq.onsuccess = go; } else go();
+          } else {                           // filtered path: read the range in fast batches, keep only the matches, then fetch one page
+            const keep = limit === Infinity, hits = [];
+            eachLogBatch(f, rows => { for (const r of rows) if (test(r)) hits.push(keep ? r : r.id); }).then(async () => {
+              total = hits.length;
+              if (keep) return resolve({ rows: hits.slice(0, Math.max(0, total - offset)).reverse(), total });
+              const pick = hits.slice(Math.max(0, total - offset - limit), Math.max(0, total - offset)).reverse(), st = db.transaction('logs').objectStore('logs');
+              resolve({ rows: (await Promise.all(pick.map(id => reqP(st.get(id))))).filter(Boolean), total });
+            }).catch(reject);
           }
         });
       }
 
-      function rebuildAggregates() {
+      /* ---- big-data helpers (v6.1): statistics that can be added together, and reading the log in batches,
+         so restores, exports and period statistics work for any amount of data without loading it all at once ---- */
+      const DAYC = new Map();                       // date → that day's statistics (built once, reused when you change the period)
+      const nextTick = () => new Promise(r => setTimeout(r, 0));
+      const aggNew = () => ({ keys: new Map(), daily: new Map(), g: newGlobal(), src: new Map(), n: 0 });
+      function aggAdd(A, r) {
+        let k = A.keys.get(r.midi); if (!k) A.keys.set(r.midi, k = newKey(r.midi)); accKey(k, r);
+        let d = A.daily.get(r.date); if (!d) A.daily.set(r.date, d = newDaily(r.date)); accDaily(d, r);
+        accGlobal(A.g, r);
+        let s = A.src.get(r.source); if (!s) A.src.set(r.source, s = newGlobal('src:' + r.source)); accGlobal(s, r);
+        A.n++;
+      }
+      function mergeKey(a, b) {
+        if (!b || !b.count) return a;
+        a.count += b.count; a.totalDur += b.totalDur; a.totalVel += b.totalVel;
+        a.maxVel = Math.max(a.maxVel, b.maxVel); a.minVel = Math.min(a.minVel, b.minVel); a.longest = Math.max(a.longest, b.longest);
+        a.shortest = a.shortest == null ? b.shortest : b.shortest == null ? a.shortest : Math.min(a.shortest, b.shortest);
+        a.first = a.first && b.first ? Math.min(a.first, b.first) : (a.first || b.first); a.last = Math.max(a.last, b.last);
+        return a;
+      }
+      const addTo = (o, p) => { for (const k in p) o[k] = (o[k] || 0) + p[k]; };
+      function mergeGlobal(g, b) {
+        if (!b || !b.count) return g;
+        g.keyCounts = g.keyCounts || {}; g.days = g.days || {}; g.devices = g.devices || {}; g.src = g.src || {};
+        g.vel = g.vel || Array(8).fill(0); g.hours = g.hours || Array(24).fill(0); g.longest = g.longest || { dur: 0, midi: 0, ts: 0 };
+        g.count += b.count; g.totalDur += b.totalDur; g.totalVel += b.totalVel;
+        g.maxVel = Math.max(g.maxVel || 0, b.maxVel || 0); g.minVel = g.minVel && b.minVel ? Math.min(g.minVel, b.minVel) : (g.minVel || b.minVel || 0);
+        for (let i = 0; i < 8; i++) g.vel[i] += (b.vel && b.vel[i]) || 0;
+        for (let i = 0; i < 24; i++) g.hours[i] += (b.hours && b.hours[i]) || 0;
+        g.maxPoly = Math.max(g.maxPoly || 0, b.maxPoly || 0);
+        if (b.longest && b.longest.dur > g.longest.dur) g.longest = Object.assign({}, b.longest);
+        if (b.shortest && (!g.shortest || b.shortest.dur < g.shortest.dur)) g.shortest = Object.assign({}, b.shortest);
+        g.firstTs = g.firstTs && b.firstTs ? Math.min(g.firstTs, b.firstTs) : (g.firstTs || b.firstTs); g.lastTs = Math.max(g.lastTs || 0, b.lastTs || 0);
+        addTo(g.src, b.src || {}); addTo(g.keyCounts, b.keyCounts || {}); addTo(g.days, b.days || {}); addTo(g.devices, b.devices || {});
+        return g;
+      }
+      function aggMerge(T, A) {                     // adds A into T without changing A
+        A.keys.forEach((v, m) => { let k = T.keys.get(m); if (!k) T.keys.set(m, k = newKey(m)); mergeKey(k, v); });
+        A.daily.forEach((v, d) => { let x = T.daily.get(d); if (!x) T.daily.set(d, x = newDaily(d)); x.count += v.count; x.totalDur += v.totalDur; });
+        mergeGlobal(T.g, A.g);
+        A.src.forEach((v, s) => { let x = T.src.get(s); if (!x) T.src.set(s, x = newGlobal('src:' + s)); mergeGlobal(x, v); });
+        T.n += A.n;
+      }
+      function aggWrite(tx, A) {                    // adds A to the saved statistics, inside an open transaction
+        const ks = tx.objectStore('keys'), ds = tx.objectStore('daily'), as = tx.objectStore('agg');
+        A.keys.forEach((v, m) => upsert(ks, m, () => newKey(m), k => mergeKey(k, v)));
+        A.daily.forEach((v, d) => upsert(ds, d, () => newDaily(d), x => { x.count += v.count; x.totalDur += v.totalDur; }));
+        upsert(as, 'global', newGlobal, g => mergeGlobal(g, A.g));
+        A.src.forEach((v, s) => upsert(as, 'src:' + s, () => newGlobal('src:' + s), g => mergeGlobal(g, v)));
+      }
+      // reads the log oldest → newest in batches; fn(rows) may return false to stop early
+      async function eachKeyBatch(from, open, hi, fn, size = 20000) {
+        for (;;) {
+          const rows = await reqP(db.transaction('logs').objectStore('logs').index('uniq').getAll(IDBKeyRange.bound(from, [hi, Infinity], open, false), size));
+          if (!rows.length) return;
+          if (await fn(rows) === false || rows.length < size) return;
+          const L = rows[rows.length - 1]; from = [L.startTs, L.midi]; open = true;
+        }
+      }
+      // the same, in plain time order (presses with the same time in the order they were saved), like the old one-step reads
+      async function eachTsBatch(lo, hi, fn, size = 20000) {
+        if (!db || lo > hi) return;
+        let from = lo, open = false, seen = null;
+        for (;;) {
+          const rows = await reqP(db.transaction('logs').objectStore('logs').index('startTs').getAll(IDBKeyRange.bound(from, hi, open, false), size));
+          const fresh = seen ? rows.filter(r => !(r.startTs === from && seen.has(r.id))) : rows;
+          if (fresh.length && await fn(fresh) === false) return;
+          if (rows.length < size) return;
+          const L = rows[rows.length - 1].startTs;
+          if (rows[0].startTs === L) { from = L; open = true; seen = null; continue; }      // a whole batch with one time: step past it
+          if (L !== from || !seen) seen = new Set();
+          rows.forEach(r => { if (r.startTs === L) seen.add(r.id); });
+          from = L; open = false;
+        }
+      }
+      async function eachLogBatch(f, fn, size = 20000) {
+        if (!db) return;
+        const r0 = rangeOf(f || {}), lo = r0 && r0.lower != null ? r0.lower : -Infinity, hi = r0 && r0.upper != null ? r0.upper : Infinity;
+        if (lo > hi) return;
+        return eachKeyBatch([lo, -Infinity], false, hi, fn, size);
+      }
+      // writes one batch of presses and adds them to the statistics in the same step (so a stopped restore never leaves wrong totals)
+      function writeBatch(recs, clearFirst) {
         return new Promise((resolve, reject) => {
-          const tx = db.transaction(['logs', 'keys', 'daily', 'agg'], 'readwrite');
-          const keys = new Map(), daily = new Map(), srcs = new Map(), g = newGlobal();
-          tx.objectStore('keys').clear(); tx.objectStore('daily').clear(); tx.objectStore('agg').clear();
-          const rq = tx.objectStore('logs').openCursor();
-          rq.onsuccess = () => {
-            const c = rq.result;
-            if (c) {
-              const r = c.value;
-              if (!keys.has(r.midi)) keys.set(r.midi, newKey(r.midi));
-              if (!daily.has(r.date)) daily.set(r.date, newDaily(r.date));
-              accKey(keys.get(r.midi), r); accDaily(daily.get(r.date), r); accGlobal(g, r);
-              if (!srcs.has(r.source)) srcs.set(r.source, newGlobal('src:' + r.source));
-              accGlobal(srcs.get(r.source), r);
-              c.continue();
-            } else {
-              keys.forEach(v => tx.objectStore('keys').put(v));
-              daily.forEach(v => tx.objectStore('daily').put(v));
-              tx.objectStore('agg').put(g);
-              srcs.forEach(v => tx.objectStore('agg').put(v));
-            }
-          };
-          tx.oncomplete = () => resolve();
-          tx.onabort = () => reject(tx.error);
+          const tx = db.transaction(['logs', 'keys', 'daily', 'agg'], 'readwrite'), L = tx.objectStore('logs'), A = aggNew();
+          let left = recs.length, added = 0, dup = 0;
+          if (clearFirst) ['logs', 'keys', 'daily', 'agg'].forEach(s => tx.objectStore(s).clear());
+          const settle = () => { if (--left === 0 && added) aggWrite(tx, A); };
+          recs.forEach(r => {
+            const rq = L.add(r);
+            rq.onsuccess = () => { added++; aggAdd(A, r); settle(); };
+            rq.onerror = e => { if (rq.error && rq.error.name === 'ConstraintError') { e.preventDefault(); e.stopPropagation(); dup++; settle(); } };
+          });
+          tx.oncomplete = () => resolve({ added, dup });
+          tx.onabort = () => reject(tx.error || new Error('The database stopped the save'));
         });
+      }
+      async function rebuildAggregates(onProgress) {
+        if (!db) throw new Error('Storage is unavailable');
+        const A = aggNew(); let lastId = 0;
+        for (;;) {                                  // read by save order, 20,000 at a time
+          const rows = await reqP(db.transaction('logs').objectStore('logs').getAll(IDBKeyRange.lowerBound(lastId, true), 20000));
+          if (!rows.length) break;
+          rows.forEach(r => aggAdd(A, r)); lastId = rows[rows.length - 1].id;
+          if (onProgress) onProgress(A.n);
+          await nextTick();
+          if (rows.length < 20000) break;
+        }
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(['logs', 'keys', 'daily', 'agg'], 'readwrite');
+          const late = tx.objectStore('logs').getAll(IDBKeyRange.lowerBound(lastId, true));    // presses saved while we were reading
+          late.onsuccess = () => {
+            late.result.forEach(r => aggAdd(A, r));
+            ['keys', 'daily', 'agg'].forEach(s => tx.objectStore(s).clear());
+            A.keys.forEach(v => tx.objectStore('keys').put(v)); A.daily.forEach(v => tx.objectStore('daily').put(v));
+            tx.objectStore('agg').put(A.g); A.src.forEach(v => tx.objectStore('agg').put(v));
+          };
+          tx.oncomplete = () => resolve(); tx.onabort = () => reject(tx.error || new Error('Rebuild was interrupted'));
+        });
+        DAYC.clear();
+      }
+      // builds an export / backup file piece by piece (large files are kept by the browser on disk, not in memory)
+      async function logBlob(f, fmt, kind, onProgress) {
+        const test = makeTest(f), type = fmt === 'csv' ? 'text/csv;charset=utf-8' : 'application/json';
+        let blob = new Blob([fmt === 'csv' ? '﻿' + CSV_HEAD.join(',') + '\r\n' :
+          '{"app":"piano-lifetime-logger","version":1,"kind":"' + kind + '","exportedAt":"' + new Date().toISOString() + '","logs":[']), parts = [], size = 0, n = 0;
+        await eachLogBatch(f, async rows => {
+          if (test) rows = rows.filter(test);
+          if (rows.length) {
+            const s = fmt === 'csv' ? rows.map(r => [r.id, r.date, r.time, r.iso, r.startTs, r.note, r.midi, r.velocity, r.durationMs, r.source, r.device, r.channel, r.simultaneous].map(csvCell).join(',')).join('\r\n') + '\r\n'
+              : (n ? ',' : '') + rows.map(r => JSON.stringify(r)).join(',');
+            parts.push(s); size += s.length; n += rows.length;
+            if (size > 8e6) { blob = new Blob([blob, ...parts]); parts = []; size = 0; }
+          }
+          if (onProgress) onProgress(n);
+          await nextTick();
+        });
+        blob = new Blob([blob, ...parts, fmt === 'csv' ? '' : '],"count":' + n + '}'], { type });
+        return { blob, n };
+      }
+      // reads a backup file of any size piece by piece; onItems(texts) gets the text of each saved press
+      async function readBackupFile(file, onItems, onBytes) {
+        const rd = file.stream().getReader(), dec = new TextDecoder();
+        let depth = 0, inStr = false, esc = false, top = '', arrD = -1, fin = false, objS = -1, carry = '', tail = '', bytes = 0, items = [];
+        for (;;) {
+          const { value, done } = await rd.read();
+          const chunk = done ? dec.decode() : dec.decode(value, { stream: true });
+          if (value) bytes += value.length;
+          const s = carry + chunk; let i = carry.length; carry = '';
+          for (; i < s.length && !fin; i++) {
+            const ch = s.charCodeAt(i);
+            if (inStr) { if (esc) esc = false; else if (ch === 92) esc = true; else if (ch === 34) inStr = false; continue; }
+            if (ch === 34) { inStr = true; continue; }
+            if (ch === 123 || ch === 91) {                 // { or [
+              if (!top) top = ch === 123 ? '{' : '[';
+              depth++;
+              if (arrD < 0) {
+                if (top === '[' && depth === 1) arrD = 1;
+                else if (ch === 91 && depth === 2 && /"logs"\s*:\s*$/.test(tail + s.slice(Math.max(0, i - 64), i))) arrD = 2;
+              } else if (ch === 123 && depth === arrD + 1) objS = i;
+            } else if (ch === 125 || ch === 93) {          // } or ]
+              if (arrD > 0 && ch === 125 && depth === arrD + 1 && objS >= 0) {
+                items.push(s.slice(objS, i + 1)); objS = -1;
+                if (items.length >= 4000) { const it = items; items = []; if (await onItems(it) === false) { rd.cancel().catch(() => { }); return false; } }
+              }
+              if (arrD > 0 && ch === 93 && depth === arrD) fin = true;
+              depth--;
+            }
+          }
+          if (objS >= 0) { carry = s.slice(objS); objS = 0; }
+          tail = s.slice(-64);
+          if (onBytes) onBytes(bytes);
+          if (done || fin) break;
+        }
+        if (fin) rd.cancel().catch(() => { });
+        if (arrD < 0) throw new Error('No list of presses was found in that file. Is it a Piano Logger backup?');
+        if (!fin) { if (items.length) await onItems(items); throw new Error('the file ends too early: it is incomplete (maybe the download or copy did not finish).'); }
+        if (items.length && await onItems(items) === false) return false;
+        return true;
       }
 
       /* ============================================================
@@ -9346,21 +10214,26 @@
         parts.push(']}');
         return parts;
       }
+      const fmtBytes = b => b >= 1073741824 ? (b / 1073741824).toFixed(2) + ' GB' : b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
       async function exportRows(f, fmt, label) {
-        if (!db) return toast('Storage is unavailable.', 'bad');
-        const { rows } = await scanLogs(f); rows.reverse();
-        if (!rows.length) return toast('Nothing to export for these filters.', 'bad');
-        if (fmt === 'csv') download('piano-log-' + label + '-' + stampName() + '.csv', toCsv(rows), 'text/csv;charset=utf-8');
-        else download('piano-log-' + label + '-' + stampName() + '.json', toJson(rows, label), 'application/json');
-        toast('Exported ' + fmtInt(rows.length) + ' presses.', 'ok');
+        if (!db) return toast('Storage is unavailable' + (dbError ? ': ' + (dbError.message || dbError) : '.'), 'bad');
+        const total = Object.keys(f).some(k => f[k]) ? 0 : (cache.g && cache.g.count) || 0;
+        const tp = toastProgress('Preparing ' + (fmt === 'csv' ? 'CSV' : label === 'backup' ? 'backup' : 'JSON') + '…');
+        try {
+          const { blob, n } = await logBlob(f, fmt, label, k => tp.set('Preparing… ' + fmtInt(k) + (total ? ' of ' + fmtInt(total) : '') + ' presses', total ? k / total : null));
+          if (!n) return tp.done('Nothing to export for these filters.', 'bad');
+          download('piano-log-' + label + '-' + stampName() + '.' + fmt, [blob], blob.type);
+          tp.done('Exported ' + fmtInt(n) + ' presses (' + fmtBytes(blob.size) + ').', 'ok');
+          return n;
+        } catch (e) { tp.done('Export failed: ' + (e && e.message || e), 'bad'); }
       }
       $('#expAllCsv').onclick = () => exportRows({}, 'csv', 'all');
       $('#expAllJson').onclick = () => exportRows({}, 'json', 'all');
       $('#expFiltCsv').onclick = () => exportRows(getFilter(), 'csv', 'filtered');
       $('#expFiltJson').onclick = () => exportRows(getFilter(), 'json', 'filtered');
       $('#btnBackup').onclick = async () => {
-        await exportRows({}, 'json', 'backup');
-        try { localStorage.setItem('pll.lastBackup', String(Date.now())); } catch (e) { }
+        const n = await exportRows({}, 'json', 'backup');
+        if (n) { try { localStorage.setItem('pll.lastBackup', String(Date.now())); } catch (e) { } }
         showBackupInfo();
       };
       function showBackupInfo() {
@@ -9384,39 +10257,81 @@
           channel: clamp(Math.round(+r.channel) || 0, 0, 16), simultaneous: Math.max(1, Math.round(+r.simultaneous) || 1)
         };
       }
+      let RS = null;                                   // the restore that is running right now
+      function rsPaint() {
+        let box = $('#rsProg');
+        if (!box) {
+          box = document.createElement('div'); box.id = 'rsProg'; box.className = 'rs-prog'; box.hidden = true;
+          box.innerHTML = '<div class="rs-top"><b>Restoring…</b><span class="rs-pct">0%</span></div><i class="rs-bar"><b></b></i><div class="rs-info"></div><button type="button" class="btn small" id="rsStop">Stop</button><button type="button" class="btn small" id="rsOk" hidden>OK</button>';
+          $('#btnRestore').insertAdjacentElement('afterend', box);
+          box.querySelector('#rsStop').onclick = () => { if (RS) { RS.stop = true; box.querySelector('#rsStop').disabled = true; box.querySelector('#rsStop').textContent = 'Stopping…'; } };
+          box.querySelector('#rsOk').onclick = () => { box.classList.remove('res'); box.hidden = true; };
+        }
+        $('#btnRestore').disabled = !!RS;
+        if (!RS) { if (!box.classList.contains('res')) box.hidden = true; return; }
+        box.hidden = false; box.classList.remove('res', 'bad', 'ok'); box.querySelector('#rsStop').hidden = false;
+        const f = RS.size ? RS.read / RS.size : 0, sec = (Date.now() - RS.t0) / 1000, eta = f > 0.02 ? sec / f - sec : 0;
+        box.querySelector('.rs-pct').textContent = Math.floor(f * 100) + '%';
+        box.querySelector('.rs-bar b').style.width = (f * 100).toFixed(1) + '%';
+        box.querySelector('.rs-info').textContent = fmtBytes(RS.read) + ' of ' + fmtBytes(RS.size) + ' read · ' + fmtInt(RS.added) + ' presses added' +
+          (RS.dup ? ' · ' + fmtInt(RS.dup) + ' already there' : '') + (eta > 3 ? ' · about ' + (eta >= 90 ? Math.round(eta / 60) + ' min' : Math.round(eta) + ' s') + ' left' : '');
+      }
       $('#btnRestore').onclick = async () => {
+        if (RS) return;
         const file = $('#restoreFile').files[0];
         if (!file) return toast('Choose a backup .json file first.', 'bad');
-        if (!db) return toast('Storage is unavailable.', 'bad');
-        let obj;
-        try { obj = JSON.parse(await file.text()); } catch (e) { return toast('That file is not valid JSON.', 'bad'); }
-        const list = Array.isArray(obj) ? obj : obj && obj.logs;
-        if (!Array.isArray(list)) return toast('No "logs" list found in that file.', 'bad');
-        const recs = list.map(sanitize).filter(Boolean);
+        if (!db) return toast('Storage is unavailable' + (dbError ? ': ' + (dbError.message || dbError) : '.'), 'bad');
         const mode = $('#restoreMode').value;
-        if (!recs.length) return toast('No valid presses found in that file.', 'bad');
-        if (mode === 'replace' && !confirm('Replace ALL current data with ' + fmtInt(recs.length) + ' presses from the backup?')) return;
-        let added = 0, dup = 0;
+        if (mode === 'replace' && !confirm('Replace ALL current data with the presses in “' + file.name + '” (' + fmtBytes(file.size) + ')?\nMake a backup first if you are not sure.')) return;
+        RS = { stop: false, added: 0, dup: 0, bad: 0, seen: 0, read: 0, size: file.size, t0: Date.now() };
+        rsPaint();
+        let clear = mode === 'replace', paintAt = 0, ok = false, errTxt = '';
         try {
-          await new Promise((resolve, reject) => {
-            const tx = db.transaction(['logs', 'keys', 'daily', 'agg'], 'readwrite');
-            const logs = tx.objectStore('logs');
-            if (mode === 'replace') ['logs', 'keys', 'daily', 'agg'].forEach(s => tx.objectStore(s).clear());
-            recs.forEach(r => {
-              const rq = logs.add(r);
-              rq.onsuccess = () => added++;
-              rq.onerror = e => { if (rq.error && rq.error.name === 'ConstraintError') { e.preventDefault(); dup++; } };
-            });
-            tx.oncomplete = resolve; tx.onabort = () => reject(tx.error);
-          });
-          await rebuildAggregates();
-          toast('Restored ' + fmtInt(added) + ' presses' + (dup ? ' (' + fmtInt(dup) + ' duplicates skipped)' : '') + '.', 'ok');
-          await refreshAll();
-        } catch (e) { toast('Restore failed: ' + (e && e.message || e), 'bad'); }
+          await readBackupFile(file, async texts => {
+            let arr;
+            try { arr = JSON.parse('[' + texts.join(',') + ']'); }
+            catch (e) { arr = texts.map(t => { try { return JSON.parse(t); } catch (er) { return null; } }); }
+            const recs = [];
+            arr.forEach(o => { const r = sanitize(o); if (r) recs.push(r); else RS.bad++; });
+            RS.seen += arr.length;
+            if (recs.length) { const w = await writeBatch(recs, clear); clear = false; RS.added += w.added; RS.dup += w.dup; }
+            if (Date.now() - paintAt > 200) { paintAt = Date.now(); rsPaint(); }
+            return !RS.stop;
+          }, b => { RS.read = b; });
+          ok = true;
+        } catch (e) {
+          errTxt = e && e.name === 'QuotaExceededError' ? 'the browser has no more storage space for this page (the disk is full, or this is a private window).'
+            : e && e.name === 'NotReadableError' ? 'the file could not be read any more (was it moved, or is it on a USB stick that was removed?).'
+            : (e && e.message || String(e));
+        }
+        const r = RS; RS = null; rsPaint();
+        const result = (text, good) => {           // the result stays in the box until you press OK (messages can be pushed away by others)
+          const box = $('#rsProg'); box.hidden = false; box.classList.add('res', good ? 'ok' : 'bad');
+          box.querySelector('.rs-top b').textContent = good ? '✓ Restore finished' : r.stop ? 'Restore stopped' : '⚠ Restore did not finish';
+          box.querySelector('.rs-pct').textContent = good ? '100%' : Math.floor(r.read / (r.size || 1) * 100) + '%';
+          if (good) box.querySelector('.rs-bar b').style.width = '100%';
+          box.querySelector('.rs-info').textContent = text;
+          const st = box.querySelector('#rsStop'); st.hidden = true; st.disabled = false; st.textContent = 'Stop'; box.querySelector('#rsOk').hidden = false;
+          toast(text, good ? 'ok' : 'bad');
+        };
+        DAYC.clear(); RV.c = null; if (mode === 'replace' && (r.added || clear === false)) await dsClear();
+        const took = Math.max(1, Math.round((Date.now() - r.t0) / 1000)), tookTxt = took >= 120 ? Math.round(took / 60) + ' min' : took + ' s';
+        const summary = 'Restored ' + fmtInt(r.added) + ' presses' + (r.dup ? ' (' + fmtInt(r.dup) + ' were already there)' : '') + (r.bad ? ', ' + fmtInt(r.bad) + ' damaged items ignored' : '') + ' in ' + tookTxt + '.';
+        if (ok) {
+          if (!r.seen) result('No presses were found in that file.', false);
+          else if (!r.added && !r.dup) result('None of the ' + fmtInt(r.seen) + ' items in that file were valid presses.', false);
+          else if (r.stop) result('You stopped the restore. ' + summary + ' They are kept, with correct totals.', false);
+          else result(summary, true);
+        } else result('The restore stopped: ' + errTxt + (r.added ? ' ' + summary + ' Those presses are kept, with correct totals.' : ''), false);
+        await refreshAll();
+        try { bc && bc.postMessage('changed'); } catch (e) { }
       };
       $('#btnRebuild').onclick = async () => {
-        try { await rebuildAggregates(); await refreshAll(); toast('Statistics rebuilt from the logs.', 'ok'); }
-        catch (e) { toast('Rebuild failed: ' + (e && e.message || e), 'bad'); }
+        const total = (cache.g && cache.g.count) || 0, tp = toastProgress('Rebuilding statistics…');
+        try {
+          await rebuildAggregates(n => tp.set('Rebuilding statistics… ' + fmtInt(n) + (total ? ' of ' + fmtInt(total) : ''), total ? n / total : null));
+          await refreshAll(); tp.done('Statistics rebuilt from the logs.', 'ok');
+        } catch (e) { tp.done('Rebuild failed: ' + (e && e.message || e), 'bad'); }
       };
       $('#btnClear').onclick = async () => {
         if (!db) return;
@@ -9501,8 +10416,11 @@
          ============================================================ */
       (async function init() {
         applySettings(); updOct(); renderHeld(); setCounters(); renderSrcCount(); updateOutStatus(); resizeRoll();
-        try { db = await openDB(); }
-        catch (e) { dbError = e; toast('Database error: ' + (e && e.message || e), 'bad'); }
+        for (let i = 0; i < 4 && !db; i++) {          // a database that is busy (another tab, the app restarting) often opens a moment later
+          try { db = await openDB(); dbError = null; }
+          catch (e) { dbError = e; if (i < 3) await new Promise(r => setTimeout(r, 700 * (i + 1))); }
+        }
+        if (!db) toast('Your saved data could not be opened: ' + String(dbError && dbError.message || dbError).replace(/\.$/, '') + '. Logging is paused; see the red note under the statistics.', 'bad');
         updateSaveState();
         if (db) {
           try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
@@ -9530,7 +10448,7 @@
 <nav class="g-toc">
 <a href="#g-start">1. Getting started</a><a href="#g-play">2. Playing</a><a href="#g-sound">3. Sound &amp; instruments</a><a href="#g-setup">4. Transpose, split &amp; layers</a>
 <a href="#g-bend">5. Pitch bend &amp; mod wheel</a><a href="#g-live">6. Live panels &amp; speed</a><a href="#g-practice">7. Practice songs</a><a href="#g-ear">8. Ear training</a>
-<a href="#g-studio">9. Studio</a><a href="#g-profile">10. Profile, XP &amp; achievements</a><a href="#g-themes">11. Themes</a><a href="#g-gfx">12. Graphics settings</a><a href="#g-sounds">13. Sound library</a><a href="#g-quests">14. Daily quests</a><a href="#g-routines">15. Practice routines</a><a href="#g-explorer">16. Scale &amp; chord explorer</a><a href="#g-card">17. Player card &amp; journal</a><a href="#g-news">18. What’s new</a><a href="#g-sessions">19. Session statistics</a><a href="#g-sustain">20. Sustain fade</a><a href="#g-boards">21. XP boosts &amp; quest boards</a><a href="#g-dlc">22. DLC packs</a><a href="#g-app">23. Windows app</a><a href="#g-sf">24. SoundFont instruments</a><a href="#g-focus">25. Focus mode &amp; rolling numbers</a><a href="#g-dash">19. Dashboard</a><a href="#g-analysis">20. Analysis</a><a href="#g-report">21. Monthly PDF report</a>
+<a href="#g-studio">9. Studio</a><a href="#g-profile">10. Profile, XP &amp; achievements</a><a href="#g-themes">11. Themes</a><a href="#g-gfx">12. Graphics settings</a><a href="#g-sounds">13. Sound library</a><a href="#g-quests">14. Daily quests</a><a href="#g-routines">15. Practice routines</a><a href="#g-explorer">16. Scale &amp; chord explorer</a><a href="#g-card">17. Player card &amp; journal</a><a href="#g-news">18. What’s new</a><a href="#g-sessions">19. Session statistics</a><a href="#g-sustain">20. Sustain fade</a><a href="#g-boards">21. XP boosts &amp; quest boards</a><a href="#g-dlc">22. DLC packs</a><a href="#g-app">23. Windows app</a><a href="#g-sf">24. SoundFont instruments</a><a href="#g-focus">25. Focus mode &amp; rolling numbers</a><a href="#g-dates">26. Choosing dates</a><a href="#g-dash">19. Dashboard</a><a href="#g-analysis">20. Analysis</a><a href="#g-report">21. Monthly PDF report</a>
 <a href="#g-hist">22. History &amp; key stats</a><a href="#g-data">23. Backup &amp; your data</a><a href="#g-look">24. Look &amp; layout</a><a href="#g-keys">25. Shortcuts</a><a href="#g-fix">26. Troubleshooting</a>
 </nav>
 
@@ -9775,6 +10693,16 @@
 <li><b>Rolling numbers:</b> counters, XP, playing time and the clock slide up digit by digit when they grow (and down when they fall). Choose in <b>Settings → Graphics → Rolling numbers</b>: <b>On</b> (default, rolls on every device, even when Windows “Animation effects” is off), <b>Follow system “reduce motion”</b> (also turned off by Calm mode and Lite effects) or <b>Off</b>.</li>
 </ol>
 
+<h3 id="g-dates">26. Choosing dates (calendar)</h3>
+<ul>
+<li>Click any date box (Dashboard → Period → Custom, or the History filters) to open the calendar. It uses your theme's colours.</li>
+<li>The small <b>bars under the day numbers</b> show how much you played that day. Hover a day to see the number of presses.</li>
+<li>Pick the <b>start date</b> and the calendar moves straight on to the <b>end date</b>. While you choose, the days in between light up.</li>
+<li><b>Quick ranges:</b> Last 7 days, Last 30 days, This month, Last month, This year. Click the <b>month name</b> to jump to another month or year.</li>
+<li>Keyboard: arrows move a day / week, <kbd>PgUp</kbd> <kbd>PgDn</kbd> change month, <kbd>Enter</kbd> picks, <kbd>Esc</kbd> closes. You can still type a date straight into the box.</li>
+<li>Custom periods load much faster now: each day is added up once and then remembered, so changing the dates is almost instant.</li>
+</ul>
+
 <h3 id="g-dash">19. Dashboard</h3>
 <ul>
 <li>Choose <b>Show statistics for</b> (all inputs or one) and a <b>Period</b> (all time, today, 7 / 30 days, this month, this year, custom).</li>
@@ -9808,7 +10736,8 @@
 <h3 id="g-data">23. Backup &amp; your data</h3>
 <ul>
 <li>Everything is stored only in this browser on this computer, nothing is uploaded. Press <b>Ask browser to protect data</b> so it is not cleared automatically.</li>
-<li><b>Create backup file</b> downloads one JSON file with every press. <b>Restore</b> it with <i>Merge</i> (adds missing presses, skips duplicates) or <i>Replace everything</i>.</li>
+<li><b>Create backup file</b> downloads one JSON file with every press. <b>Restore</b> it with <i>Merge</i> (adds missing presses, skips duplicates) or <i>Replace everything</i>. Backups of <b>any size</b> work (even several GB): the file is read piece by piece with a progress bar, the time left and a <b>Stop</b> button. Presses restored before you stop are kept, with correct totals.</li>
+<li><b>Day summaries:</b> the page keeps a small summary of every finished day next to your data, so periods, speed statistics and trends stay quick even with millions of presses. After a very big restore they are worked out once in the background (the speed card says “Working out…”); after that the page opens straight away.</li>
 <li><b>Auto-backup:</b> choose every day or every week. In Chrome / Edge pick a <b>backup folder</b> once; backups are then saved there automatically (the newest 10 are kept). Otherwise a reminder banner and a red dot on the tab tell you when a backup is due.</li>
 <li><b>Rebuild statistics</b> recalculates all totals from the logs. <b>Erase all data</b> deletes everything (type DELETE to confirm), so make a backup first.</li>
 <li>Your practice journal (export it from the Studio tab), routines, quests, profile and settings are kept in this browser, separately from the backup file of your presses.</li>
@@ -9837,6 +10766,8 @@
 <li><b>Grand piano does not load:</b> it needs internet once per visit; meanwhile the built-in piano plays.</li>
 <li><b>A note keeps ringing:</b> press Stop stuck notes (MIDI out) or release and press the sustain pedal.</li>
 <li><b>My data is gone:</b> you probably opened the file from a different folder or address. Open it from the original place, or restore a backup.</li>
+<li><b>“Storage unavailable — logs are NOT being saved”:</b> the page shows the reason under the message. Close other tabs of this page and press <b>Try again</b>. In a private / incognito window storage may be blocked. In the Windows app, <b>Repair storage…</b> moves the broken database to a safe folder (nothing is deleted) and starts a fresh one; then restore your newest backup.</li>
+<li><b>A big restore is slow:</b> a backup of 200,000 presses takes about a minute. Keep the page open; you can press <b>Stop</b> at any time and the presses restored so far are kept.</li>
 <li><b>Velocity is always the same:</b> PC keys always send 100; on a MIDI keyboard check that touch sensitivity is on.</li>
 </ul>
 <div class="actions"><button class="btn primary" data-act="close">Got it ✨</button><button class="btn" data-act="tour">Take the tour</button><button class="btn" data-act="guideprint">🖨 Print this guide</button></div>
@@ -11024,17 +11955,77 @@
       /* =====================================================================
          DASHBOARD: period picker, clickable charts, insights, year in review
          ===================================================================== */
+      // Period statistics (v6.1): every day is summed up once (totals and speed) and saved next to your data, so periods,
+      // all-time speed and trends stay quick even with millions of presses. Only today is read again while you play.
+      const DSUM_V = 1, dayEnd = d => new Date(d + 'T23:59:59.999').getTime();
+      let DAYP = Promise.resolve(), DAYH = Promise.resolve(), HIQ = 0, UIQ = 0, dsLoaded = false;
+      const sleep = ms => new Promise(r => setTimeout(r, ms)), yieldToUser = async () => { while (HIQ > 0 || UIQ > 0) await sleep(60); };
+      // what you are looking at goes first: background work (all-time speed, first profile read) pauses while a period, History… loads
+      function ensureDays(from, to, low, onProg) {   // one at a time per kind, so two panels never read the same days twice
+        if (low) { const p = DAYP.then(() => ensureDaysNow(from, to, true, onProg)); DAYP = p.catch(() => { }); return p; }
+        HIQ++; const p = DAYH.then(() => ensureDaysNow(from, to, false, onProg)); DAYH = p.catch(() => { });
+        p.then(() => HIQ--, () => HIQ--); return p;
+      }
+      const _scanLogs = scanLogs;
+      scanLogs = function (...a) { UIQ++; const p = _scanLogs(...a); p.then(() => UIQ--, () => UIQ--); return p; };
+      const dayNew = d => ({ d, n: 0, agg: aggNew(), sp: null, raw: { ts: [], so: [], last: null } });
+      const dayAdd = (E, r) => { aggAdd(E.agg, r); E.n++; E.raw.ts.push(r.startTs); E.raw.so.push(r.source); E.raw.last = [r.startTs, r.midi]; };
+      async function dsLoadAll() {                   // day summaries saved on earlier visits
+        if (dsLoaded) return; dsLoaded = true;
+        try {
+          const x = await xdb(), all = await reqP(x.transaction('kv').objectStore('kv').getAll(IDBKeyRange.bound('dsum:', 'dsum:￿')));
+          const days = (cache.g && cache.g.days) || {};
+          for (const E of all) if (E && E.v === DSUM_V && E.d && !DAYC.has(E.d) && days[E.d] === E.n) DAYC.set(E.d, E);
+        } catch (e) { }
+      }
+      function dsSave(list) {                        // finished days only (today keeps changing)
+        if (!list.length) return;
+        xdb().then(x => { const st = x.transaction('kv', 'readwrite').objectStore('kv'); list.forEach(E => st.put({ v: DSUM_V, d: E.d, n: E.n, agg: E.agg, sp: E.sp }, 'dsum:' + E.d)); }).catch(() => { });
+      }
+      async function dsClear() {                     // after “Replace everything” or “Erase all data”
+        DAYC.clear(); dsLoaded = true;
+        try { const x = await xdb(); await new Promise(res => { const tx = x.transaction('kv', 'readwrite'); tx.objectStore('kv').delete(IDBKeyRange.bound('dsum:', 'dsum:￿')); tx.oncomplete = tx.onerror = tx.onabort = res; }); } catch (e) { }
+      }
+      async function ensureDaysNow(from, to, low, onProg) {
+        await dsLoadAll();
+        const days = (cache.g && cache.g.days) || {}, today = localParts(Date.now()).date;
+        const want = Object.keys(days).filter(d => d >= from && d <= to && days[d] > 0).sort();
+        for (const d of want) {                     // days still in memory with their presses (today): add only the presses saved since
+          const E = DAYC.get(d);
+          if (E && E.raw && E.n < days[d]) { await eachKeyBatch(E.raw.last, true, dayEnd(d), rows => { rows.forEach(r => { if (r.date === d) dayAdd(E, r); }); }); E.sp = null; }
+        }
+        const stale = d => { const E = DAYC.get(d); return !E || E.n < days[d]; };
+        const runs = []; let run = null, total = 0, done = 0;   // days not summed yet: neighbouring days are read together (about 100,000 presses at a time)
+        want.forEach(d => { if (stale(d)) { total += days[d]; if (run && run[2] + days[d] <= 100000) { run[1] = d; run[2] += days[d]; } else runs.push(run = [d, d, days[d]]); } else run = null; });
+        for (const [a, b, cnt] of runs) {
+          if (low) { await yieldToUser(); if (!want.some(d => d >= a && d <= b && stale(d))) { done += cnt; continue; } }
+          const fresh = new Map();
+          await eachLogBatch({ from: a, to: b }, async rows => {
+            rows.forEach(r => { let E = fresh.get(r.date); if (!E) fresh.set(r.date, E = dayNew(r.date)); dayAdd(E, r); });
+            done += rows.length; if (onProg) onProg(done, total);
+            if (low) await yieldToUser(); await nextTick();
+          }, low ? 5000 : 20000);
+          const save = [];
+          want.forEach(d => {
+            if (d < a || d > b) return;
+            const E = fresh.get(d) || dayNew(d); E.sp = daySpeeds(E.raw.ts, E.raw.so);
+            if (d < today) { delete E.raw; save.push(E); }
+            DAYC.set(d, E);
+          });
+          dsSave(save);
+        }
+        for (const d of want) { const E = DAYC.get(d); if (E && !E.sp && E.raw) E.sp = daySpeeds(E.raw.ts, E.raw.so); }
+        return want;
+      }
       async function buildRangeCache(rg) {
-        const { rows } = await scanLogs({ from: rg.from, to: rg.to, fromTs: rg.fromTs, toTs: rg.toTs });
-        const keys = new Map(), daily = new Map(), src = {}, g = newGlobal();
-        rows.forEach(r => {
-          if (!keys.has(r.midi)) keys.set(r.midi, newKey(r.midi));
-          if (!daily.has(r.date)) daily.set(r.date, newDaily(r.date));
-          accKey(keys.get(r.midi), r); accDaily(daily.get(r.date), r); accGlobal(g, r);
-          if (!src[r.source]) src[r.source] = newGlobal('src:' + r.source);
-          accGlobal(src[r.source], r);
-        });
-        return { keys: [...keys.values()], daily: [...daily.values()], g, src };
+        const days = cache.g && cache.g.days;
+        if (rg.fromTs != null || rg.toTs != null || !days || !Object.keys(days).length) {          // sessions use exact times: add them up directly
+          const A = aggNew(); await eachLogBatch(rg, rows => { rows.forEach(r => aggAdd(A, r)); });
+          return { keys: [...A.keys.values()], daily: [...A.daily.values()], g: A.g, src: Object.fromEntries(A.src) };
+        }
+        const want = await ensureDays(rg.from, rg.to), T = aggNew();
+        want.forEach(d => { const E = DAYC.get(d); if (E) aggMerge(T, E.agg); });
+        return { keys: [...T.keys.values()], daily: [...T.daily.values()], g: T.g, src: Object.fromEntries(T.src) };
       }
       function dashRangeBounds() {
         const v = $('#dashRange').value, today = localParts(Date.now()).date;
@@ -11048,17 +12039,20 @@
       }
       let RV = { key: '', at: 0, c: null, busy: false };
       const _rd3 = renderDashboard;
+      const rangeBusy = on => { const p = $('#p-dash'); if (p) p.classList.toggle('rg-busy', !!on); if (on) $('#rangeNote').textContent = 'Loading this period…'; };
       renderDashboard = function () {
         if (!cache.g) return;
         const rg = dashRangeBounds();
-        if (!rg) { _rd3(); renderInsights(cache, cache); rangeLabels(null); return; }
+        if (!rg) { rangeBusy(false); _rd3(); renderInsights(cache, cache); rangeLabels(null); return; }
         const key = rgKey(rg);
         if (RV.c && RV.key === key) { drawRange(RV.c, rg); if (Date.now() - RV.at < 5000) return; }
         if (RV.busy) return; RV.busy = true;
+        if (!(RV.c && RV.key === key)) rangeBusy(true);
         buildRangeCache(rg).then(c => {
           RV = { key, at: Date.now(), c, busy: false };
-          if (activeTab() === 'dash') { const now = dashRangeBounds(); if (now && rgKey(now) === key) drawRange(c, rg); else renderDashboard(); }
-        }).catch(() => { RV.busy = false; });
+          if (activeTab() === 'dash') { const now = dashRangeBounds(); if (now && rgKey(now) === key) { rangeBusy(false); drawRange(c, rg); } else renderDashboard(); }
+          else rangeBusy(false);
+        }).catch(e => { RV.busy = false; rangeBusy(false); toast('Could not load that period: ' + (e && e.message || e), 'bad'); });
       };
       function drawRange(c, rg) {
         const keep = cache, dv = dashView; cache = c;
@@ -11255,9 +12249,10 @@
       const lastBackup = () => { try { return +localStorage.getItem('pll.lastBackup') || 0; } catch (e) { return 0; } };
       const bkEvery = () => X2.autoBk === 'off' ? 7 : +X2.autoBk;
       async function writeBackupTo(dir) {
-        const { rows } = await scanLogs({}); rows.reverse();
+        const { blob, n } = await logBlob({}, 'json', 'backup');
+        if (!n) return;
         const fh = await dir.getFileHandle('piano-log-backup-' + stampName() + '.json', { create: true });
-        const w = await fh.createWritable(); await w.write(new Blob(toJson(rows, 'backup'), { type: 'application/json' })); await w.close();
+        const w = await fh.createWritable(); await w.write(blob); await w.close();
         try {
           const old = []; for await (const [n] of dir.entries()) if (/^piano-log-backup-\d{8}-\d{6}\.json$/.test(n)) old.push(n);
           old.sort().slice(0, Math.max(0, old.length - 10)).forEach(n => dir.removeEntry(n).catch(() => { }));
@@ -11559,7 +12554,7 @@
       }, true);
       let gmPrev = null;
       new MutationObserver(() => {
-        if (!$('#gm').hidden) { if (!gmPrev) gmPrev = document.activeElement; setTimeout(() => { const f = $('#gbox').querySelector('button,select,input,[href]'); if (f) f.focus(); }, 30); }
+        if (!$('#gm').hidden) { if (!gmPrev) gmPrev = document.activeElement; setTimeout(() => { const f = $('#gbox').querySelector('button,select,input,[href]'); if (f) f.focus({ preventScroll: true }); }, 30); }
         else if (gmPrev) { try { gmPrev.focus(); } catch (e) { } gmPrev = null; }
       }).observe($('#gm'), { attributes: true, attributeFilter: ['hidden'] });
 
@@ -11658,12 +12653,102 @@ PianoLogger.on('noteon', e => {
         Object.entries(bySrc).forEach(([k, a]) => { let j = 0, best = 0; for (let i = 0; i < a.length; i++) { while (a[i] - a[j] >= 1000) j++; best = Math.max(best, i - j + 1); } s.src[k] = best; });
         return s;
       }
-      function speedRows(rg) {
-        return new Promise((res, rej) => {
-          if (!db) return res([]);
-          const rq = db.transaction('logs').objectStore('logs').index('startTs').getAll(rangeOf(rg || {}));
-          rq.onsuccess = () => res(rq.result.map(r => [r.startTs, r.source])); rq.onerror = () => rej(rq.error);
-        });
+      /* ---- speed statistics from day summaries (v6.1): each day is summed up once; joining the days gives exactly what
+         speedStats() gives for all the presses at once, including sessions and fast bursts that cross midnight ---- */
+      const SP_EDGE = 60000;                         // the first and last minute of each day are kept for bursts across midnight
+      function daySpeed(ts, so) {                    // ts: press times of one day (sorted), so: their inputs
+        const n = ts.length, sp = {
+          n, first: n ? ts[0] : 0, last: n ? ts[n - 1] : 0, p1: { v: 0, at: 0 }, p10: { v: 0, at: 0 }, p60: { v: 0, at: 0 }, ms: 0,
+          hourN: Array(24).fill(0), hourMs: Array(24).fill(0), gapH: new Uint32Array(GAP_PLAY + 1), hist: Array(12).fill(0), sess: [],
+          head: { t: [], s: [] }, tail: { t: [], s: [] }
+        };
+        if (!n) return sp;
+        const win = ms => { let j = 0, b = { v: 0, at: 0 }; for (let i = 0; i < n; i++) { while (ts[i] - ts[j] >= ms) j++; const c = i - j + 1; if (c > b.v) b = { v: c, at: ts[j] }; } return b; };
+        sp.p1 = win(1000); sp.p10 = win(10000); sp.p60 = win(60000);
+        let sStart = ts[0], k0 = Math.floor(ts[0] / 1000), c = 0;
+        for (let i = 0; i < n; i++) {
+          const h = new Date(ts[i]).getHours(), gap = i ? ts[i] - ts[i - 1] : Infinity;
+          if (gap <= GAP_PLAY) { sp.ms += gap; sp.hourMs[h] += gap; sp.hourN[h]++; sp.gapH[gap]++; }
+          else { sp.ms += 300; sp.hourMs[h] += 300; sp.hourN[h]++; }
+          if (gap > GAP_SESSION) { if (i) sp.sess.push([sStart, ts[i - 1]]); sStart = ts[i]; }
+          const k = Math.floor(ts[i] / 1000); if (k !== k0) { sp.hist[Math.min(12, c) - 1]++; k0 = k; c = 0; } c++;
+          if (ts[i] < sp.first + SP_EDGE) { sp.head.t.push(ts[i]); sp.head.s.push(so[i]); }
+          if (ts[i] > sp.last - SP_EDGE) { sp.tail.t.push(ts[i]); sp.tail.s.push(so[i]); }
+        }
+        sp.sess.push([sStart, ts[n - 1]]); sp.hist[Math.min(12, c) - 1]++;
+        return sp;
+      }
+      function daySpeeds(ts, so) {                   // the whole day, and each input on its own (for “Show statistics for”)
+        const by = {}, idx = {};
+        for (let i = 0; i < so.length; i++) (idx[so[i]] = idx[so[i]] || []).push(i);
+        for (const k in idx) by[k] = daySpeed(idx[k].map(i => ts[i]), idx[k].map(() => k));
+        return { all: daySpeed(ts, so), by };
+      }
+      // list: [{ d: 'YYYY-MM-DD', sp }] in date order
+      function speedCombine(list, withSrc, onlySrc) {   // withSrc: { input: list } for the all-inputs view; onlySrc: the one input shown
+        const s = {
+          n: 0, peak1: { v: 0, at: 0 }, peak10: { v: 0, at: 0 }, peak60: { v: 0, at: 0 }, active: 0, sessions: 0, longest: 0, sessTotal: 0,
+          gaps: null, hist: Array(12).fill(0), day: {}, hourN: Array(24).fill(0), hourMs: Array(24).fill(0), src: {}, median: 0
+        };
+        const gapH = new Float64Array(GAP_PLAY + 1), slots = [['peak1', 1000, 'p1'], ['peak10', 10000, 'p10'], ['peak60', 60000, 'p60']];
+        let prev = null, cur = null;
+        const closeSess = q => { const len = q[1] - q[0]; s.sessions++; if (len > s.longest) s.longest = len; s.sessTotal += len; };
+        for (const { d, sp: D } of list) {
+          if (!D || !D.n) continue;
+          const day = s.day[d] = s.day[d] || { peak: 0, ms: 0, n: 0 };
+          day.n += D.n; day.ms += D.ms; s.n += D.n; s.active += D.ms;
+          for (let h = 0; h < 24; h++) { s.hourN[h] += D.hourN[h]; s.hourMs[h] += D.hourMs[h]; }
+          for (let i = 0; i < 12; i++) s.hist[i] += D.hist[i];
+          for (let g = 0; g <= GAP_PLAY; g++) if (D.gapH[g]) gapH[g] += D.gapH[g];
+          if (prev) {
+            const g = D.first - prev.last;
+            if (g <= GAP_PLAY) { const h = new Date(D.first).getHours(), x = g - 300; s.active += x; day.ms += x; s.hourMs[h] += x; gapH[g]++; }
+            if (g < SP_EDGE) {                       // fast bursts that started before midnight
+              const T = prev.tail.t, H = D.head.t;
+              for (const [slot, ms] of slots) {
+                let a = 0, j = 0;
+                for (let i = 0; i < H.length && H[i] - ms < prev.last; i++) {
+                  while (a < T.length && T[a] <= H[i] - ms) a++;
+                  while (H[i] - H[j] >= ms) j++;
+                  const c = (i - j + 1) + (T.length - a), at = a < T.length ? T[a] : H[j];
+                  if (c > s[slot].v) s[slot] = { v: c, at };
+                  if (slot === 'peak1' && c > day.peak) day.peak = c;
+                }
+              }
+            }
+          }
+          for (const [slot, , k] of slots) if (D[k].v > s[slot].v) s[slot] = { v: D[k].v, at: D[k].at };
+          if (D.p1.v > day.peak) day.peak = D.p1.v;
+          for (const q of D.sess) { if (cur && q[0] - cur[1] <= GAP_SESSION) cur[1] = q[1]; else { if (cur) closeSess(cur); cur = [q[0], q[1]]; } }
+          prev = D;
+        }
+        if (cur) closeSess(cur);
+        let G = 0; for (let g = 0; g <= GAP_PLAY; g++) G += gapH[g];
+        if (G) { let want = Math.floor(G / 2), acc = 0; for (let g = 0; g <= GAP_PLAY; g++) { acc += gapH[g]; if (acc > want) { s.median = g; break; } } }
+        if (onlySrc && s.n) s.src[onlySrc] = s.peak1.v;
+        if (withSrc) {                               // fastest second per input, listed in the order each input was first used
+          const firstOf = k => { for (const x of withSrc[k]) if (x.sp && x.sp.n) return x.sp.first; return Infinity; };
+          Object.keys(withSrc).map(k => [k, firstOf(k)]).filter(x => x[1] < Infinity).sort((a, b) => a[1] - b[1])
+            .forEach(([k]) => { const r = speedCombine(withSrc[k]); if (r.n) s.src[k] = r.peak1.v; });
+        }
+        return s;
+      }
+      const spProg = (k, n) => { const el = $('#speedNote'); if (el && n > 50000 && /Calculating|Working out/.test(el.textContent)) el.textContent = 'Working out speed statistics for your whole history (only needed once)… ' + Math.min(99, Math.floor(k / n * 100)) + '%'; };
+      async function speedFor(rg, src) {             // speed statistics for a period (null = all time) and one input or 'all'
+        const all = !src || src === 'all', days = cache.g && cache.g.days;
+        if ((rg && (rg.fromTs != null || rg.toTs != null)) || !days || !Object.keys(days).length) {   // sessions use exact times: read them directly
+          const rows = []; await eachLogBatch(rg || {}, b => { for (const r of b) if (all || r.source === src) rows.push([r.startTs, r.source]); });
+          return speedStats(rows);
+        }
+        const want = await ensureDays(rg ? rg.from : '0000-00-00', rg ? rg.to : '9999-99-99', !rg, rg ? null : spProg);
+        const E = want.map(d => DAYC.get(d)).filter(x => x && x.sp);
+        if (!all) return speedCombine(E.map(x => ({ d: x.d, sp: x.sp.by[src] })), null, src);
+        const per = {}; E.forEach(x => { for (const k in x.sp.by) per[k] = 1; });
+        for (const k in per) per[k] = E.map(x => ({ d: x.d, sp: x.sp.by[k] }));
+        return speedCombine(E.map(x => ({ d: x.d, sp: x.sp.all })), per);
+      }
+      async function speedRows(rg) {                 // kept for add-ons: [[time, input], …] oldest → newest
+        const out = []; await eachLogBatch(rg || {}, b => { for (const r of b) out.push([r.startTs, r.source]); }); return out;
       }
       let SPD = { key: '', base: '', at: 0, s: null, busy: false, timer: null, life: 0 };
       async function renderSpeed() {
@@ -11677,8 +12762,7 @@ PianoLogger.on('noteon', e => {
         }
         SPD.busy = true; if (SPD.base !== base) $('#speedNote').textContent = 'Calculating…';
         try {
-          let rows = await speedRows(rg); if (dashView !== 'all') rows = rows.filter(r => r[1] === dashView);
-          const s = speedStats(rows);
+          const s = await speedFor(rg, dashView);
           Object.assign(SPD, { key, base, at: Date.now(), s, busy: false, life: lifetime });
           if (activeTab() === 'dash') { const now = dashRangeBounds(), b2 = (now ? rgKey(now) : 'all') + '|' + dashView; if (b2 === base) drawSpeed(s, rg); else renderSpeed(); }
         } catch (e) { SPD.busy = false; }
@@ -11769,7 +12853,7 @@ PianoLogger.on('noteon', e => {
       const _yirStats4 = yirStats;
       yirStats = async function (y) {
         const s = await _yirStats4(y);
-        try { s.speed = speedStats(await speedRows({ from: y + '-01-01', to: y + '-12-31' })); } catch (e) { }
+        try { s.speed = await speedFor({ from: y + '-01-01', to: y + '-12-31' }, 'all'); } catch (e) { }
         return s;
       };
       const _yirCanvas4 = yirCanvas;
@@ -12187,12 +13271,11 @@ PianoLogger.on('noteon', e => {
           key, reg: reg.map(av), hand: hand.map(av), wk
         };
       }
-      function anRowsGet(rg) {
-        return new Promise((res, rej) => {
-          if (!db) return res([]);
-          const rq = db.transaction('logs').objectStore('logs').index('startTs').getAll(rangeOf(rg || {}));
-          rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
-        });
+      async function anRowsGet(rg) {                 // only the fields the analysis uses, read in batches (much less memory for long periods)
+        const out = [], S = new Map(), one = s => { let x = S.get(s); if (x === undefined) S.set(s, x = s); return x; };
+        const r0 = rangeOf(rg || {}), lo = r0 && r0.lower != null ? r0.lower : -Infinity, hi = r0 && r0.upper != null ? r0.upper : Infinity;
+        await eachTsBatch(lo, hi, rows => { for (const r of rows) out.push({ startTs: r.startTs, midi: r.midi, velocity: r.velocity, durationMs: r.durationMs, source: one(r.source), date: one(r.date) }); });
+        return out;
       }
       function anBounds() {
         const v = $('#anRange').value, today = localParts(Date.now()).date;
@@ -12218,18 +13301,20 @@ PianoLogger.on('noteon', e => {
           return A;
         } finally { AN.busy = false; }
       }
-      async function anTrends() {
+      async function anTrends() {                    // weeks and months, from the saved day summaries (no need to read 400 days of presses)
         const key = lifetime + '|' + $('#anSrc').value;
         if (AN.trend && (AN.trendKey === key || Date.now() - AN.trendAt < 15000)) return AN.trend;
         const from = new Date(); from.setDate(from.getDate() - 400);
-        let rows = await anRowsGet({ from: localParts(from.getTime()).date }); const src = $('#anSrc').value; if (src) rows = rows.filter(r => r.source === src);
-        const W = new Map(), M = new Map();
-        rows.forEach((r, i) => {
-          const gap = i ? r.startTs - rows[i - 1].startTs : Infinity, w = weekKey(r.startTs), m = r.date ? r.date.slice(0, 7) : localParts(r.startTs).date.slice(0, 7);
-          const a = W.get(w) || { n: 0, ms: 0, ses: 0 }, b = M.get(m) || { n: 0, ms: 0, ses: 0 };
-          const add = gap <= GAP_PLAY ? gap : 300; a.n++; b.n++; a.ms += add; b.ms += add; if (gap > GAP_SESSION) { a.ses++; b.ses++; }
-          W.set(w, a); M.set(m, b);
-        });
+        const src = $('#anSrc').value, W = new Map(), M = new Map(), want = await ensureDays(localParts(from.getTime()).date, '9999-99-99');
+        let prev = null;
+        for (const d of want) {
+          const E = DAYC.get(d), D = E && E.sp ? (src ? E.sp.by[src] : E.sp.all) : null; if (!D || !D.n) continue;
+          let ms = D.ms, ses = D.sess.length;
+          if (prev) { const g = D.first - prev.last; if (g <= GAP_PLAY) ms += g - 300; if (g <= GAP_SESSION) ses--; }
+          const w = weekKey(D.first), m = d.slice(0, 7), a = W.get(w) || { n: 0, ms: 0, ses: 0 }, b = M.get(m) || { n: 0, ms: 0, ses: 0 };
+          a.n += D.n; b.n += D.n; a.ms += ms; b.ms += ms; a.ses += ses; b.ses += ses; W.set(w, a); M.set(m, b);
+          prev = D;
+        }
         const weeks = [], months = [];
         for (let i = 11; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i * 7); weeks.push(weekKey(d.getTime())); }
         for (let i = 11; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); months.push(d.getFullYear() + '-' + pad(d.getMonth() + 1)); }
@@ -12663,18 +13748,33 @@ PianoLogger.on('noteon', e => {
       // (in the same read transaction) detects restores / erases and triggers a full re-read.
       // upTo: presses at or after the oldest key still held down (or still waiting to be saved) are left for the next
       // read, because a held key is saved later with an older time — reading past it would break the incremental count.
+      // The profile reads only what is new since last time; its state is saved, so opening the page does not re-read your whole history.
+      // The “did the data change?” check uses the saved total and counts only the newest presses (counting millions one by one is slow).
       function pfFetch(afterTs, upTo) {
         return new Promise((res, rej) => {
           if (!db) return res({ rows: [], count: 0 });
-          const tx = db.transaction('logs'), st = tx.objectStore('logs'), ix = st.index('startTs'), out = {}, lim = Number.isFinite(upTo);
-          const rg = afterTs == null ? (lim ? IDBKeyRange.upperBound(upTo) : null)
-            : lim ? (upTo > afterTs ? IDBKeyRange.bound(afterTs, upTo, true, false) : null) : IDBKeyRange.lowerBound(afterTs, true);
-          if (afterTs != null && lim && upTo <= afterTs) out.rows = [];
-          else { const rq = ix.getAll(rg); rq.onsuccess = () => { out.rows = rq.result; }; }
-          const cq = lim ? ix.count(IDBKeyRange.upperBound(upTo)) : st.count(); cq.onsuccess = () => { out.count = cq.result; };
-          tx.oncomplete = () => res(out); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+          const tx = db.transaction(['logs', 'agg']), ix = tx.objectStore('logs').index('startTs'), out = { rows: [] }, lim = Number.isFinite(upTo);
+          let g = 0, after = 0;
+          if (afterTs != null) {
+            const rg = lim ? (upTo > afterTs ? IDBKeyRange.bound(afterTs, upTo, true, false) : null) : IDBKeyRange.lowerBound(afterTs, true);
+            if (rg) { const rq = ix.getAll(rg); rq.onsuccess = () => { out.rows = rq.result; }; }
+          }
+          const a = tx.objectStore('agg').get('global'); a.onsuccess = () => { g = (a.result && a.result.count) || 0; };
+          if (lim) { const c = ix.count(IDBKeyRange.lowerBound(upTo, true)); c.onsuccess = () => { after = c.result; }; }
+          tx.oncomplete = () => { out.count = g - after; res(out); }; tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
         });
       }
+      async function pfFeedAll(S, upTo) {            // the first read of your whole history: in batches, in the background
+        await eachTsBatch(-Infinity, Number.isFinite(upTo) ? upTo : Infinity, async rows => { pfFeed(S, rows); await yieldToUser(); await nextTick(); }, 5000);
+      }
+      const pfsV = () => APP_VERSION + '|' + PF_VER + '|' + JSON.stringify(PF_RULES);
+      async function pfStateLoad() { try { const x = await kvGet('pfS'); if (x && x.v === pfsV() && x.S) { PF.off = x.off || 0; return x.S; } } catch (e) { } return null; }
+      function pfStateSave(now) {
+        clearTimeout(PF.svT);
+        const go = () => { if (PF.S) kvSet('pfS', { v: pfsV(), off: PF.off || 0, S: PF.S }).catch(() => { }); };
+        if (now) go(); else PF.svT = setTimeout(go, 15000);
+      }
+      window.addEventListener('pagehide', () => { if (PF.svT) pfStateSave(true); });
       function pfNewState() {
         return {
           n: 0, days: new Map(), lastCounted: new Map(), runKey: -1, run: 0, prevT: null, sStart: 0, sN: 0, sDay: null,
@@ -12848,10 +13948,11 @@ PianoLogger.on('noteon', e => {
         try {
           const life = lifetime;
           const upTo = pfSafeTs();
-          let S = PF.S, got = await pfFetch(S ? S.lastTs : null, upTo);
-          if (S && S.n + got.rows.length !== got.count) { S = null; got = await pfFetch(null, upTo); }    // restore / erase: start over
-          if (!S) S = pfNewState();
-          pfFeed(S, got.rows); PF.S = S;
+          let S = PF.S || await pfStateLoad(), got = S && S.lastTs != null ? await pfFetch(S.lastTs, upTo) : null;
+          if (S && (!got || S.n + got.rows.length + (PF.off || 0) !== got.count)) S = null;    // restore / erase: start over
+          let full = false;
+          if (!S) { full = true; S = pfNewState(); await pfFeedAll(S, upTo); got = S.lastTs != null ? await pfFetch(S.lastTs, upTo) : { rows: [], count: S.n }; PF.off = got.count - S.n - got.rows.length; }
+          pfFeed(S, got.rows); PF.S = S; pfStateSave(full);
           const c = pfResult(S), p = PF.p, un = pfCleanAch(p);
           const beforeXp = p.xp, beforeLevel = pfLevelInfo(p.xp).level, first = !p.updatedAt, fresh = [];
           p.stats = c.stats; p.breakdown = c.breakdown;
@@ -13896,7 +14997,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '6.0';
+      const APP_VERSION = '6.1';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -14374,7 +15475,7 @@ PianoLogger.on('noteon', e => {
         const set = $('#btnSet'); if (set) {
           const b = document.createElement('button'); b.className = 'btn icon'; b.id = 'btnNews'; b.type = 'button'; b.title = 'What’s new (update log)'; b.setAttribute('aria-label', 'What’s new: update log');
           b.innerHTML = '🆕<i class="news-dot" aria-hidden="true"></i>'; b.onclick = openNews; set.before(b);
-          if (LS.get('pll.seenVer', '') !== APP_VERSION) { b.classList.add('new'); if (LS.get('pll.tour', null) || localStorage.getItem('pll.tour')) setTimeout(() => toast('✨ Updated to v' + APP_VERSION + ': Windows app with SoundFonts and auto-backup, focus mode with the piano at the bottom, rolling numbers on every PC. Click 🆕 to see what’s new.', 'ok'), 2500); }
+          if (LS.get('pll.seenVer', '') !== APP_VERSION) { b.classList.add('new'); if (LS.get('pll.tour', null) || localStorage.getItem('pll.tour')) setTimeout(() => toast('✨ Updated to v' + APP_VERSION + ': restore backups of any size, a much faster custom period, a new calendar that matches your theme, and many small fixes. Click 🆕 to see what’s new.', 'ok'), 2500); }
         }
       }
       { const h1 = $('.brand h1'); if (h1) { const v = document.createElement('button'); v.type = 'button'; v.className = 'ver-tag'; v.textContent = 'v' + APP_VERSION; v.title = 'What’s new'; v.onclick = openNews; h1.after(v); } }
@@ -15119,6 +16220,18 @@ PianoLogger.on('noteon', e => {
           '🧘 Fixed: in focus mode the piano now sits at the bottom of the screen and the notes use the full height above it',
           '🔢 Fixed: rolling numbers did not roll on PCs where Windows “Animation effects” is off. They now roll everywhere; choose On, Follow system or Off in Settings → Graphics → Rolling numbers']
       });
+      VERSIONS.unshift({
+        v: '6.1', date: '2026-10-27', title: 'Big backups, fast periods & a new calendar', items: [
+          '💾 Restore backups of any size (even several GB). The file is read piece by piece with a progress bar, the time left and a Stop button; presses restored before you stop are kept, with correct totals',
+          '📤 Exports, backup files, the backup folder and the app’s daily backup are built piece by piece too, so a long history no longer runs out of memory',
+          '⚡ Custom periods load much faster: each day is summed up once and saved, so changing the dates is almost instant',
+          '🚀 Much faster with a long history: History opens at once, the speed statistics and your Profile are saved and only add what is new, and Analysis uses far less memory (tested with 2.4 million presses)',
+          '📅 New calendar for every date box: matches your theme, small bars show how much you played each day, quick ranges (last 7 / 30 days, this / last month, this year), month and year jump, keyboard support',
+          '🔔 The same message no longer stacks up many times: it shows a counter instead. Click a message to close it',
+          '🐞 Fixed: “What’s new” and other long windows opened scrolled to the bottom; the guide repeated section numbers 19–25; two boxes in Export & backup were cut off on laptop screens; routine descriptions were cut off',
+          '🛠 When the browser cannot open your saved data, the page now says why and offers “Try again” (and “Repair storage” in the app)',
+          '🖥 App 6.1: backups of any size, more memory for big histories, and a note if the window ever stops unexpectedly']
+      });
       {
         const hn = $('#p-help .help-new');
         if (hn) {
@@ -15393,16 +16506,22 @@ PianoLogger.on('noteon', e => {
       const APPS = Object.assign({ autoBk: true }, LS.get('pll.app', {}));
       const saveApps = () => LS.set('pll.app', APPS);
       async function appBackup(manual) {
-        if (!APPX || !db) return;
+        if (!APPX || !db || (!manual && RS)) return;            // never back up half-way through a restore
+        const tp = manual ? toastProgress('Making a backup…') : null;
         try {
-          const { rows } = await scanLogs({}); rows.reverse();
-          if (!rows.length) { if (manual) toast('Nothing to back up yet: play a few notes first.', 'bad'); return; }
-          const f = await APPX.backup.save('piano-log-backup-' + stampName() + '.json', toJson(rows, 'backup').join(''));
+          const { blob, n } = await logBlob({}, 'json', 'backup', k => tp && tp.set('Making a backup… ' + fmtInt(k) + ' presses', cache.g && cache.g.count ? k / cache.g.count : null));
+          if (!n) { if (tp) tp.done('Nothing to back up yet: play a few notes first.', 'bad'); return; }
+          const name = 'piano-log-backup-' + stampName() + '.json'; let f;
+          if (APPX.backup.begin) {                    // app 6.1+: the file is sent in pieces, so any size works
+            const id = await APPX.backup.begin(name);
+            try { for (let o = 0; o < blob.size; o += 8388608) await APPX.backup.write(id, new Uint8Array(await blob.slice(o, o + 8388608).arrayBuffer())); f = await APPX.backup.end(id); }
+            catch (e) { APPX.backup.abort(id).catch(() => { }); throw e; }
+          } else f = await APPX.backup.save(name, await blob.text());
           LS.set('pll.appBk', Date.now());
           try { localStorage.setItem('pll.lastBackup', String(Date.now())); } catch (e) { }
           if (typeof showBackupInfo === 'function') showBackupInfo();
-          if (manual) toast('💾 Backup saved: ' + f, 'ok');
-        } catch (e) { toast('Automatic backup failed: ' + (e && e.message || e), 'bad'); }
+          if (tp) tp.done('💾 Backup saved (' + fmtInt(n) + ' presses, ' + fmtBytes(blob.size) + '): ' + f, 'ok');
+        } catch (e) { if (tp) tp.done('Backup failed: ' + (e && e.message || e), 'bad'); else toast('Automatic backup failed: ' + (e && e.message || e), 'bad'); }
         if (appPanelOpen()) paintAppPanel();
       }
       if (APPX) {
@@ -15521,6 +16640,242 @@ PianoLogger.on('noteon', e => {
         return C;
       };
       TOUR.splice(TOUR.length - 1, 0, ['#btnApp', APPX ? '🖥 App features' : '⬇ Windows app', APPX ? 'SoundFont instruments, daily backups into a folder, always on top and start with Windows.' : 'For additional features, download the free Windows app: your own SoundFont instruments, automatic backups, always on top and more.']);
+
+      /* =====================================================================
+         v6.1 — themed date picker (replaces the browser's grey calendar on every date box)
+         · follows the theme · shows how much you played on each day · quick ranges
+         · month / year jump · keyboard: arrows, PgUp/PgDn, Home/End, Enter, Esc
+         ===================================================================== */
+      {
+        const PAIR = { dFrom: 'dTo', dTo: 'dFrom', fFrom: 'fTo', fTo: 'fFrom' };
+        const isFrom = id => id === 'dFrom' || id === 'fFrom';
+        const coarse = () => window.matchMedia && matchMedia('(pointer: coarse)').matches;
+        const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        const parse = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? new Date(s + 'T00:00:00') : null;
+        const addD = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+        let wk0 = 0;                                   // first day of the week from the language settings (0 = Sunday)
+        try { const wi = new Intl.Locale(navigator.language).weekInfo || new Intl.Locale(navigator.language).getWeekInfo(); if (wi && wi.firstDay) wk0 = wi.firstDay % 7; } catch (e) { }
+        const MONTHS = [...Array(12)].map((_, i) => new Date(2000, i, 1).toLocaleDateString(undefined, { month: 'long' }));
+        const MSHORT = [...Array(12)].map((_, i) => new Date(2000, i, 1).toLocaleDateString(undefined, { month: 'short' }));
+        const WD = [...Array(7)].map((_, i) => new Date(2023, 0, 1 + ((i + wk0) % 7)).toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 2));
+        const P = { inp: null, view: null, mode: 'days', focus: null, hover: null, dir: 0, anim: false, pend: new Set() };
+        const box = document.createElement('div');
+        box.id = 'dp'; box.className = 'dp'; box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Choose a date');
+        document.body.appendChild(box);
+
+        const partner = () => P.inp && PAIR[P.inp.id] ? $('#' + PAIR[P.inp.id]) : null;
+        const range = () => {                          // the from → to range being edited (for highlighting)
+          const o = partner(); if (!o) return null;
+          const a = isFrom(P.inp.id) ? P.inp.value : o.value, b = isFrom(P.inp.id) ? o.value : P.inp.value;
+          return a && b && a <= b ? [a, b] : null;
+        };
+        function dayLevel() {                          // how much you played each day → small bars under the numbers
+          const days = (cache && cache.g && cache.g.days) || {}; let max = 0;
+          for (const k in days) if (days[k] > max) max = days[k];
+          return { days, max };
+        }
+        function paint() {
+          if (!P.inp) return;
+          const v = P.view, today = localParts(Date.now()).date, sel = P.inp.value, rg = range(), o = partner();
+          const hv = P.hover && o && o.value ? (isFrom(P.inp.id) ? [P.hover, o.value] : [o.value, P.hover]) : null;
+          const hr = hv && hv[0] <= hv[1] ? hv : null;
+          const min = P.inp.min || '', max = P.inp.max || '';
+          let title, body;
+          if (P.mode === 'days') {
+            title = MONTHS[v.getMonth()] + ' ' + v.getFullYear();
+            const first = new Date(v.getFullYear(), v.getMonth(), 1), off = (first.getDay() - wk0 + 7) % 7, start = addD(first, -off), L = dayLevel();
+            body = '<div class="dp-wd">' + WD.map(w => '<span>' + w + '</span>').join('') + '</div><div class="dp-days">';
+            for (let i = 0; i < 42; i++) {
+              const d = addD(start, i), s = ymd(d), n = L.days[s] || 0, lvl = n && L.max ? Math.max(1, Math.ceil(n / L.max * 4)) : 0;
+              const cls = ['dp-d'];
+              if (d.getMonth() !== v.getMonth()) cls.push('out');
+              if (s === today) cls.push('today');
+              if (s === sel) cls.push('sel');
+              const R = hr || rg;
+              if (R && s >= R[0] && s <= R[1]) { cls.push('in'); if (s === R[0]) cls.push('r0'); if (s === R[1]) cls.push('r1'); }
+              if (o && o.value === s) cls.push('other');
+              const dis = (min && s < min) || (max && s > max);
+              cls.push('wd' + d.getDay());
+              body += '<button type="button" class="' + cls.join(' ') + '" data-d="' + s + '"' + (dis ? ' disabled' : '') + ' tabindex="' + (s === P.focus ? 0 : -1) + '" aria-label="' +
+                d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + (n ? ', ' + fmtInt(n) + ' presses' : '') + '"' +
+                (s === sel ? ' aria-pressed="true"' : '') + (n ? ' title="' + fmtInt(n) + ' presses"' : '') + '><span>' + d.getDate() + '</span>' + (lvl ? '<i class="lv' + lvl + '"></i>' : '') + '</button>';
+            }
+            body += '</div>';
+          } else if (P.mode === 'months') {
+            title = String(v.getFullYear());
+            const cur = sel ? sel.slice(0, 7) : '', now = today.slice(0, 7);
+            body = '<div class="dp-grid">' + MSHORT.map((m, i) => { const k = v.getFullYear() + '-' + pad(i + 1); return '<button type="button" class="dp-m' + (k === cur ? ' sel' : '') + (k === now ? ' today' : '') + '" data-m="' + i + '">' + m + '</button>'; }).join('') + '</div>';
+          } else {
+            const y0 = Math.floor(v.getFullYear() / 12) * 12, cy = +today.slice(0, 4), sy = sel ? +sel.slice(0, 4) : 0;
+            title = y0 + ' – ' + (y0 + 11);
+            body = '<div class="dp-grid">' + [...Array(12)].map((_, i) => '<button type="button" class="dp-m' + (y0 + i === sy ? ' sel' : '') + (y0 + i === cy ? ' today' : '') + '" data-y="' + (y0 + i) + '">' + (y0 + i) + '</button>').join('') + '</div>';
+          }
+          const quick = o ? [['7', 'Last 7 days'], ['30', 'Last 30 days'], ['month', 'This month'], ['lmonth', 'Last month'], ['year', 'This year']]
+            : [['today', 'Today'], ['yday', 'Yesterday'], ['w', 'A week ago']];
+          const label = o ? (isFrom(P.inp.id) ? 'Start date' : 'End date') : (P.inp.getAttribute('aria-label') || 'Date');
+          box.innerHTML = '<div class="dp-cap">' + esc(label) + (rg ? '<small>' + fmtDays(rg) + '</small>' : '') + '</div>' +
+            '<div class="dp-head"><button type="button" class="dp-nav" data-nav="-1" aria-label="Previous">‹</button>' +
+            '<button type="button" class="dp-title" data-up="1" aria-label="Choose month or year">' + esc(title) + '<b>▾</b></button>' +
+            '<button type="button" class="dp-nav" data-nav="1" aria-label="Next">›</button></div>' +
+            '<div class="dp-body ' + (P.dir > 0 ? 'sl-l' : P.dir < 0 ? 'sl-r' : P.anim ? 'fade' : '') + '">' + body + '</div>' +
+            '<div class="dp-quick">' + quick.map(([k, t]) => '<button type="button" data-q="' + k + '">' + t + '</button>').join('') + '</div>' +
+            '<div class="dp-foot"><button type="button" class="dp-link" data-act="clear">Clear</button><span class="dp-key">' + (P.mode === 'days' ? '← → ↑ ↓ · Enter' : '') + '</span>' +
+            '<button type="button" class="dp-link" data-act="today">Today</button></div>';
+          P.dir = 0; P.anim = false;
+          const f = box.querySelector('[tabindex="0"]'); if (f && box.contains(document.activeElement)) f.focus();
+        }
+        const fmtDays = rg => { const n = Math.round((parse(rg[1]) - parse(rg[0])) / 864e5) + 1; return n + (n === 1 ? ' day' : ' days'); };
+        function place() {
+          if (!P.inp || box.hidden) return;
+          const r = P.inp.getBoundingClientRect(), W = innerWidth, H = innerHeight, bw = box.offsetWidth, bh = box.offsetHeight;
+          box.classList.toggle('sheet', W < 520);
+          if (W < 520) { box.style.left = box.style.top = ''; return; }
+          let x = Math.min(Math.max(8, r.left), W - bw - 8), y = r.bottom + 8, up = false;
+          if (y + bh > H - 8 && r.top - bh - 8 > 8) { y = r.top - bh - 8; up = true; }
+          box.style.left = x + 'px'; box.style.top = Math.max(8, Math.min(y, H - bh - 8)) + 'px';
+          box.classList.toggle('up', up);
+        }
+        function open(inp) {
+          if (P.inp === inp && !box.hidden) return;
+          P.inp = inp; P.mode = 'days'; P.hover = null;
+          const d = parse(inp.value) || (partner() && parse(partner().value)) || new Date();
+          P.view = new Date(d.getFullYear(), d.getMonth(), 1); P.focus = ymd(d);
+          box.hidden = false; box.classList.remove('closing'); paint(); place();
+          inp.classList.add('dp-open'); inp.setAttribute('aria-expanded', 'true');
+          requestAnimationFrame(() => { box.classList.add('show'); });
+        }
+        function flushPend() {                       // dates chosen quietly (start date while you pick the end date) tell the page now
+          const L = [...P.pend]; P.pend.clear();
+          L.forEach(x => { x.dispatchEvent(new Event('input', { bubbles: true })); x.dispatchEvent(new Event('change', { bubbles: true })); });
+        }
+        function close(refocus) {
+          if (box.hidden) { flushPend(); return; }
+          const inp = P.inp; box.classList.remove('show'); box.classList.add('closing');
+          if (inp) { inp.classList.remove('dp-open'); inp.setAttribute('aria-expanded', 'false'); if (refocus) inp.focus({ preventScroll: true }); }
+          setTimeout(() => { if (box.classList.contains('closing')) { box.hidden = true; box.classList.remove('closing'); } }, 160);
+          P.inp = null; flushPend();
+        }
+        function quiet(inp, s) { inp.value = s; P.pend.add(inp); inp.classList.remove('dp-flash'); void inp.offsetWidth; inp.classList.add('dp-flash'); }
+        function switchTo(o) {                       // carry on with the other date box without closing
+          const had = box.contains(document.activeElement);
+          P.inp.classList.remove('dp-open'); P.inp.setAttribute('aria-expanded', 'false');
+          P.inp = o; P.mode = 'days'; P.hover = null; P.anim = true;
+          const d = parse(o.value); if (d) { P.view = new Date(d.getFullYear(), d.getMonth(), 1); P.focus = o.value; }
+          o.classList.add('dp-open'); o.setAttribute('aria-expanded', 'true');
+          paint(); place();
+          if (had) { const f = box.querySelector('[tabindex="0"]'); if (f) f.focus(); }
+        }
+        function setVal(inp, s) {
+          if (inp.value === s && !P.pend.has(inp)) return;
+          P.pend.delete(inp);
+          inp.value = s;
+          inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true }));
+          inp.classList.remove('dp-flash'); void inp.offsetWidth; inp.classList.add('dp-flash');
+        }
+        function pick(s) {
+          const inp = P.inp, o = partner();
+          if (o && isFrom(inp.id)) {                 // start date chosen: go straight on to the end date (the page updates once, when both are set)
+            quiet(inp, s); if (o.value && s > o.value) quiet(o, s);
+            return switchTo(o);
+          }
+          setVal(inp, s);
+          if (o && o.value && s < o.value) setVal(o, s);   // end before start: the start follows
+          close(true);
+        }
+        function quick(k) {
+          const t = new Date(), today = ymd(t), o = partner();
+          if (!o) { const d = k === 'today' ? t : k === 'yday' ? addD(t, -1) : addD(t, -7); return pick(ymd(d)); }
+          let a = today, b = today;
+          if (k === '7' || k === '30') a = ymd(addD(t, -(+k - 1)));
+          else if (k === 'month') a = today.slice(0, 8) + '01';
+          else if (k === 'lmonth') { const f = new Date(t.getFullYear(), t.getMonth() - 1, 1); a = ymd(f); b = ymd(new Date(t.getFullYear(), t.getMonth(), 0)); }
+          else if (k === 'year') a = today.slice(0, 5) + '01-01';
+          const from = isFrom(P.inp.id) ? P.inp : o, to = isFrom(P.inp.id) ? o : P.inp;
+          to.value = ''; setVal(from, a); setVal(to, b); close(true);
+        }
+        function move(days) {
+          let d = addD(parse(P.focus) || new Date(), days);
+          P.focus = ymd(d);
+          if (d.getMonth() !== P.view.getMonth() || d.getFullYear() !== P.view.getFullYear()) { P.dir = days > 0 ? 1 : -1; P.view = new Date(d.getFullYear(), d.getMonth(), 1); }
+          paint(); const f = box.querySelector('[data-d="' + P.focus + '"]'); if (f) f.focus();
+        }
+        function nav(n) {
+          const v = P.view; P.dir = n;
+          if (P.mode === 'days') P.view = new Date(v.getFullYear(), v.getMonth() + n, 1);
+          else if (P.mode === 'months') P.view = new Date(v.getFullYear() + n, v.getMonth(), 1);
+          else P.view = new Date(v.getFullYear() + 12 * n, v.getMonth(), 1);
+          if (P.mode === 'days') { const fd = parse(P.focus); if (fd) { const day = Math.min(fd.getDate(), new Date(P.view.getFullYear(), P.view.getMonth() + 1, 0).getDate()); P.focus = ymd(new Date(P.view.getFullYear(), P.view.getMonth(), day)); } }
+          paint();
+        }
+        box.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });   // keep the focus where it is
+        box.addEventListener('click', e => {
+          const b = e.target.closest('button'); if (!b || b.disabled) return;
+          if (b.dataset.d) pick(b.dataset.d);
+          else if (b.dataset.nav) nav(+b.dataset.nav);
+          else if (b.dataset.up) { P.mode = P.mode === 'days' ? 'months' : 'years'; P.anim = true; paint(); }
+          else if (b.dataset.m) { P.view = new Date(P.view.getFullYear(), +b.dataset.m, 1); P.mode = 'days'; P.anim = true; paint(); }
+          else if (b.dataset.y) { P.view = new Date(+b.dataset.y, P.view.getMonth(), 1); P.mode = 'months'; P.anim = true; paint(); }
+          else if (b.dataset.q) quick(b.dataset.q);
+          else if (b.dataset.act === 'clear') { setVal(P.inp, ''); close(true); }
+          else if (b.dataset.act === 'today') pick(localParts(Date.now()).date);
+        });
+        box.addEventListener('mouseover', e => {
+          const b = e.target.closest('[data-d]'), h = b ? b.dataset.d : null;
+          if (P.inp && h !== P.hover && partner() && partner().value) { P.hover = h; const keep = P.focus; paint(); P.focus = keep; }
+        });
+        box.addEventListener('mouseleave', () => { if (P.hover) { P.hover = null; if (P.inp) paint(); } });
+        box.addEventListener('keydown', e => {
+          e.stopPropagation();
+          const k = e.key;
+          if (k === 'Escape') { e.preventDefault(); return close(true); }
+          if (P.mode !== 'days') return;
+          const map = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+          if (map[k]) { e.preventDefault(); return move(map[k]); }
+          if (k === 'PageUp' || k === 'PageDown') { e.preventDefault(); return nav(k === 'PageUp' ? -1 : 1); }
+          if (k === 'Home' || k === 'End') { e.preventDefault(); const d = parse(P.focus) || new Date(), dw = (d.getDay() - wk0 + 7) % 7; return move(k === 'Home' ? -dw : 6 - dw); }
+        });
+        // open on click; keep the text box usable for typing
+        document.addEventListener('pointerdown', e => {
+          const inp = e.target.closest && e.target.closest('input[type=date]');
+          if (inp && coarse()) inp.readOnly = true;                     // phones: our calendar instead of the system one
+          if (!box.hidden && !box.contains(e.target) && e.target !== P.inp) close();
+        }, true);
+        document.addEventListener('click', e => {
+          const inp = e.target.closest && e.target.closest('input[type=date]');
+          if (inp && !inp.disabled) { e.preventDefault(); if (P.inp === inp && !box.hidden) close(); else open(inp); }
+        });
+        document.addEventListener('keydown', e => {
+          const inp = e.target.closest && e.target.closest('input[type=date]');
+          if (!inp) return;
+          if ((e.altKey && e.key === 'ArrowDown') || e.key === 'F4' || (e.key === 'Enter' && box.hidden) || (e.key === ' ' && box.hidden)) { e.preventDefault(); open(inp); setTimeout(() => { const f = box.querySelector('[tabindex="0"]'); if (f) f.focus(); }, 0); }
+          else if (e.key === 'Escape' && !box.hidden) { e.preventDefault(); e.stopPropagation(); close(true); }
+          else if (e.key === 'Tab' && !box.hidden) close();
+        }, true);
+        document.addEventListener('input', e => { if (P.inp && e.target === P.inp && !box.hidden) { const d = parse(P.inp.value); if (d) { P.view = new Date(d.getFullYear(), d.getMonth(), 1); P.focus = P.inp.value; } paint(); } });
+        window.addEventListener('resize', () => place());
+        window.addEventListener('scroll', e => { if (!box.hidden && !box.contains(e.target)) place(); }, true);
+        $$('input[type=date]').forEach(i => { i.setAttribute('aria-haspopup', 'dialog'); i.setAttribute('aria-expanded', 'false'); if (!i.title) i.title = 'Click to choose a date (or type it)'; });
+        window.__dp = { open, close };
+      }
+
+      /* guide: number the sections in order (some numbers were repeated after earlier updates) */
+      function guideNumber(g) {
+        if (!g || g.dataset.num) return; g.dataset.num = '1';
+        const hs = [...g.querySelectorAll('h3[id^="g-"]')], idx = new Map();
+        hs.forEach((h, i) => { idx.set(h.id, i); h.textContent = h.textContent.replace(/^\d+\.\s*/, (i + 1) + '. '); });
+        const toc = g.querySelector('.g-toc'), at = a => { const i = idx.get(a.getAttribute('href').slice(1)); return i == null ? 999 : i; };
+        if (toc) [...toc.querySelectorAll('a[href^="#g-"]')].sort((a, b) => at(a) - at(b)).forEach(a => { if (at(a) < 999) a.textContent = a.textContent.replace(/^\d+\.\s*/, (at(a) + 1) + '. '); toc.appendChild(a); });
+      }
+      new MutationObserver(() => guideNumber($('#gbox .guide'))).observe($('#gbox'), { childList: true });
+      window.addEventListener('beforeprint', () => guideNumber($('#printRoot .guide')));
+      // app: if the window stopped unexpectedly last time, say so once (helps to find the cause)
+      if (APPX) APPX.info().then(i => {
+        const c = i && i.lastCrash; if (!c || !(c.at > (+LS.get('pll.crashSeen', 0) || 0))) return;
+        LS.set('pll.crashSeen', c.at);
+        toast('The app window stopped unexpectedly (' + (c.reason === 'oom' ? 'it ran out of memory' : c.reason || 'unknown reason') + ') at ' + fmtStamp(c.at).slice(11, 16) + ' and was reopened. Presses saved before that are safe.', 'bad');
+      }).catch(() => { });
+      // “Erase all data” also forgets the saved day summaries and the saved profile state
+      { const _clr = $('#btnClear').onclick; $('#btnClear').onclick = async e => { const before = cache.g ? cache.g.count : -1; await _clr(e); if (!cache.g || cache.g.count !== before) { await dsClear(); RV.c = null; PF.S = null; kvSet('pfS', null).catch(() => { }); } }; }
 
     })();
   </script>
