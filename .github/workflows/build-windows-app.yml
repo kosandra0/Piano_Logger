@@ -1,0 +1,22 @@
+name: Build Windows app
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+        working-directory: desktop
+      - run: npm run dist
+        working-directory: desktop
+      - run: gh release create "app-v${{ env.V }}" dist/Piano-Logger-Setup.exe --latest || gh release upload --clobber "app-v${{ env.V }}" dist/Piano-Logger-Setup.exe
+        working-directory: desktop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: "6.0"
