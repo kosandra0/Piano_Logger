@@ -1,40 +1,32 @@
-{
-  "name": "piano-logger",
-  "productName": "Piano Logger",
-  "version": "6.1.0",
-  "description": "Piano MIDI visualizer and lifetime key logger for Windows",
-  "author": "kosandra0",
-  "license": "UNLICENSED",
-  "private": true,
-  "main": "main.js",
-  "scripts": {
-    "start": "electron .",
-    "dist": "electron-builder --win nsis --x64 --ia32 --publish never"
+// Piano Logger desktop app — the bridge between the page and Windows.
+// The page only gets these few functions; it cannot touch any other file on your computer.
+const { contextBridge, ipcRenderer } = require('electron');
+const inv = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
+
+contextBridge.exposeInMainWorld('pianoApp', {
+  isApp: true,
+  info: () => inv('app:info'),
+  sf: {
+    list: () => inv('sf:list'),
+    add: () => inv('sf:add'),
+    read: file => inv('sf:read', String(file)),
+    remove: file => inv('sf:remove', String(file)),
+    openFolder: () => inv('sf:open')
   },
-  "devDependencies": {
-    "electron": "43.3.0",
-    "electron-builder": "^25.1.8"
+  backup: {
+    save: (name, text) => inv('bk:save', String(name), String(text)),
+    begin: name => inv('bk:begin', String(name)),
+    write: (id, bytes) => inv('bk:write', String(id), bytes),
+    end: id => inv('bk:end', String(id)),
+    abort: id => inv('bk:abort', String(id)),
+    list: () => inv('bk:list'),
+    openFolder: () => inv('bk:open')
   },
-  "build": {
-    "appId": "com.kosandra0.pianologger",
-    "productName": "Piano Logger",
-    "copyright": "kosandra0",
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["main.js", "preload.js", "page/**", "build/icon.png"],
-    "win": {
-      "target": [{ "target": "nsis", "arch": ["x64", "ia32"] }],
-      "icon": "build/icon.png"
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Piano Logger",
-      "uninstallDisplayName": "Piano Logger",
-      "deleteAppDataOnUninstall": false,
-      "artifactName": "Piano-Logger-Setup.${ext}"
-    }
-  }
-}
+  setOnTop: on => inv('win:ontop', !!on),
+  setStartup: on => inv('app:startup', !!on),
+  checkUpdate: () => inv('upd:check'),
+  restart: () => inv('app:restart'),
+  openDataFolder: () => inv('app:datadir'),
+  repairStorage: () => inv('app:repairStorage'),
+  onUpdate: cb => { ipcRenderer.on('upd:ready', (_e, v) => { try { cb(v); } catch (e) { } }); }
+});
