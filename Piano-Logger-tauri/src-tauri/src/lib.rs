@@ -160,12 +160,24 @@ mod startup {
     use windows_registry::{Type, CURRENT_USER};
     const RUN: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
     const APPROVED: &str = r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    const NAME: &str = "com.kosandra0.pianologger"; // its own name, so it never touches the Electron app's entry
+    // The Electron app uses "com.kosandra0.pianologger" for its entry; 7.0.0 used that name too, so the two apps replaced each other's.
+    const NAME: &str = "com.kosandra0.pianologger.desktop";
+    const OLD: &str = "com.kosandra0.pianologger";
     pub fn is_enabled() -> bool {
         CURRENT_USER.open(RUN).and_then(|k| k.get_string(NAME)).is_ok()
     }
+    // an entry left by 7.0.0 under the shared name is removed only when it starts THIS program (never the Electron app's)
+    fn drop_old_entry(run: &windows_registry::Key) {
+        let me = std::env::current_exe().map(|p| p.display().to_string().to_lowercase()).unwrap_or_default();
+        if let Ok(v) = run.get_string(OLD) {
+            if !me.is_empty() && v.to_lowercase().contains(&me) {
+                let _ = run.remove_value(OLD);
+            }
+        }
+    }
     pub fn set(on: bool) -> Result<bool, String> {
         let run = CURRENT_USER.create(RUN).map_err(|e| e.to_string())?;
+        drop_old_entry(&run);
         if on {
             let exe = std::env::current_exe().map_err(|e| e.to_string())?;
             run.set_string(NAME, format!("\"{}\"", exe.display())).map_err(|e| e.to_string())?;

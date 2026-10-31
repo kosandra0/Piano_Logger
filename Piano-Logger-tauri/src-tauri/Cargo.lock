@@ -2475,7 +2475,7 @@ dependencies = [
 
 [[package]]
 name = "piano-logger"
-version = "7.0.0"
+version = "7.0.1"
 dependencies = [
  "serde",
  "serde_json",
