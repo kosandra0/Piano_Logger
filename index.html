@@ -10281,6 +10281,28 @@
       scroll-padding-top: calc(var(--tb-h) + 8px)
     }
 
+    /* the Windows app's window itself has rounded corners (the window is transparent; Windows 10 cannot round windows),
+       square again when maximized */
+    html.tb-round {
+      clip-path: inset(0 round 12px);
+      background: transparent
+    }
+
+    html.tb-round body {
+      background: transparent
+    }
+
+    html.tb-round::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      border-radius: 12px;
+      border: 1px solid color-mix(in srgb, var(--txt, #fff) 13%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+      pointer-events: none;
+      z-index: 2147483647
+    }
+
     html.has-tb .v7nav {
       top: calc(12px + var(--tb-h))
     }
@@ -19967,7 +19989,7 @@ PianoLogger.on('noteon', e => {
           document.body.insertBefore(tb, document.body.firstChild);
           HTML.classList.add('has-tb');
           const maxBtn = tb.querySelector('[data-w=max]');
-          const paintMax = on => { maxBtn.innerHTML = sv(on ? g.r : g.x); const l = W ? (on ? 'Restore' : 'Maximize') : (on ? 'Exit full screen' : 'Full screen'); maxBtn.setAttribute('aria-label', l); maxBtn.title = l; };
+          const paintMax = on => { if (W) HTML.classList.toggle('tb-round', !on); maxBtn.innerHTML = sv(on ? g.r : g.x); const l = W ? (on ? 'Restore' : 'Maximize') : (on ? 'Exit full screen' : 'Full screen'); maxBtn.setAttribute('aria-label', l); maxBtn.title = l; };
           const sync = () => { if (W) W.state().then(s => paintMax(s.maximized)).catch(() => { }); else paintMax(!!document.fullscreenElement); };
           const toggleMax = () => W ? W.toggleMaximize().then(paintMax).catch(() => { }) : (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => { });
           tb.addEventListener('click', e => {
@@ -20159,7 +20181,7 @@ PianoLogger.on('noteon', e => {
         groups: [
           ['New features', [
             'Windows app: the window has no Windows frame any more. A glass title bar with macOS-style controls takes its place: red closes, yellow minimizes, green maximizes and restores',
-            'Drag the title bar to move the window and double-click it to maximize or restore; every edge and corner still resizes the window, and Windows 11 keeps the rounded corners and shadow',
+            'Drag the title bar to move the window and double-click it to maximize or restore; every edge and corner still resizes the window, and the window has rounded corners with a fine light edge (square while maximized)',
             'Website: the same title bar with a green control that switches full screen on and off (a web page is not allowed to close or minimize the browser window)']],
           ['UI & UX', [
             'The control symbols appear when you point at the controls or reach them with the Tab key; the lights turn grey while the window is in the background, like on a Mac',

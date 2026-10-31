@@ -7,7 +7,7 @@ Desktop app versions are listed separately at the end.
 
 ### New features
 - Windows app: the window has no Windows frame any more. A glass title bar with macOS-style controls takes its place: red closes, yellow minimizes, green maximizes / restores.
-- Drag the title bar to move the window, double-click it to maximize or restore. Every edge and corner still resizes the window; Windows 11 keeps its rounded corners and shadow.
+- Drag the title bar to move the window, double-click it to maximize or restore. Every edge and corner still resizes the window. The window has rounded corners with a fine light edge on Windows 10 and 11 (square while maximized).
 - Website: the same title bar with a green control that switches full screen on and off (a web page is not allowed to close or minimize the browser window, so those controls are not shown).
 
 ### UI & UX
@@ -102,7 +102,7 @@ Desktop app versions are listed separately at the end.
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
-| 7.0.2 | 2026-10-31 | Tauri 2.12.5 (WebView2) | Frameless window with the page's glass title bar (close, minimize, maximize/restore, drag, double-click); new window commands win_state / win_minimize / win_toggle_max / win_close / win_drag. Page 7.0.2. |
+| 7.0.2 | 2026-10-31 | Tauri 2.12.5 (WebView2) | Frameless, transparent window with rounded corners and the page's glass title bar (close, minimize, maximize/restore, drag, double-click); new window commands win_state / win_minimize / win_toggle_max / win_close / win_drag. Page 7.0.2. |
 | 7.0.1 | 2026-10-31 | Tauri 2.12.5 (WebView2) | Fixed: "Start with Windows" used the same Windows start-up entry name as the Electron app, so with both apps installed one replaced the other. The new app now uses its own name (an entry 7.0.0 left behind for itself is cleaned up). Page unchanged (7.0). |
 | 7.0.0 | 2026-10-31 | Tauri 2.12.5 (WebView2) | New desktop target in `Piano-Logger-tauri/`. Same page and the same `window.pianoApp` features as the Electron app (SoundFonts, backups, always on top, start with Windows, updates of the page from the website). MIDI is allowed without a pop-up. The page is served with a Content-Security-Policy (no frames or plugins); remote websites open in the browser. 64-bit only. |
 | 6.1.0 | 2026-10-27 | Electron 43 | Backups of any size, more memory, crash note. Unchanged by 7.0 (`Piano-Logger-app-6.1-files/`). |

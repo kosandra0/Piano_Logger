@@ -572,11 +572,13 @@ pub fn run() {
                 .title("Piano Logger")
                 .inner_size(1400.0, 900.0)
                 .min_inner_size(360.0, 400.0)
-                // no Windows frame: the page draws its own glass title bar (Tauri keeps every edge resizable;
-                // the shadow also gives the window its rounded corners on Windows 11)
+                // no Windows frame: the page draws its own glass title bar (Tauri keeps every edge resizable).
+                // The window is transparent so the page can give it rounded corners itself (Windows 10 never rounds windows);
+                // no system shadow, because Windows 10 would draw it as a square outline around the rounded corners.
                 .decorations(false)
-                .shadow(true)
-                .background_color(tauri::window::Color(5, 8, 22, 255))
+                .transparent(true)
+                .shadow(false)
+                .background_color(tauri::window::Color(0, 0, 0, 0))
                 .always_on_top(on_top)
                 .initialization_script(BRIDGE)
                 // keep sound, the visualizer and logging running while the window is minimised or hidden
