@@ -1,7 +1,7 @@
 {
   "name": "piano-logger-desktop",
   "productName": "Piano Logger",
-  "version": "7.0.1",
+  "version": "7.0.2",
   "description": "Piano Logger for Windows, built with Tauri 2 (the website page inside a native window)",
   "author": "kosandra0",
   "license": "UNLICENSED",

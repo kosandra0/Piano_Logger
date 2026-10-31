@@ -1,6 +1,6 @@
 [package]
 name = "piano-logger"
-version = "7.0.1"
+version = "7.0.2"
 description = "Piano Logger: MIDI visualizer and lifetime key logger for Windows"
 authors = ["kosandra0"]
 license = "UNLICENSED"

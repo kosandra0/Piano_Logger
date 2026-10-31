@@ -52,7 +52,15 @@
     restart: function () { return inv('app_restart'); },
     openDataFolder: function () { return inv('open_data_dir'); },
     repairStorage: function () { return inv('repair_storage'); },
-    onUpdate: function (cb) { if (typeof cb === 'function') listeners.push(cb); }
+    onUpdate: function (cb) { if (typeof cb === 'function') listeners.push(cb); },
+    // 7.0.2: the window has no Windows frame; the page's title bar uses these
+    window: Object.freeze({
+      state: function () { return inv('win_state'); },
+      minimize: function () { return inv('win_minimize'); },
+      toggleMaximize: function () { return inv('win_toggle_max'); },
+      close: function () { return inv('win_close'); },
+      startDrag: function () { return inv('win_drag'); }
+    })
   });
 
   // once per app start (not on every reload), a few seconds after the window opens; quietly skipped when offline

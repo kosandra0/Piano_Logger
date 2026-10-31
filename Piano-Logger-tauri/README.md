@@ -15,7 +15,7 @@ the same API the Electron app's `preload.js` provides, so the page code is ident
 | `package.json` | version, and the `dev` / `build` scripts (Tauri CLI 2.12) |
 | `scripts/copy-page.mjs` | copies the newest page (`../index.html` or `../piano-logger.html`) to `web/index.html` before every build |
 | `web/` | the page inside the app (generated; do not edit) |
-| `src-tauri/tauri.conf.json` | name, version 7.0.1, identifier, installer settings |
+| `src-tauri/tauri.conf.json` | name, version 7.0.2, identifier, installer settings |
 | `src-tauri/capabilities/default.json` | no plugin permissions are given to the page (least privilege) |
 | `src-tauri/src/lib.rs` | the app: window, page serving and updates, SoundFonts, backups, always on top, start with Windows, MIDI permission |
 | `src-tauri/src/bridge.js` | `window.pianoApp` for the page |
@@ -30,7 +30,7 @@ npm install
 npm run build        # web page copied in, release build, NSIS installer
 ```
 
-The installer is written to `src-tauri/target/release/bundle/nsis/Piano Logger_7.0.1_x64-setup.exe`,
+The installer is written to `src-tauri/target/release/bundle/nsis/Piano Logger_7.0.2_x64-setup.exe`,
 and the app itself to `src-tauri/target/release/piano-logger.exe`. `npm run dev` starts a debug build.
 
 ## How it behaves
@@ -43,6 +43,7 @@ and the app itself to `src-tauri/target/release/piano-logger.exe`. `npm run dev`
 - **Security**: the page is served with a Content-Security-Policy (no frames, plugins or unknown script origins);
   websites open in your normal browser; the page's commands only reach the app's own folders and check every file name.
 - **Start with Windows**: a value named `com.kosandra0.pianologger.desktop` in the current user's Run key only (never machine-wide), separate from the Electron app's entry.
+- **Window**: no Windows frame; the page draws a glass title bar with close, minimize and maximize/restore controls (bridge.js `window`). Drag it to move, double-click to maximize; Tauri keeps every edge resizable.
 - **Background**: sound, the visualizer and logging keep running while the window is minimised (background throttling off).
 - **Where things are kept**
   - data and settings: `%APPDATA%\com.kosandra0.pianologger` (SoundFonts in `SoundFonts\`)

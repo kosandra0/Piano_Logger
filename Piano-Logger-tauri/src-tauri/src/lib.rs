@@ -399,6 +399,34 @@ fn win_ontop(on: bool, app: AppHandle, st: State<AppState>) -> Res<bool> {
     save_settings(&st);
     Ok(on)
 }
+// the page's own title bar (the window has no Windows frame): close, minimize, maximize / restore, drag
+#[derive(Serialize)]
+struct WinState {
+    maximized: bool,
+    minimized: bool,
+    focused: bool,
+}
+#[tauri::command]
+fn win_state(window: tauri::WebviewWindow) -> Res<WinState> {
+    Ok(WinState { maximized: window.is_maximized().map_err(err)?, minimized: window.is_minimized().map_err(err)?, focused: window.is_focused().map_err(err)? })
+}
+#[tauri::command]
+fn win_minimize(window: tauri::WebviewWindow) -> Res<()> {
+    window.minimize().map_err(err)
+}
+#[tauri::command]
+fn win_toggle_max(window: tauri::WebviewWindow) -> Res<bool> {
+    if window.is_maximized().map_err(err)? { window.unmaximize() } else { window.maximize() }.map_err(err)?;
+    window.is_maximized().map_err(err)
+}
+#[tauri::command]
+fn win_close(window: tauri::WebviewWindow) -> Res<()> {
+    window.close().map_err(err)
+}
+#[tauri::command]
+fn win_drag(window: tauri::WebviewWindow) -> Res<()> {
+    window.start_dragging().map_err(err)
+}
 #[tauri::command]
 fn app_startup(on: bool) -> Res<bool> {
     startup::set(on)
@@ -480,7 +508,13 @@ pub fn run() {
                 let _ = w.set_focus();
             }
         }))
-        .plugin(tauri_plugin_window_state::Builder::default().build())
+        // remember size, position and maximized state, but not the frame: 7.0.0 / 7.0.1 saved "has a frame", which would
+        // otherwise bring the Windows frame back over the 7.0.2 glass title bar
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(tauri_plugin_window_state::StateFlags::all() & !tauri_plugin_window_state::StateFlags::DECORATIONS)
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .register_uri_scheme_protocol(SCHEME, |ctx, req| {
@@ -489,7 +523,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             app_info, sf_list, sf_add, sf_read, sf_remove, sf_open, bk_save, bk_begin, bk_write, bk_end, bk_abort, bk_list, bk_open,
-            win_ontop, app_startup, upd_store, app_restart, open_data_dir, repair_storage
+            win_ontop, app_startup, upd_store, app_restart, open_data_dir, repair_storage,
+            win_state, win_minimize, win_toggle_max, win_close, win_drag
         ])
         .setup(|app| {
             let h = app.handle().clone();
@@ -537,6 +572,10 @@ pub fn run() {
                 .title("Piano Logger")
                 .inner_size(1400.0, 900.0)
                 .min_inner_size(360.0, 400.0)
+                // no Windows frame: the page draws its own glass title bar (Tauri keeps every edge resizable;
+                // the shadow also gives the window its rounded corners on Windows 11)
+                .decorations(false)
+                .shadow(true)
                 .background_color(tauri::window::Color(5, 8, 22, 255))
                 .always_on_top(on_top)
                 .initialization_script(BRIDGE)

@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 7.0: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="7.0">
+  <meta name="description" content="Piano Logger 7.0.2: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="7.0.2">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10153,6 +10153,169 @@
       }
     }
 
+    /* ---------- 7.0.2: glass title bar with macOS-style window controls ----------
+       App (no Windows frame): close · minimize · maximize/restore, drag to move, double-click to maximize.
+       Website: only the green control (full screen), because a page may not close or minimize the browser window. */
+    :root {
+      --tb-h: 0px
+    }
+
+    html.has-tb {
+      --tb-h: 38px
+    }
+
+    .v7tb {
+      position: fixed;
+      z-index: 2147483000;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--tb-h);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 14px;
+      user-select: none;
+      -webkit-user-select: none;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .015)), color-mix(in srgb, var(--s2-solid, #0e1020) 74%, transparent);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      backdrop-filter: blur(22px) saturate(160%);
+      border-bottom: 1px solid color-mix(in srgb, var(--txt, #fff) 9%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 8px 24px -18px rgba(0, 0, 0, .7)
+    }
+
+    html:not(.has-tb) .v7tb {
+      display: none
+    }
+
+    .tb-lights {
+      display: flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .tb-l {
+      position: relative;
+      width: 13px;
+      height: 13px;
+      padding: 0;
+      border-radius: 50%;
+      border: .5px solid rgba(0, 0, 0, .22);
+      background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--l) 82%, #fff), var(--l) 62%);
+      box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .45), 0 0 0 0 transparent;
+      display: grid;
+      place-items: center;
+      cursor: default;
+      transition: transform .18s cubic-bezier(.22, 1, .36, 1), box-shadow .25s ease, filter .2s ease, background .2s ease
+    }
+
+    .tb-l.c {
+      --l: #ff5f57
+    }
+
+    .tb-l.m {
+      --l: #febc2e
+    }
+
+    .tb-l.x {
+      --l: #28c840
+    }
+
+    .tb-l svg {
+      width: 8px;
+      height: 8px;
+      fill: none;
+      stroke: rgba(40, 10, 10, .62);
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      opacity: 0;
+      transition: opacity .15s ease
+    }
+
+    .tb-lights:hover .tb-l svg,
+    .tb-lights:focus-within .tb-l svg {
+      opacity: 1
+    }
+
+    .tb-l:hover {
+      box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .5), 0 0 10px -1px color-mix(in srgb, var(--l) 70%, transparent)
+    }
+
+    .tb-l:active {
+      transform: scale(.88);
+      filter: brightness(.86)
+    }
+
+    .tb-l:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--l) 80%, #fff);
+      outline-offset: 2px
+    }
+
+    html.tb-blur .tb-l:not(:hover):not(:focus-visible) {
+      background: color-mix(in srgb, var(--txt, #fff) 22%, transparent);
+      border-color: transparent;
+      box-shadow: none
+    }
+
+    .tb-title {
+      font: 600 12.5px/1 var(--font-h, var(--font));
+      letter-spacing: .01em;
+      color: var(--mut);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 52vw;
+      pointer-events: none
+    }
+
+    .tb-title b {
+      color: var(--txt);
+      font-weight: 700
+    }
+
+    html.has-tb body {
+      padding-top: var(--tb-h)
+    }
+
+    html.has-tb {
+      scroll-padding-top: calc(var(--tb-h) + 8px)
+    }
+
+    html.has-tb .v7nav {
+      top: calc(12px + var(--tb-h))
+    }
+
+    html.has-tb :is(.gm, .pal, .tour, .ts, .v7scrim) {
+      top: var(--tb-h)
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .tb-l,
+      .tb-l svg {
+        transition: none
+      }
+
+      .tb-l:active {
+        transform: none
+      }
+    }
+
+    html.anim-off .tb-l,
+    html.anim-off .tb-l svg {
+      transition: none
+    }
+
+    @media print {
+      .v7tb {
+        display: none !important
+      }
+
+      html.has-tb body {
+        padding-top: 0
+      }
+    }
+
     /* settings rows: a dropdown takes a fixed share of its row instead of the width of its longest option
        (long pack names such as "Synthwave grid (animated)" pushed it out of the box and made the window scroll sideways) */
     .set-grid>* {
@@ -17141,7 +17304,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.0';
+      const APP_VERSION = '7.0.2';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -19784,6 +19947,51 @@ PianoLogger.on('noteon', e => {
         applyTune();
       };
 
+      /* ---------- 7.0.2: glass title bar with macOS-style controls ----------
+         · Windows app 7.0.2+ (window.pianoApp.window exists, no Windows frame): close, minimize, maximize / restore, drag, double-click
+         · website: only the green control, which really toggles full screen (a page may not close or minimize the browser)
+         · the Electron app and older Tauri apps keep their normal Windows frame, so no bar is shown there */
+      {
+        const W = window.pianoApp && window.pianoApp.window ? window.pianoApp.window : null;
+        const web = !window.pianoApp, fsOK = !!(document.documentElement.requestFullscreen && document.fullscreenEnabled !== false);
+        if (W || (web && fsOK)) {
+          const g = { c: '<path d="M2 2l4 4M6 2L2 6"/>', m: '<path d="M1.5 4h5"/>', x: '<path d="M1.8 6.2L6.2 1.8M3.8 1.8h2.4v2.4M1.8 3.8v2.4h2.4"/>', r: '<path d="M1.5 6.5l2-2M2 4.5h1.5V6M6.5 1.5l-2 2M4.5 2v1.5H6"/>' };
+          const sv = d => '<svg viewBox="0 0 8 8" aria-hidden="true">' + d + '</svg>';
+          const tb = document.createElement('div');
+          tb.className = 'v7tb'; tb.id = 'v7tb'; tb.setAttribute('role', 'toolbar'); tb.setAttribute('aria-label', W ? 'Window' : 'Page');
+          tb.innerHTML = '<div class="tb-lights">' +
+            (W ? '<button type="button" class="tb-l c" data-w="close" aria-label="Close Piano Logger" title="Close">' + sv(g.c) + '</button>' +
+              '<button type="button" class="tb-l m" data-w="min" aria-label="Minimize" title="Minimize">' + sv(g.m) + '</button>' : '') +
+            '<button type="button" class="tb-l x" data-w="max" aria-label="' + (W ? 'Maximize' : 'Full screen') + '" title="' + (W ? 'Maximize' : 'Full screen') + '">' + sv(g.x) + '</button></div>' +
+            '<div class="tb-title"><b>Piano Logger</b> <span id="tbSec"></span></div><div></div>';
+          document.body.insertBefore(tb, document.body.firstChild);
+          HTML.classList.add('has-tb');
+          const maxBtn = tb.querySelector('[data-w=max]');
+          const paintMax = on => { maxBtn.innerHTML = sv(on ? g.r : g.x); const l = W ? (on ? 'Restore' : 'Maximize') : (on ? 'Exit full screen' : 'Full screen'); maxBtn.setAttribute('aria-label', l); maxBtn.title = l; };
+          const sync = () => { if (W) W.state().then(s => paintMax(s.maximized)).catch(() => { }); else paintMax(!!document.fullscreenElement); };
+          const toggleMax = () => W ? W.toggleMaximize().then(paintMax).catch(() => { }) : (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => { });
+          tb.addEventListener('click', e => {
+            const b = e.target.closest('[data-w]'); if (!b) return;
+            if (b.dataset.w === 'close') W.close(); else if (b.dataset.w === 'min') W.minimize(); else toggleMax();
+          });
+          if (W) {
+            // drag the bar to move the window; double-click it to maximize / restore (like macOS)
+            tb.addEventListener('mousedown', e => {
+              if (e.button !== 0 || e.target.closest('button')) return;
+              if (e.detail === 2) { e.preventDefault(); toggleMax(); } else W.startDrag().catch(() => { });
+            });
+            let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(sync, 120); });
+          } else document.addEventListener('fullscreenchange', sync);
+          window.addEventListener('blur', () => HTML.classList.add('tb-blur'));
+          window.addEventListener('focus', () => HTML.classList.remove('tb-blur'));
+          // the section you are in, next to the name (same text as the top bar's title)
+          const sec = $('#tbSec'), crumb = $('#v7crumbT');
+          const paintSec = () => { const t = crumb ? crumb.textContent : ''; sec.textContent = t ? '· ' + t : ''; };
+          if (crumb) new MutationObserver(paintSec).observe(crumb, { childList: true, characterData: true, subtree: true });
+          paintSec(); sync();
+        }
+      }
+
       /* ---------- piano-roll backgrounds (v7.0 fixes) ----------
          · animated backgrounds only moved for 8 s after the last key press, so choosing one in Settings showed a still picture;
            they now keep moving while the roll is on screen and the window is visible (idle frames capped at 30 fps)
@@ -19942,6 +20150,25 @@ PianoLogger.on('noteon', e => {
         ]
       });
       VERSIONS[0].items = VERSIONS[0].groups.flatMap(g => g[1]);
+      VERSIONS.unshift({
+        v: '7.0.1', date: '2026-10-31', title: 'Windows app: its own start-up entry',
+        groups: [['Bug fixes', ['Windows app: “Start with Windows” used the same Windows start-up entry as the older Electron app, so with both apps installed one replaced the other; the new app now has its own']]]
+      });
+      VERSIONS.unshift({
+        v: '7.0.2', date: '2026-10-31', title: 'Glass title bar with window controls',
+        groups: [
+          ['New features', [
+            'Windows app: the window has no Windows frame any more. A glass title bar with macOS-style controls takes its place: red closes, yellow minimizes, green maximizes and restores',
+            'Drag the title bar to move the window and double-click it to maximize or restore; every edge and corner still resizes the window, and Windows 11 keeps the rounded corners and shadow',
+            'Website: the same title bar with a green control that switches full screen on and off (a web page is not allowed to close or minimize the browser window)']],
+          ['UI & UX', [
+            'The control symbols appear when you point at the controls or reach them with the Tab key; the lights turn grey while the window is in the background, like on a Mac',
+            'The title bar shows the part of Piano Logger you are in; smooth hover and press animations, turned off by Motion Off or the system’s reduce-motion setting']],
+          ['Compatibility', [
+            'The Electron app and the 7.0.0 / 7.0.1 Windows apps keep their normal Windows frame, so they show no extra bar']]
+        ]
+      });
+      VERSIONS[0].items = VERSIONS[0].groups.flatMap(g => g[1]); VERSIONS[1].items = VERSIONS[1].groups.flatMap(g => g[1]);
       let wnSel = 0;
       function openNewsV7(i) {
         navClose(); LS.set('pll.seenVer', APP_VERSION); const nb = $('#btnNews'); if (nb) nb.classList.remove('new'); const nd = nav.querySelector('.nv-dot'); if (nd) nd.hidden = true;
@@ -19972,7 +20199,7 @@ PianoLogger.on('noteon', e => {
         const h6 = $('#p-help .help-v6 h2'); if (h6) h6.textContent = '✨ New in v6';
         const first = $('#p-help .help-v6') || $('#p-help .help-new');
         if (first) {
-          first.insertAdjacentHTML('beforebegin', '<div class="help-new help-v7"><h2>✨ New in v' + APP_VERSION + '</h2><div class="help-tiles">' +
+          first.insertAdjacentHTML('beforebegin', '<div class="help-new help-v7"><h2>✨ New in v7</h2><div class="help-tiles">' +
             [['🎨', 'Theme Studio', V7_IDS.length + ' new design languages', 'ts'], ['🧭', 'Navigation', 'Every area in one rail', 'nav'], ['🎹', 'MIDI devices', 'Inputs, outputs, permission', 'dv'], ['✨', 'Motion', 'Off · Reduced · Balanced · Expressive', 'mo'], ['🆕', 'What’s new', 'Release timeline', 'wn']]
               .map(([i, t, d, k]) => '<button type="button" class="help-tile" data-h7="' + k + '"><span>' + i + '</span><b>' + t + '</b><small>' + esc(d) + '</small></button>').join('') + '</div></div>');
           $('#p-help .help-v7 .help-tiles').onclick = e => {
