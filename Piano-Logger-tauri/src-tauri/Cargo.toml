@@ -1,0 +1,36 @@
+[package]
+name = "piano-logger"
+version = "7.0.0"
+description = "Piano Logger: MIDI visualizer and lifetime key logger for Windows"
+authors = ["kosandra0"]
+license = "UNLICENSED"
+edition = "2021"
+rust-version = "1.77.2"
+publish = false
+
+[lib]
+name = "piano_logger_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.4", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.5", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-window-state = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+trash = "5"
+
+[target.'cfg(windows)'.dependencies]
+windows-registry = "0.6"   # "Start with Windows": the current user's Run key only
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

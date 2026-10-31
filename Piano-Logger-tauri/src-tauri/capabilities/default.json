@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The Piano Logger window. The page only calls the app's own commands (src/lib.rs), which check every file name they receive; dialog, folder opening and start-with-Windows run in Rust, so no plugin is exposed to the page.",
+  "windows": ["main"],
+  "permissions": []
+}

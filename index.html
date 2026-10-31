@@ -4,7 +4,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Piano MIDI Visualizer & Lifetime Key Logger</title>
+  <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
+  <meta name="description" content="Piano Logger 7.0: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="7.0">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
     rel="stylesheet">
   <style>
     /* =====================================================================
@@ -8065,6 +8067,2133 @@
       pointer-events: none;
       z-index: 9999
     }
+
+    /* =====================================================================
+       v7.0 — AURORA GLASS STUDIO
+       A design-token layer on top of everything above. Class names / IDs are unchanged.
+       · html.ds        = a v7 theme is active (its tokens come from the theme registry in the script)
+       · data-surface   = glass · liquid · frost · solid · paper · outline · neon · brutal · crt · velvet · holo
+       · data-mode      = dark · light      · data-deco = background artwork      · data-motion = calm · smooth · snappy · bouncy
+       · --u-*          = the user's Theme Studio dials (glass, blur, border, glow, reflection, background)
+       Rules are prefixed with  html.ds:not(.hc):not(#_)  so they win over the older skins without !important;
+       high-contrast mode (.hc) keeps its own, plainer look.
+       ===================================================================== */
+    :root {
+      --u-glass: 1;
+      --u-blur: 1;
+      --u-border: 1;
+      --u-glow: 1;
+      --u-spec: 1;
+      --u-bg: 1;
+      --ease-out: cubic-bezier(.22, 1, .36, 1);
+      --ease-io: cubic-bezier(.65, 0, .35, 1);
+      --ease-spring: linear(0, .009, .035 2.1%, .141 4.4%, .723 12.9%, .938 16.7%, 1.017 19.4%, 1.067, 1.087 24.4%, 1.084 26.8%, 1.06 30.1%, 1.008 38.7%, .996 43.4%, .993 48.9%, 1 64.6%, 1);
+      --dur: 280ms;
+      --nav-w: 248px
+    }
+
+    @property --ang {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 0deg
+    }
+
+    /* ---------- surfaces ---------- */
+    html.ds:not(.hc):not(#_) .glass {
+      border-radius: var(--r);
+      border: var(--bw, 1px) solid color-mix(in srgb, var(--bd) calc(min(1, var(--u-border)) * 100%), transparent);
+      background:
+        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c1) calc(var(--spot, 0) * 12%), transparent), transparent 62%),
+        linear-gradient(180deg, rgba(255, 255, 255, calc(var(--spec-a) * var(--u-spec))), rgba(255, 255, 255, 0) 130px),
+        color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), transparent);
+      -webkit-backdrop-filter: blur(calc(var(--blur-b) * var(--u-blur) * 1px)) saturate(165%);
+      backdrop-filter: blur(calc(var(--blur-b) * var(--u-blur) * 1px)) saturate(165%);
+      box-shadow: var(--sh), inset 0 1px 0 rgba(255, 255, 255, calc(var(--spec-a) * var(--u-spec) * 2.4)), 0 0 calc(70px * var(--glow-a) * var(--u-glow)) -38px var(--c1);
+      transition: background-color var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=liquid] .glass {
+      background:
+        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c1) calc(var(--spot, 0) * 14%), transparent), transparent 62%),
+        linear-gradient(115deg, rgba(255, 255, 255, calc(.11 * var(--u-spec))) 0%, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, calc(.05 * var(--u-spec))) 100%),
+        radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--c1) 9%, transparent), transparent 55%),
+        radial-gradient(100% 90% at 100% 100%, color-mix(in srgb, var(--c2) 8%, transparent), transparent 55%),
+        color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), transparent);
+      -webkit-backdrop-filter: blur(calc(var(--blur-b) * var(--u-blur) * 1.35px)) saturate(190%) brightness(1.04);
+      backdrop-filter: blur(calc(var(--blur-b) * var(--u-blur) * 1.35px)) saturate(190%) brightness(1.04);
+      box-shadow: var(--sh), inset 1px 1px 0 rgba(255, 255, 255, calc(.22 * var(--u-spec))), inset -1px -1px 0 rgba(255, 255, 255, calc(.05 * var(--u-spec))), inset 0 0 32px rgba(255, 255, 255, calc(.035 * var(--u-spec))), 0 0 calc(80px * var(--glow-a) * var(--u-glow)) -40px var(--c1)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=frost] .glass {
+      background:
+        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c1) calc(var(--spot, 0) * 10%), transparent), transparent 62%),
+        var(--noise),
+        linear-gradient(180deg, rgba(255, 255, 255, calc(var(--spec-a) * var(--u-spec) * 1.4)), rgba(255, 255, 255, 0) 160px),
+        color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), transparent)
+    }
+
+    html.ds:not(.hc):not(#_):is([data-surface=solid], [data-surface=paper], [data-surface=brutal], [data-surface=outline]) .glass {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=paper] .glass {
+      background: var(--noise), color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), transparent)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=outline] .glass {
+      box-shadow: none
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=neon] .glass {
+      border-color: color-mix(in srgb, var(--c1) calc(min(1, .55 * var(--u-border)) * 100%), transparent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--c1) 12%, transparent), 0 0 calc(34px * var(--u-glow)) calc(-10px) color-mix(in srgb, var(--c1) 70%, transparent), inset 0 0 calc(30px * var(--u-glow)) -16px var(--c1), var(--sh)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=brutal] .glass {
+      border: 2.5px solid var(--txt);
+      box-shadow: 6px 6px 0 var(--txt)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=crt] .glass {
+      border-color: color-mix(in srgb, var(--c1) 45%, transparent);
+      box-shadow: inset 0 0 40px -12px color-mix(in srgb, var(--c1) 45%, transparent), 0 0 24px -12px var(--c1)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=crt] body {
+      text-shadow: 0 0 6px color-mix(in srgb, var(--c1) calc(55% * var(--u-glow)), transparent)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=velvet] .glass {
+      background:
+        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c3) calc(var(--spot, 0) * 10%), transparent), transparent 62%),
+        linear-gradient(160deg, color-mix(in srgb, var(--c1) 12%, transparent), transparent 45%),
+        linear-gradient(180deg, rgba(255, 255, 255, calc(var(--spec-a) * var(--u-spec))), rgba(255, 255, 255, 0) 120px),
+        color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), transparent);
+      border-color: color-mix(in srgb, var(--c3) calc(min(1, .38 * var(--u-border)) * 100%), transparent)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=holo] .glass {
+      border: 1px solid transparent;
+      background:
+        linear-gradient(color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), color-mix(in srgb, var(--bg) 70%, transparent)), color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), color-mix(in srgb, var(--bg) 70%, transparent))) padding-box,
+        conic-gradient(from var(--ang), var(--c1), var(--c2), var(--c3), var(--c1)) border-box;
+      animation: v7spin 14s linear infinite
+    }
+
+    @keyframes v7spin {
+      to {
+        --ang: 360deg
+      }
+    }
+
+    html.ds.lite:not(.hc):not(#_) .glass,
+    html.ds.noblur:not(.hc):not(#_) .glass {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background: color-mix(in srgb, var(--s-c) 96%, var(--bg))
+    }
+
+    /* inner cards: one level up from the panel they sit on */
+    html.ds:not(.hc):not(#_) :is(.card, .chart, .box, .sc) {
+      background: color-mix(in srgb, var(--s2-c) calc(min(1, var(--s2-a) * var(--u-glass)) * 100%), transparent);
+      border: 1px solid color-mix(in srgb, var(--bd) calc(min(1, .7 * var(--u-border)) * 100%), transparent);
+      border-radius: var(--r-md);
+      transition: border-color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out), transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out)
+    }
+
+    html.ds:not(.hc):not(#_) :is(.card, .box, .sc):hover {
+      border-color: color-mix(in srgb, var(--c1) 34%, var(--bd))
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=brutal] :is(.card, .chart, .box, .sc) {
+      border: 2px solid var(--txt);
+      box-shadow: 4px 4px 0 var(--txt)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=neon] :is(.card, .chart, .box, .sc) {
+      border-color: color-mix(in srgb, var(--c1) 28%, transparent)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=paper] :is(.card, .chart, .box, .sc) {
+      box-shadow: 0 1px 2px rgba(20, 16, 10, .06)
+    }
+
+    html.ds:not(.hc):not(#_) .card::after {
+      background: radial-gradient(circle, color-mix(in srgb, var(--c1) calc(16% * var(--u-glow)), transparent), transparent 70%)
+    }
+
+    html.ds:not(.hc):not(#_):is([data-surface=brutal], [data-surface=solid], [data-surface=paper], [data-surface=outline]) .card::after {
+      opacity: .45
+    }
+
+    html.ds:not(.hc):not(#_) .card b {
+      background: linear-gradient(90deg, var(--c1), var(--c2));
+      -webkit-background-clip: text;
+      background-clip: text
+    }
+
+    html.ds:not(.hc):not(#_)[data-mode=light] .card b {
+      background: linear-gradient(90deg, var(--c1), color-mix(in srgb, var(--c2) 70%, var(--txt)));
+      -webkit-background-clip: text;
+      background-clip: text
+    }
+
+    /* ---------- type ---------- */
+    html.ds:not(.hc):not(#_) :is(h1, h2, .hx-title, .ts-title) {
+      font-family: var(--font-h);
+      text-transform: var(--h-tf, none);
+      letter-spacing: var(--h-ls, -.01em);
+      font-weight: var(--h-w, 700)
+    }
+
+    html.ds:not(.hc):not(#_) h3 {
+      font-family: var(--font-h3, var(--font))
+    }
+
+    html.ds:not(.hc):not(#_) :is(p, li) {
+      color: color-mix(in srgb, var(--txt) 84%, var(--mut))
+    }
+
+    html.ds:not(.hc):not(#_) .brand h1 {
+      background: linear-gradient(90deg, var(--txt), color-mix(in srgb, var(--c1) 55%, var(--txt)));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent
+    }
+
+    /* ---------- controls ---------- */
+    html.ds:not(.hc):not(#_) .btn {
+      position: relative;
+      border-radius: var(--r-btn);
+      border: 1px solid color-mix(in srgb, var(--bd) calc(min(1, var(--u-border)) * 100%), transparent);
+      background: color-mix(in srgb, var(--in-c) calc(var(--in-a) * 100%), transparent);
+      color: var(--txt);
+      transition: transform var(--dur) var(--ease-spring), background-color var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out), color var(--dur)
+    }
+
+    html.ds:not(.hc):not(#_) .btn:hover:not(:disabled) {
+      border-color: color-mix(in srgb, var(--c1) 45%, var(--bd));
+      background: color-mix(in srgb, var(--c1) 10%, color-mix(in srgb, var(--in-c) calc(var(--in-a) * 100%), transparent))
+    }
+
+    html.ds:not(.hc):not(#_) .btn.primary {
+      color: var(--on-acc);
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--c1), color-mix(in srgb, var(--c1) 50%, var(--c2)));
+      box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--c1) calc(80% * var(--u-glow)), transparent), inset 0 1px 0 rgba(255, 255, 255, .28)
+    }
+
+    html.ds:not(.hc):not(#_) .btn.primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, color-mix(in srgb, var(--c1) 88%, #fff), color-mix(in srgb, var(--c1) 45%, var(--c2)));
+      box-shadow: 0 14px 34px -12px color-mix(in srgb, var(--c1) calc(90% * var(--u-glow)), transparent), inset 0 1px 0 rgba(255, 255, 255, .34)
+    }
+
+    html.ds:not(.hc):not(#_) .btn.danger {
+      border-color: color-mix(in srgb, var(--bad) 55%, transparent);
+      color: var(--bad);
+      background: color-mix(in srgb, var(--bad) 10%, transparent)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=brutal] .btn {
+      border: 2px solid var(--txt);
+      box-shadow: 3px 3px 0 var(--txt)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=brutal] .btn:active:not(:disabled) {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--txt)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=neon] .btn.primary,
+    html.ds:not(.hc):not(#_)[data-surface=crt] .btn.primary {
+      background: color-mix(in srgb, var(--c1) 16%, transparent);
+      color: var(--c1);
+      border: 1px solid var(--c1);
+      box-shadow: 0 0 calc(18px * var(--u-glow)) -4px var(--c1), inset 0 0 12px -6px var(--c1)
+    }
+
+    html.ds:not(.hc):not(#_) :is(select, input[type=text], input[type=number], input[type=date], input[type=search]) {
+      border-radius: min(var(--r-sm), 12px);
+      background-color: color-mix(in srgb, var(--in-c) calc(var(--in-a) * 100%), transparent);
+      border: 1px solid color-mix(in srgb, var(--bd) calc(min(1, var(--u-border)) * 100%), transparent);
+      color: var(--txt);
+      color-scheme: var(--scheme, dark)
+    }
+
+    html.ds:not(.hc):not(#_) :is(select, input[type=text], input[type=number], input[type=date], input[type=search]):focus {
+      border-color: var(--c1);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--c1) 26%, transparent)
+    }
+
+    html.ds:not(.hc):not(#_) select option {
+      background: var(--s2-solid);
+      color: var(--txt)
+    }
+
+    html.ds:not(.hc):not(#_) input[type=range] {
+      accent-color: var(--c1)
+    }
+
+    html.ds:not(.hc):not(#_) input[type=checkbox] {
+      accent-color: var(--c1)
+    }
+
+    html.ds:not(.hc):not(#_) :focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px
+    }
+
+    /* tabs: a segmented strip with a sliding indicator */
+    html.ds:not(.hc):not(#_) .tabs {
+      position: relative;
+      isolation: isolate
+    }
+
+    html.ds:not(.hc):not(#_) .tab {
+      border-radius: var(--r-btn);
+      transition: color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out)
+    }
+
+    html.ds:not(.hc):not(#_) .tabs.has-ind .tab[aria-selected=true] {
+      background: transparent;
+      box-shadow: none;
+      color: var(--on-acc)
+    }
+
+    .tab-ind {
+      position: absolute;
+      z-index: -1;
+      top: 0;
+      left: 0;
+      height: 0;
+      width: 0;
+      border-radius: var(--r-btn, 12px);
+      background: linear-gradient(135deg, var(--c1), color-mix(in srgb, var(--c1) 50%, var(--c2)));
+      box-shadow: 0 8px 24px -12px var(--c1);
+      transition: transform 420ms var(--ease-spring), width 420ms var(--ease-spring), height 300ms var(--ease-out), opacity .2s;
+      pointer-events: none
+    }
+
+    html:not(.ds) .tab-ind,
+    html.hc .tab-ind {
+      display: none
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=neon] .tab-ind,
+    html.ds:not(.hc):not(#_)[data-surface=crt] .tab-ind {
+      background: color-mix(in srgb, var(--c1) 18%, transparent);
+      border: 1px solid var(--c1)
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=neon] .tabs.has-ind .tab[aria-selected=true],
+    html.ds:not(.hc):not(#_)[data-surface=crt] .tabs.has-ind .tab[aria-selected=true] {
+      color: var(--c1)
+    }
+
+    html.ds:not(.hc):not(#_) .seg button.on {
+      background: linear-gradient(135deg, var(--c1), color-mix(in srgb, var(--c1) 50%, var(--c2)));
+      color: var(--on-acc)
+    }
+
+    html.ds:not(.hc):not(#_) :is(.toast, .gbox, .pal-box) {
+      border-radius: var(--r);
+      background: color-mix(in srgb, var(--s2-solid) 92%, transparent);
+      border: 1px solid var(--bd);
+      -webkit-backdrop-filter: blur(calc(var(--blur-b) * 1px + 8px)) saturate(160%);
+      backdrop-filter: blur(calc(var(--blur-b) * 1px + 8px)) saturate(160%)
+    }
+
+    html.ds:not(.hc):not(#_) .toast {
+      border-radius: min(var(--r), 16px)
+    }
+
+    html.ds:not(.hc):not(#_) .pill {
+      background: color-mix(in srgb, var(--in-c) calc(var(--in-a) * 100%), transparent);
+      border-color: var(--bd)
+    }
+
+    html.ds:not(.hc):not(#_) * {
+      scrollbar-color: color-mix(in srgb, var(--c1) 30%, color-mix(in srgb, var(--txt) 20%, transparent)) transparent
+    }
+
+    html.ds:not(.hc):not(#_) ::selection {
+      background: color-mix(in srgb, var(--c1) 35%, transparent)
+    }
+
+    /* ---------- background layers ---------- */
+    html.ds:not(.hc):not(#_) .orbs {
+      background:
+        radial-gradient(1200px 820px at 12% -12%, color-mix(in srgb, var(--c1) calc(var(--bg-a) * var(--u-bg) * 100%), transparent), transparent 62%),
+        radial-gradient(1000px 760px at 100% -4%, color-mix(in srgb, var(--c2) calc(var(--bg-a) * var(--u-bg) * 90%), transparent), transparent 60%),
+        radial-gradient(1100px 720px at 50% 115%, color-mix(in srgb, var(--c3) calc(var(--bg-a) * var(--u-bg) * 70%), transparent), transparent 65%),
+        var(--bg)
+    }
+
+    html.ds:not(.hc):not(#_) .orbs i {
+      opacity: calc(var(--orb-a) * var(--u-bg));
+      filter: blur(120px)
+    }
+
+    html.ds:not(.hc):not(#_) .orbs::before {
+      opacity: min(1, var(--u-bg))
+    }
+
+    html.ds:not(.hc):not(#_) .orbs::after {
+      background: var(--noise);
+      opacity: var(--noise-a, 0);
+      -webkit-mask-image: none;
+      mask-image: none
+    }
+
+    html.ds:not(.hc):not(#_)[data-surface=crt] .orbs::after {
+      background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px);
+      opacity: .55
+    }
+
+    html.ds.doc-hidden *,
+    html.ds.doc-hidden *::before,
+    html.ds.doc-hidden *::after {
+      animation-play-state: paused !important
+    }
+
+    html.ds:is(.anim-off, .anim-red, .lite) .orbs::before,
+    html.ds:is(.anim-off, .lite) .glass {
+      animation: none !important
+    }
+
+    @keyframes v7aurora {
+      0% {
+        transform: translate3d(-6%, 0, 0) scaleY(1) skewX(-6deg)
+      }
+
+      50% {
+        transform: translate3d(4%, -3%, 0) scaleY(1.15) skewX(4deg)
+      }
+
+      100% {
+        transform: translate3d(8%, 2%, 0) scaleY(.95) skewX(-2deg)
+      }
+    }
+
+    @keyframes v7drift {
+      to {
+        transform: translate3d(0, 6%, 0) rotate(8deg)
+      }
+    }
+
+    @keyframes v7fall {
+      from {
+        background-position: 0 0, 0 0, 0 0
+      }
+
+      to {
+        background-position: 0 600px, 120px 900px, -80px 1200px
+      }
+    }
+
+    @keyframes v7pulse {
+
+      0%,
+      100% {
+        opacity: calc(.7 * var(--u-bg))
+      }
+
+      50% {
+        opacity: var(--u-bg)
+      }
+    }
+
+    @keyframes v7flash {
+
+      0%,
+      93%,
+      100% {
+        opacity: 0
+      }
+
+      94% {
+        opacity: .5
+      }
+
+      95% {
+        opacity: .05
+      }
+
+      96% {
+        opacity: .35
+      }
+    }
+
+    /* ---------- navigation rail ---------- */
+    .v7nav {
+      position: fixed;
+      z-index: 40;
+      left: 12px;
+      top: 12px;
+      bottom: 12px;
+      width: var(--nav-w);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 14px 10px 12px;
+      overflow: hidden auto;
+      scrollbar-width: none;
+      transition: width 380ms var(--ease-out), transform 380ms var(--ease-out)
+    }
+
+    .v7nav::-webkit-scrollbar {
+      display: none
+    }
+
+    html:not(.ds) .v7nav {
+      border-radius: var(--r)
+    }
+
+    .nv-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 2px 6px 14px;
+      min-height: 52px
+    }
+
+    .nv-logo {
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      border-radius: calc(var(--r-sm, 12px) + 2px);
+      display: grid;
+      place-items: center;
+      color: var(--on-acc, #0a0a14);
+      background: linear-gradient(135deg, var(--c1), var(--c2));
+      box-shadow: 0 10px 26px -10px var(--c1), inset 0 1px 0 rgba(255, 255, 255, .45)
+    }
+
+    .nv-logo svg {
+      width: 22px;
+      height: 22px
+    }
+
+    .nv-name {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      line-height: 1.15
+    }
+
+    .nv-name b {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      white-space: nowrap;
+      font-family: var(--font-h, var(--font))
+    }
+
+    .nv-name small {
+      font-size: 11px;
+      color: var(--mut);
+      white-space: nowrap
+    }
+
+    .nv-sec {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--mut2, var(--mut));
+      padding: 12px 12px 6px;
+      white-space: nowrap
+    }
+
+    .nv-list {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
+
+    .nv-i {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 9px 12px;
+      border: 0;
+      background: none;
+      border-radius: var(--r-btn, 12px);
+      color: color-mix(in srgb, var(--txt) 78%, var(--mut));
+      font-size: 13.5px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out), transform var(--dur) var(--ease-spring)
+    }
+
+    .nv-i svg {
+      flex: 0 0 auto;
+      width: 19px;
+      height: 19px
+    }
+
+    .nv-i:hover {
+      color: var(--txt);
+      background: color-mix(in srgb, var(--txt) 6%, transparent)
+    }
+
+    .nv-i[aria-current=page] {
+      color: var(--txt)
+    }
+
+    .nv-i[aria-current=page] svg {
+      color: var(--c1)
+    }
+
+    .nv-i .nv-k {
+      margin-left: auto;
+      font-size: 10.5px;
+      color: var(--mut);
+      font-family: var(--mono)
+    }
+
+    .nv-i .nv-dot {
+      margin-left: auto;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--c2);
+      box-shadow: 0 0 8px var(--c2)
+    }
+
+    .nv-ind {
+      position: absolute;
+      z-index: 0;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 38px;
+      border-radius: var(--r-btn, 12px);
+      background: linear-gradient(90deg, color-mix(in srgb, var(--c1) 22%, transparent), color-mix(in srgb, var(--c2) 8%, transparent));
+      border: 1px solid color-mix(in srgb, var(--c1) 30%, transparent);
+      opacity: 0;
+      transition: transform 460ms var(--ease-spring), height 300ms var(--ease-out), opacity .25s;
+      pointer-events: none
+    }
+
+    .nv-ind::before {
+      content: "";
+      position: absolute;
+      left: -1px;
+      top: 22%;
+      bottom: 22%;
+      width: 3px;
+      border-radius: 3px;
+      background: var(--c1);
+      box-shadow: 0 0 12px var(--c1)
+    }
+
+    .nv-foot {
+      margin-top: auto;
+      padding: 12px 6px 2px;
+      display: grid;
+      gap: 10px
+    }
+
+    .nv-viz {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 34px;
+      padding: 0 6px
+    }
+
+    .nv-viz i {
+      flex: 1;
+      min-width: 2px;
+      height: 6%;
+      border-radius: 3px;
+      background: linear-gradient(180deg, var(--c1), var(--c2));
+      opacity: .75;
+      transform-origin: bottom;
+      transition: height 520ms var(--ease-out)
+    }
+
+    .nv-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--mut);
+      padding: 0 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .nv-status i {
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mut2, #666)
+    }
+
+    .nv-status[data-s=ok] i {
+      background: var(--ok);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent), 0 0 10px var(--ok)
+    }
+
+    .nv-status[data-s=warn] i {
+      background: var(--c4)
+    }
+
+    .nv-status[data-s=bad] i {
+      background: var(--bad)
+    }
+
+    .nv-collapse {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 7px;
+      border-radius: var(--r-btn, 12px);
+      border: 1px solid var(--line-soft);
+      background: none;
+      color: var(--mut);
+      cursor: pointer;
+      font-size: 12px
+    }
+
+    .nv-collapse:hover {
+      color: var(--txt)
+    }
+
+    .nv-collapse svg {
+      width: 16px;
+      height: 16px;
+      transition: transform .3s var(--ease-out)
+    }
+
+    @media (min-width: 1100px) {
+      body.has-nav {
+        padding-left: calc(var(--nav-w) + 12px)
+      }
+
+      body.has-nav .app {
+        transition: padding .38s var(--ease-out)
+      }
+
+      html.nav-rail {
+        --nav-w: 74px
+      }
+
+      html.nav-rail .v7nav :is(.nv-name, .nv-sec, .nv-i span, .nv-k, .nv-status span, .nv-collapse span) {
+        display: none
+      }
+
+      html.nav-rail .nv-i {
+        justify-content: center;
+        padding: 10px
+      }
+
+      html.nav-rail .nv-collapse svg {
+        transform: rotate(180deg)
+      }
+
+      html.nav-rail .nv-brand {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0
+      }
+
+      html.nav-rail .nv-viz {
+        padding: 0
+      }
+
+      body.has-nav .top .brand {
+        display: none
+      }
+
+      .v7menu {
+        display: none !important
+      }
+    }
+
+    @media (max-width: 1099.98px) {
+      .v7nav {
+        transform: translateX(calc(-100% - 24px));
+        box-shadow: none
+      }
+
+      html.nav-open .v7nav {
+        transform: none;
+        box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .6)
+      }
+
+      .nv-collapse {
+        display: none
+      }
+
+      .v7scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 39;
+        background: rgba(0, 0, 0, .45);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .3s
+      }
+
+      html.nav-open .v7scrim {
+        opacity: 1;
+        pointer-events: auto
+      }
+    }
+
+    .v7crumb {
+      display: none;
+      flex-direction: column;
+      line-height: 1.15;
+      margin-right: auto;
+      min-width: 0
+    }
+
+    .v7crumb small {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--mut)
+    }
+
+    .v7crumb b {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      font-family: var(--font-h, var(--font));
+      text-transform: var(--h-tf, none)
+    }
+
+    @media (min-width: 1100px) {
+      body.has-nav .v7crumb {
+        display: flex
+      }
+    }
+
+    .nv-name small {
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .v7menu {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      padding: 0
+    }
+
+    .v7menu svg {
+      width: 20px;
+      height: 20px
+    }
+
+    html.perf .v7nav,
+    html.perf .v7scrim {
+      display: none
+    }
+
+    html.perf body.has-nav {
+      padding-left: 0
+    }
+
+    /* icons inside the existing header buttons */
+    .btn.icon>svg.ico {
+      width: 18px;
+      height: 18px;
+      display: block
+    }
+
+    .btn.icon:has(> svg.ico) {
+      display: inline-grid;
+      place-items: center
+    }
+
+    svg.ico {
+      width: 1.15em;
+      height: 1.15em;
+      flex: 0 0 auto;
+      vertical-align: -.2em;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
+    /* ---------- dashboard hero ---------- */
+    .v7hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      gap: 18px;
+      padding: 22px;
+      margin-bottom: 16px;
+      border-radius: var(--r);
+      overflow: hidden;
+      isolation: isolate;
+      border: 1px solid transparent;
+      background:
+        linear-gradient(color-mix(in srgb, var(--s2-solid, #10101e) 88%, transparent), color-mix(in srgb, var(--s2-solid, #10101e) 88%, transparent)) padding-box,
+        conic-gradient(from var(--ang), color-mix(in srgb, var(--c1) 70%, transparent), transparent 25%, color-mix(in srgb, var(--c2) 60%, transparent) 50%, transparent 75%, color-mix(in srgb, var(--c1) 70%, transparent)) border-box;
+      animation: v7spin 18s linear infinite
+    }
+
+    html.anim-off .v7hero,
+    html.lite .v7hero {
+      animation: none
+    }
+
+    .v7hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: radial-gradient(70% 90% at 100% 0%, color-mix(in srgb, var(--c1) 16%, transparent), transparent 60%), radial-gradient(60% 80% at 0% 100%, color-mix(in srgb, var(--c2) 12%, transparent), transparent 60%);
+      pointer-events: none
+    }
+
+    .hx-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--mut);
+      padding: 5px 11px 5px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line-soft);
+      background: color-mix(in srgb, var(--txt) 4%, transparent)
+    }
+
+    .hx-eyebrow i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mut2, #666)
+    }
+
+    .hx-eyebrow[data-s=ok] i {
+      background: var(--ok);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
+      animation: v7beat 2.4s ease-in-out infinite
+    }
+
+    .hx-eyebrow[data-s=warn] i {
+      background: var(--c4)
+    }
+
+    .hx-eyebrow[data-s=bad] i {
+      background: var(--bad)
+    }
+
+    @keyframes v7beat {
+      50% {
+        box-shadow: 0 0 0 6px color-mix(in srgb, var(--ok) 0%, transparent)
+      }
+    }
+
+    .hx-title {
+      font-size: clamp(22px, 2.6vw, 32px);
+      line-height: 1.12;
+      margin: 14px 0 6px;
+      font-weight: 800;
+      letter-spacing: -.02em
+    }
+
+    .hx-title em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--c1), var(--c2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent
+    }
+
+    .hx-sub {
+      color: var(--mut) !important;
+      font-size: 13.5px;
+      max-width: 52ch
+    }
+
+    .hx-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px
+    }
+
+    .hx-actions .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .hx-actions .btn svg {
+      width: 16px;
+      height: 16px
+    }
+
+    .hx-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      align-content: start
+    }
+
+    .hx-stat {
+      position: relative;
+      padding: 13px 14px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--line-soft);
+      background: color-mix(in srgb, var(--txt) 3.5%, transparent);
+      overflow: hidden
+    }
+
+    .hx-stat small {
+      display: block;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--mut)
+    }
+
+    .hx-stat b {
+      display: block;
+      margin-top: 4px;
+      font-size: 24px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.01em
+    }
+
+    .hx-stat.skel b {
+      color: transparent;
+      border-radius: 8px;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--txt) 6%, transparent) 0%, color-mix(in srgb, var(--txt) 14%, transparent) 50%, color-mix(in srgb, var(--txt) 6%, transparent) 100%) 0 0/200% 100%;
+      animation: v7shim 1.3s linear infinite
+    }
+
+    @keyframes v7shim {
+      to {
+        background-position: -200% 0
+      }
+    }
+
+    .hx-recent {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 34px;
+      flex-wrap: wrap
+    }
+
+    .hx-recent>small {
+      font-size: 11px;
+      color: var(--mut);
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-right: 6px
+    }
+
+    .hx-n {
+      display: inline-grid;
+      place-items: center;
+      min-width: 38px;
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font: 700 12px/1 var(--mono);
+      color: var(--txt);
+      background: hsl(var(--h) 90% 60% / .16);
+      border: 1px solid hsl(var(--h) 90% 64% / .45);
+      animation: v7pop 420ms var(--ease-spring) both
+    }
+
+    @keyframes v7pop {
+      from {
+        opacity: 0;
+        transform: translateY(6px) scale(.7);
+        filter: blur(3px)
+      }
+    }
+
+    .hx-art {
+      position: absolute;
+      right: -10px;
+      bottom: -14px;
+      width: 46%;
+      max-width: 380px;
+      opacity: .22;
+      z-index: -1;
+      pointer-events: none;
+      color: var(--c1)
+    }
+
+    .hx-art .wave {
+      stroke-dasharray: 6 10;
+      animation: v7dash 6s linear infinite
+    }
+
+    @keyframes v7dash {
+      to {
+        stroke-dashoffset: -160
+      }
+    }
+
+    .hx-keys {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      font-size: 12px;
+      color: var(--mut)
+    }
+
+    @media (max-width: 820px) {
+      .v7hero {
+        grid-template-columns: 1fr;
+        padding: 18px
+      }
+    }
+
+    /* the newest note in the Live panel pops in */
+    #bigNote.v7pop {
+      animation: v7note 360ms var(--ease-spring)
+    }
+
+    @keyframes v7note {
+      from {
+        transform: scale(.82);
+        filter: blur(4px);
+        opacity: .4
+      }
+    }
+
+    /* ---------- motion: ripple, light sweep, tilt ---------- */
+    .v7rpl {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      overflow: hidden;
+      pointer-events: none
+    }
+
+    .v7rpl i {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      margin: -5px 0 0 -5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .28;
+      transform: scale(0);
+      animation: v7rpl 620ms var(--ease-out) forwards
+    }
+
+    @keyframes v7rpl {
+      to {
+        transform: scale(var(--s, 30));
+        opacity: 0
+      }
+    }
+
+    html.mx-x .btn.primary:not(:disabled)>.v7sweep {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      overflow: hidden;
+      pointer-events: none
+    }
+
+    html.mx-x .btn.primary:not(:disabled)>.v7sweep::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 40%;
+      left: -60%;
+      background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .35), transparent);
+      transform: skewX(-18deg)
+    }
+
+    html.mx-x .btn.primary:hover:not(:disabled)>.v7sweep::before {
+      animation: v7sweep 900ms var(--ease-out)
+    }
+
+    @keyframes v7sweep {
+      to {
+        left: 130%
+      }
+    }
+
+    html.mx-x .v7tilt {
+      transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(0);
+      transition: transform .5s var(--ease-out)
+    }
+
+    html.ds:not(.anim-off):not(.anim-red) .panel.on.enter {
+      animation: v7focus 420ms var(--ease-out)
+    }
+
+    @keyframes v7focus {
+      from {
+        opacity: .2;
+        filter: blur(6px);
+        transform: translateY(6px)
+      }
+    }
+
+    html.anim-off .v7rpl,
+    html.anim-off .hx-n,
+    html.anim-off #bigNote.v7pop,
+    html.anim-off .nv-ind,
+    html.anim-off .tab-ind {
+      animation: none !important;
+      transition: none !important
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .v7hero,
+      .hx-n,
+      #bigNote.v7pop,
+      .v7rpl i,
+      .hx-art .wave,
+      html.ds .glass,
+      html.ds .orbs::before {
+        animation: none !important
+      }
+
+      .nv-ind,
+      .tab-ind {
+        transition: none !important
+      }
+    }
+
+    /* ---------- Theme Studio ---------- */
+    .ts {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: color-mix(in srgb, var(--bg) 40%, rgba(0, 0, 0, .45));
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      animation: v7fade .28s var(--ease-out)
+    }
+
+    .ts[hidden] {
+      display: none
+    }
+
+    @keyframes v7fade {
+      from {
+        opacity: 0
+      }
+    }
+
+    .ts-win {
+      width: min(1440px, 100%);
+      height: min(900px, 100%);
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr) 330px;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+      animation: v7rise .42s var(--ease-spring)
+    }
+
+    @keyframes v7rise {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(.985)
+      }
+    }
+
+    html.anim-off :is(.ts, .ts-win, .dv-row, .wn-item) {
+      animation: none !important
+    }
+
+    .ts-head {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line-soft);
+      flex-wrap: wrap
+    }
+
+    .ts-title {
+      font-size: 20px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .ts-title svg {
+      width: 22px;
+      height: 22px;
+      color: var(--c1)
+    }
+
+    .ts-head .sub {
+      margin-right: auto
+    }
+
+    .ts-search {
+      position: relative;
+      flex: 0 1 320px
+    }
+
+    .ts-search input {
+      width: 100%;
+      padding-left: 34px !important
+    }
+
+    .ts-search svg {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      transform: translateY(-50%);
+      color: var(--mut);
+      pointer-events: none
+    }
+
+    .ts-cats {
+      overflow: auto;
+      padding: 12px 10px;
+      border-right: 1px solid var(--line-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
+
+    .ts-cats h4 {
+      font-size: 10.5px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--mut);
+      padding: 10px 10px 4px
+    }
+
+    .ts-cat {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 10px;
+      border: 0;
+      border-radius: var(--r-btn, 10px);
+      background: none;
+      color: color-mix(in srgb, var(--txt) 80%, var(--mut));
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer
+    }
+
+    .ts-cat small {
+      font-size: 11px;
+      color: var(--mut);
+      font-variant-numeric: tabular-nums
+    }
+
+    .ts-cat:hover {
+      background: color-mix(in srgb, var(--txt) 6%, transparent)
+    }
+
+    .ts-cat[aria-pressed=true] {
+      background: color-mix(in srgb, var(--c1) 18%, transparent);
+      color: var(--txt);
+      box-shadow: inset 2px 0 0 var(--c1)
+    }
+
+    .ts-main {
+      overflow: auto;
+      padding: 14px 16px 24px;
+      min-width: 0
+    }
+
+    .ts-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px
+    }
+
+    .ts-bar .seg button {
+      padding: 5px 12px
+    }
+
+    .ts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+      gap: 12px
+    }
+
+    .ts-card {
+      position: relative;
+      content-visibility: auto;
+      contain-intrinsic-size: 196px 188px;
+      animation: v7in .4s var(--ease-out) both;
+      animation-delay: calc(min(var(--i, 0), 24) * 18ms)
+    }
+
+    @keyframes v7in {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+    }
+
+    .ts-pick {
+      position: relative;
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 1px solid var(--line-soft);
+      border-radius: calc(var(--r-md, 14px) + 2px);
+      background: color-mix(in srgb, var(--txt) 3%, transparent);
+      color: var(--txt);
+      text-align: left;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform .3s var(--ease-spring), border-color .2s, box-shadow .3s
+    }
+
+    .ts-pick:hover {
+      transform: translateY(-3px);
+      border-color: color-mix(in srgb, var(--c1) 45%, var(--line));
+      box-shadow: 0 18px 40px -22px rgba(0, 0, 0, .7)
+    }
+
+    .ts-card.on .ts-pick {
+      border-color: var(--c1);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--c1) 45%, transparent)
+    }
+
+    .ts-card.cur .ts-pick::after {
+      content: "Active";
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: var(--c1);
+      color: var(--on-acc, #000)
+    }
+
+    /* the mini-app inside each preview card is drawn with that theme's own tokens */
+    .tp {
+      position: relative;
+      height: 116px;
+      display: grid;
+      grid-template-columns: 26% 1fr;
+      gap: 6px;
+      padding: 8px;
+      background: var(--p-bgimg), var(--p-bg);
+      font-family: var(--p-font);
+      overflow: hidden
+    }
+
+    .tp-side {
+      border-radius: var(--p-r);
+      background: var(--p-surf);
+      border: var(--p-bw) solid var(--p-bd);
+      padding: 6px 5px;
+      display: grid;
+      align-content: start;
+      gap: 4px;
+      box-shadow: var(--p-sh)
+    }
+
+    .tp-side i {
+      height: 5px;
+      border-radius: 3px;
+      background: var(--p-mut);
+      opacity: .55
+    }
+
+    .tp-side i:first-child {
+      background: var(--p-c1);
+      opacity: 1
+    }
+
+    .tp-body {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 6px;
+      min-width: 0
+    }
+
+    .tp-card {
+      border-radius: var(--p-r);
+      background: var(--p-surf);
+      border: var(--p-bw) solid var(--p-bd);
+      padding: 7px 8px;
+      box-shadow: var(--p-sh);
+      min-width: 0
+    }
+
+    .tp-card b {
+      display: block;
+      font-family: var(--p-fonth);
+      font-size: 12px;
+      line-height: 1.1;
+      color: var(--p-txt);
+      text-transform: var(--p-tf);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .tp-card u {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+      text-decoration: none
+    }
+
+    .tp-card u s {
+      height: 13px;
+      flex: 0 0 34%;
+      border-radius: var(--p-rb);
+      background: var(--p-btn);
+      box-shadow: var(--p-btnsh)
+    }
+
+    .tp-card u s+s {
+      flex: 0 0 22%;
+      background: transparent;
+      border: 1px solid var(--p-bd);
+      box-shadow: none
+    }
+
+    .tp-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 100%
+    }
+
+    .tp-bars i {
+      flex: 1;
+      border-radius: 2px 2px 0 0;
+      background: linear-gradient(180deg, var(--p-c1), var(--p-c2))
+    }
+
+    .ts-meta {
+      padding: 9px 11px 10px;
+      display: grid;
+      gap: 2px
+    }
+
+    .ts-meta b {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 26px
+    }
+
+    .ts-meta small {
+      font-size: 11px;
+      color: var(--mut);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .ts-sw {
+      display: flex;
+      gap: 3px;
+      margin-top: 5px
+    }
+
+    .ts-sw i {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(127, 127, 127, .35)
+    }
+
+    .ts-fav {
+      position: absolute;
+      right: 7px;
+      bottom: 34px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--mut);
+      cursor: pointer;
+      transition: transform .3s var(--ease-spring), color .2s
+    }
+
+    .ts-fav svg {
+      width: 16px;
+      height: 16px
+    }
+
+    .ts-fav:hover {
+      transform: scale(1.18);
+      color: var(--txt)
+    }
+
+    .ts-fav[aria-pressed=true] {
+      color: #fbbf24
+    }
+
+    .ts-fav[aria-pressed=true] svg {
+      fill: currentColor
+    }
+
+    .ts-side {
+      overflow: auto;
+      border-left: 1px solid var(--line-soft);
+      padding: 16px;
+      display: grid;
+      align-content: start;
+      gap: 14px
+    }
+
+    .ts-side h4 {
+      font-size: 10.5px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--mut);
+      margin-bottom: -6px
+    }
+
+    .ts-now {
+      display: grid;
+      gap: 4px
+    }
+
+    .ts-now b {
+      font-size: 18px;
+      font-weight: 800
+    }
+
+    .ts-now .ts-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 4px
+    }
+
+    .ts-tags span {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line-soft);
+      color: var(--mut)
+    }
+
+    .ts-acts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px
+    }
+
+    .ts-acts .btn.primary {
+      grid-column: 1 / -1;
+      padding: 11px
+    }
+
+    .ts-dials {
+      display: grid;
+      gap: 10px
+    }
+
+    .ts-dial {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 2px 10px;
+      font-size: 12.5px;
+      font-weight: 600
+    }
+
+    .ts-dial output {
+      font: 600 11px var(--mono);
+      color: var(--mut)
+    }
+
+    .ts-dial input[type=range] {
+      grid-column: 1 / -1;
+      width: 100%
+    }
+
+    .ts-acc {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .ts-acc input[type=color] {
+      width: 38px;
+      height: 30px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: none;
+      cursor: pointer
+    }
+
+    .ts-acc button.sw {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      background: var(--sw)
+    }
+
+    .ts-acc button.sw[aria-pressed=true] {
+      border-color: var(--txt)
+    }
+
+    .ts-empty {
+      padding: 40px 10px;
+      text-align: center;
+      color: var(--mut)
+    }
+
+    .ts-close {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      padding: 0
+    }
+
+    .ts-close svg {
+      width: 18px;
+      height: 18px
+    }
+
+    @media (max-width: 1180px) {
+      .ts-win {
+        grid-template-columns: 190px minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto
+      }
+
+      .ts-side {
+        grid-column: 1 / -1;
+        border-left: 0;
+        border-top: 1px solid var(--line-soft);
+        max-height: 34vh;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))
+      }
+    }
+
+    @media (max-width: 760px) {
+      .ts {
+        padding: 0
+      }
+
+      .ts-win {
+        height: 100%;
+        border-radius: 0 !important;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto minmax(0, 1fr) auto
+      }
+
+      .ts-cats {
+        flex-direction: row;
+        overflow-x: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
+        padding: 8px
+      }
+
+      .ts-cats h4 {
+        display: none
+      }
+
+      .ts-cat {
+        flex: 0 0 auto
+      }
+
+      .ts-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr))
+      }
+
+      .ts-search {
+        flex: 1 1 100%;
+        order: 3
+      }
+    }
+
+    /* ---------- MIDI device centre ---------- */
+    .dv-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--line-soft);
+      background: color-mix(in srgb, var(--txt) 3%, transparent);
+      margin-bottom: 14px
+    }
+
+    .dv-orb {
+      flex: 0 0 auto;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: color-mix(in srgb, var(--mut) 18%, transparent);
+      color: var(--mut)
+    }
+
+    .dv-orb svg {
+      width: 22px;
+      height: 22px
+    }
+
+    .dv-head[data-s=ok] .dv-orb {
+      background: color-mix(in srgb, var(--ok) 18%, transparent);
+      color: var(--ok);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--ok) 8%, transparent)
+    }
+
+    .dv-head[data-s=warn] .dv-orb {
+      background: color-mix(in srgb, var(--c4) 18%, transparent);
+      color: var(--c4)
+    }
+
+    .dv-head[data-s=bad] .dv-orb {
+      background: color-mix(in srgb, var(--bad) 18%, transparent);
+      color: var(--bad)
+    }
+
+    .dv-head b {
+      display: block;
+      font-size: 16px
+    }
+
+    .dv-list {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0 16px
+    }
+
+    .dv-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 13px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--line-soft);
+      background: color-mix(in srgb, var(--txt) 2.5%, transparent);
+      animation: v7in .35s var(--ease-out) both
+    }
+
+    .dv-row.sel {
+      border-color: color-mix(in srgb, var(--c1) 55%, transparent);
+      background: color-mix(in srgb, var(--c1) 9%, transparent)
+    }
+
+    .dv-row svg {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      color: var(--mut)
+    }
+
+    .dv-row .dv-n {
+      min-width: 0;
+      flex: 1
+    }
+
+    .dv-row .dv-n b {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .dv-row .dv-n small {
+      color: var(--mut);
+      font-size: 12px
+    }
+
+    .dv-st {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line-soft);
+      color: var(--mut);
+      white-space: nowrap
+    }
+
+    .dv-st.on {
+      color: var(--ok);
+      border-color: color-mix(in srgb, var(--ok) 45%, transparent)
+    }
+
+    .dv-st.off {
+      color: var(--bad);
+      border-color: color-mix(in srgb, var(--bad) 45%, transparent)
+    }
+
+    .dv-env {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+      margin: 6px 0 4px
+    }
+
+    .dv-env div {
+      padding: 9px 11px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--line-soft)
+    }
+
+    .dv-env small {
+      display: block;
+      font-size: 10.5px;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700
+    }
+
+    /* ---------- What's new ---------- */
+    .wn {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr);
+      gap: 18px;
+      min-height: 0
+    }
+
+    .wn-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      position: relative;
+      padding-left: 12px;
+      border-left: 1px solid var(--line-soft);
+      max-height: 62vh;
+      overflow: auto
+    }
+
+    .wn-nav button {
+      position: relative;
+      display: grid;
+      gap: 1px;
+      text-align: left;
+      padding: 7px 10px;
+      border: 0;
+      border-radius: var(--r-btn, 10px);
+      background: none;
+      color: var(--mut);
+      cursor: pointer
+    }
+
+    .wn-nav button::before {
+      content: "";
+      position: absolute;
+      left: -17px;
+      top: 13px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--line);
+      box-shadow: 0 0 0 3px var(--s2-solid, #111)
+    }
+
+    .wn-nav button b {
+      color: var(--txt);
+      font-size: 13px
+    }
+
+    .wn-nav button small {
+      font-size: 11px
+    }
+
+    .wn-nav button[aria-current=true] {
+      background: color-mix(in srgb, var(--c1) 14%, transparent)
+    }
+
+    .wn-nav button[aria-current=true]::before {
+      background: var(--c1);
+      box-shadow: 0 0 0 3px var(--s2-solid, #111), 0 0 10px var(--c1)
+    }
+
+    .wn-body {
+      max-height: 62vh;
+      overflow: auto;
+      padding-right: 6px
+    }
+
+    .wn-hero {
+      padding: 16px 18px;
+      border-radius: var(--r-md);
+      margin-bottom: 14px;
+      background: linear-gradient(120deg, color-mix(in srgb, var(--c1) 18%, transparent), color-mix(in srgb, var(--c2) 14%, transparent));
+      border: 1px solid color-mix(in srgb, var(--c1) 30%, transparent)
+    }
+
+    .wn-hero b {
+      font-size: 22px;
+      font-family: var(--font-h, var(--font))
+    }
+
+    .wn-hero time {
+      color: var(--mut);
+      font-size: 12px;
+      margin-left: 8px
+    }
+
+    .wn-grp {
+      margin: 14px 0 6px;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--c1);
+      font-weight: 800
+    }
+
+    .wn-item {
+      list-style: none;
+      display: flex;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px dashed var(--line-soft);
+      animation: v7in .35s var(--ease-out) both
+    }
+
+    .wn-item::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 6px;
+      height: 6px;
+      margin-top: 8px;
+      border-radius: 50%;
+      background: var(--c2)
+    }
+
+    .wn-about {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 14px
+    }
+
+    .wn-about div {
+      padding: 9px 11px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--line-soft)
+    }
+
+    .wn-about small {
+      display: block;
+      font-size: 10.5px;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700
+    }
+
+    @media (max-width: 700px) {
+      .wn {
+        grid-template-columns: 1fr
+      }
+
+      .wn-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        border-left: 0;
+        padding-left: 0;
+        max-height: none
+      }
+
+      .wn-nav button::before {
+        display: none
+      }
+    }
+
+    /* settings rows: a dropdown takes a fixed share of its row instead of the width of its longest option
+       (long pack names such as "Synthwave grid (animated)" pushed it out of the box and made the window scroll sideways) */
+    .set-grid>* {
+      min-width: 0
+    }
+
+    .set-grid label {
+      min-width: 0
+    }
+
+    .set-grid label>select {
+      flex: 0 0 auto;
+      width: clamp(118px, 56%, 230px);
+      min-width: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden
+    }
+
+    .set-grid label>input[type=range] {
+      flex: 0 1 110px;
+      min-width: 70px
+    }
+
+    #gbox {
+      overflow-x: hidden
+    }
+
+    @media print {
+
+      .v7nav,
+      .v7scrim,
+      .ts,
+      .v7hero {
+        display: none !important
+      }
+
+      body.has-nav {
+        padding-left: 0 !important
+      }
+    }
   </style>
 </head>
 
@@ -8918,8 +11047,8 @@
           </div>
           <div class="box">
             <h2>Backup &amp; restore</h2>
-            <p class="sub">A backup is a single JSON file with every log. Statistics are rebuilt from the logs on
-              restore, so they always match.</p>
+            <p class="sub">A backup is a single JSON file with every log, plus your settings, themes, profile, quests and
+              pitch-bend log. Statistics are rebuilt from the logs on restore, so they always match.</p>
             <div class="row"><button class="btn primary" id="btnBackup">Create backup file</button></div>
             <div class="restore">
               <label class="btn file-btn"><input type="file" id="restoreFile" accept=".json,application/json"><span
@@ -9512,10 +11641,22 @@
         DAYC.clear();
       }
       // builds an export / backup file piece by piece (large files are kept by the browser on disk, not in memory)
+      // v7.0: full backups also carry settings, themes, profile, quests and the pitch-bend / mod-wheel log. They are written
+      // BEFORE "logs", so every Piano Logger version can still restore the presses (older ones simply skip this part).
+      // Not included: device-only times, and add-ons (they are code, so they are never installed from a file).
+      const BK_SKIP = ['pll.lastBackup', 'pll.appBk', 'pll.crashSeen', 'pll.appWelcome', 'pll.addons'];
+      async function settingsSnapshot() {
+        const ls = {};
+        try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^pll\./.test(k) && !BK_SKIP.includes(k)) ls[k] = localStorage.getItem(k); } } catch (e) { }
+        let gestures = []; try { const d = await xdb(); gestures = await reqP(d.transaction('gestures').objectStore('gestures').getAll()); } catch (e) { }
+        return { format: 1, appVersion: APP_VERSION, savedAt: new Date().toISOString(), localStorage: ls, gestures };
+      }
       async function logBlob(f, fmt, kind, onProgress) {
         const test = makeTest(f), type = fmt === 'csv' ? 'text/csv;charset=utf-8' : 'application/json';
+        const withSettings = fmt === 'json' && !test && (kind === 'backup' || kind === 'all');
         let blob = new Blob([fmt === 'csv' ? '﻿' + CSV_HEAD.join(',') + '\r\n' :
-          '{"app":"piano-lifetime-logger","version":1,"kind":"' + kind + '","exportedAt":"' + new Date().toISOString() + '","logs":[']), parts = [], size = 0, n = 0;
+          '{"app":"piano-lifetime-logger","version":1,"kind":"' + kind + '","exportedAt":"' + new Date().toISOString() + '",' +
+          (withSettings ? '"settings":' + JSON.stringify(await settingsSnapshot()) + ',' : '') + '"logs":[']), parts = [], size = 0, n = 0;
         await eachLogBatch(f, async rows => {
           if (test) rows = rows.filter(test);
           if (rows.length) {
@@ -9901,6 +12042,8 @@
       async function connectMIDI() {
         if (!navigator.requestMIDIAccess) return setStatus('unsupported');
         setStatus('requesting');
+        // connecting again: the previous access object's ports must stop calling us, or every key would be logged twice
+        if (midiAccess) { try { midiAccess.onstatechange = null; midiAccess.inputs.forEach(i => { i.onmidimessage = null; }); } catch (e) { } }
         try { midiAccess = await navigator.requestMIDIAccess({ sysex: false }); }
         catch (err) {
           return setStatus(err && (err.name === 'SecurityError' || err.name === 'NotAllowedError') ? 'denied' : 'error', err);
@@ -10432,8 +12575,9 @@
       })();
 
       /* ===================== STUDIO ADD-ONS ===================== */
-      const X = { theme: 'aurora', lab: 'abc', zoom: '100', root: 0, scale: '', heat: false, sust: false, goal: 500 };
+      const X = { theme: 'aurora-glass', lab: 'abc', zoom: '100', root: 0, scale: '', heat: false, sust: false, goal: 500 };
       try { Object.assign(X, JSON.parse(localStorage.getItem('pll.x') || '{}')); } catch (e) { }
+      const X_THEME0 = X.theme;        // the saved theme, kept before the theme lists below exist (v7.0: generated themes were reset on reload)
       const saveX = () => { try { localStorage.setItem('pll.x', JSON.stringify(X)); } catch (e) { } };
       const SOL = ['Do', 'Do♯', 'Re', 'Re♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯', 'La', 'La♯', 'Si'];
       const SCALES = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], pent: [0, 2, 4, 7, 9], blues: [0, 3, 5, 6, 7, 10] };
@@ -10663,7 +12807,7 @@
 
 <h3 id="g-app">23. Windows app (download for extra features)</h3>
 <ol>
-<li>Click <b>⬇ Download app</b> in the top bar, then <b>Download for Windows</b>. It works on Windows 10 and 11, 64-bit and 32-bit: one installer picks the right version.</li>
+<li>Click <b>⬇ Download app</b> in the top bar, then <b>Download for Windows</b>. It works on 64-bit Windows 10 and 11.</li>
 <li>Open <b>Piano-Logger-Setup.exe</b>. If Windows says “Windows protected your PC”, click <b>More info → Run anyway</b> (the app is new and not signed by a company). Choose a folder and finish; open <b>Piano Logger</b> from the desktop or Start menu.</li>
 <li><b>Bring your history:</b> the app keeps its own copy of your data. On the website go to <b>Data → Create backup file</b>; in the app go to <b>Data → Restore</b>, choose the file and press Restore. XP, levels and quests are worked out again from it.</li>
 <li>In the app, the <b>🖥</b> button in the top bar opens <b>App features</b>:
@@ -14997,7 +17141,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '6.1';
+      const APP_VERSION = '7.0';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -15475,7 +17619,7 @@ PianoLogger.on('noteon', e => {
         const set = $('#btnSet'); if (set) {
           const b = document.createElement('button'); b.className = 'btn icon'; b.id = 'btnNews'; b.type = 'button'; b.title = 'What’s new (update log)'; b.setAttribute('aria-label', 'What’s new: update log');
           b.innerHTML = '🆕<i class="news-dot" aria-hidden="true"></i>'; b.onclick = openNews; set.before(b);
-          if (LS.get('pll.seenVer', '') !== APP_VERSION) { b.classList.add('new'); if (LS.get('pll.tour', null) || localStorage.getItem('pll.tour')) setTimeout(() => toast('✨ Updated to v' + APP_VERSION + ': restore backups of any size, a much faster custom period, a new calendar that matches your theme, and many small fixes. Click 🆕 to see what’s new.', 'ok'), 2500); }
+          if (LS.get('pll.seenVer', '') !== APP_VERSION) { b.classList.add('new'); if (LS.get('pll.tour', null) || localStorage.getItem('pll.tour')) setTimeout(() => toast('✨ Updated to v' + APP_VERSION + ': ' + VERSIONS[0].title + '. Open What’s new to see everything.', 'ok'), 2500); }
         }
       }
       { const h1 = $('.brand h1'); if (h1) { const v = document.createElement('button'); v.type = 'button'; v.className = 'ver-tag'; v.textContent = 'v' + APP_VERSION; v.title = 'What’s new'; v.onclick = openNews; h1.after(v); } }
@@ -16304,13 +18448,13 @@ PianoLogger.on('noteon', e => {
       }
       function openDownload() {
         const win = /Windows/i.test(navigator.userAgent);
-        openModal('<div class="th-head"><h2 style="font-size:20px">⬇ Piano Logger for Windows</h2><span class="sub">Windows 10 &amp; 11 · 64-bit and 32-bit</span></div>' +
+        openModal('<div class="th-head"><h2 style="font-size:20px">⬇ Piano Logger for Windows</h2><span class="sub">Windows 10 &amp; 11 · 64-bit</span></div>' +
           '<p class="sub">For additional features, download the app. It is the same Piano Logger you use here, with these extras:</p>' +
           '<div class="app-feats">' + APP_FEATURES.map(([i, t, d]) => '<div class="app-feat"><span>' + i + '</span><div><b>' + esc(t) + '</b><small>' + esc(d) + '</small></div></div>').join('') + '</div>' +
           '<div class="row" style="margin:14px 0 6px;flex-wrap:wrap;gap:8px"><a class="btn primary" id="dlGo" href="' + APP_DL.file + '" target="_blank" rel="noopener">⬇ Download for Windows (free)</a>' +
           '<a class="btn" href="' + APP_DL.page + '" target="_blank" rel="noopener">All versions</a></div>' +
           (win ? '' : '<p class="sub">⚠ This download is for Windows PCs. On other devices keep using the website.</p>') +
-          '<ol class="app-steps"><li>Open the downloaded <b>Piano-Logger-Setup.exe</b>. One installer works on 64-bit and 32-bit Windows; it picks the right version itself.</li>' +
+          '<ol class="app-steps"><li>Open the downloaded <b>Piano-Logger-Setup.exe</b> (64-bit Windows 10 or 11; about 2 MB). If Microsoft Edge WebView2 is missing, which is rare, the installer downloads it.</li>' +
           '<li>If Windows shows “Windows protected your PC”, click <b>More info → Run anyway</b>. This appears because the app is new and not signed by a company.</li>' +
           '<li>Choose where to install, then open <b>Piano Logger</b> from the desktop or Start menu.</li>' +
           '<li><b>Bring your history:</b> the app keeps its own copy of your data. Here on the website go to <b>Data → Create backup file</b>, then in the app go to <b>Data → Restore</b> and pick that file. Your XP and level are worked out again from it.</li></ol>' +
@@ -16876,6 +19020,982 @@ PianoLogger.on('noteon', e => {
       }).catch(() => { });
       // “Erase all data” also forgets the saved day summaries and the saved profile state
       { const _clr = $('#btnClear').onclick; $('#btnClear').onclick = async e => { const before = cache.g ? cache.g.count : -1; await _clr(e); if (!cache.g || cache.g.count !== before) { await dsClear(); RV.c = null; PF.S = null; kvSet('pfS', null).catch(() => { }); } }; }
+
+      /* =====================================================================
+         v7.0 — AURORA GLASS STUDIO
+         · a theme registry of 110 design languages (palette + shape + surface + type + background + motion)
+         · Theme Studio (library, categories, search, favourites, recent, live preview, glass / glow / motion dials)
+         · navigation rail, dashboard overview, MIDI device centre, motion engine, new What's new
+         Only the look and the navigation change. MIDI, logging and saved data are read, never rewritten.
+         Saved in localStorage: the theme stays in 'pll.x' (as before); 'pll.tune' = dials, favourites, recent; 'pll.nav' = rail.
+         ===================================================================== */
+      const svgU = s => 'url("data:image/svg+xml,' + encodeURIComponent(s) + '")';
+      const contrastC = (a, b) => { const x = lumC(a), y = lumC(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      // move colour c towards black / white until it reaches the contrast ratio r against bg
+      const ensureC = (c, bg, r) => { const to = lumC(bg) > 0.4 ? '#000000' : '#ffffff'; let x = c; for (let i = 1; i <= 20 && contrastC(x, bg) < r; i++) x = mixC(c, to, i * 0.05); return x; };
+
+      /* ---------- icons: one consistent 24px line set (drawn for this app, Lucide-style) ---------- */
+      const ICO = {
+        dash: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+        piano: '<rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="M7 4v9M12 4v9M17 4v9M7 13v7M12 13v7M17 13v7"/><path d="M5.5 4v9h3V4M14.5 4v9h3V4" fill="currentColor" stroke="none" opacity=".9"/>',
+        activity: '<path d="M3 12h4l2.5-7 5 14 2.5-7H21"/>',
+        bars: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+        scope: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/>',
+        history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+        cap: '<path d="M22 9 12 4 2 9l10 5 10-5Z"/><path d="M6 11.5V16c3 2.5 9 2.5 12 0v-4.5M22 9v6"/>',
+        sparkles: '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/>',
+        user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+        db: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+        plug: '<path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0Z"/><path d="M12 17v5"/>',
+        sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+        palette: '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 2-2 0-1.5-1-1.8-1-3 0-1.2 1-2 2.2-2H17a4 4 0 0 0 4-4c0-3.9-4-7-9-7Z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/>',
+        gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
+        gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9M12 8C10 4 7 4 7 6s3 2 5 2c2 0 5 0 5-2s-3-2-5 2"/>',
+        help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/>',
+        search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+        focus: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="12" r="3"/>',
+        max: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
+        menu: '<path d="M4 6h16M4 12h16M4 18h10"/>',
+        x: '<path d="M18 6 6 18M6 6l12 12"/>',
+        star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9Z"/>',
+        refresh: '<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12A9 9 0 0 1 18.5 5.8L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/>',
+        usb: '<path d="M12 2v14M12 22a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM8 6l4-4 4 4M7 10v2l5 3 5-3v-3M7 10h0M17 9h0"/><circle cx="7" cy="9.5" r="1.3"/><rect x="15.7" y="7.7" width="2.6" height="2.6" rx=".4"/>',
+        out: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+        monitor: '<rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+        music: '<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+        puzzle: '<path d="M9 3h4v2.5a1.5 1.5 0 1 0 3 0V3h3a1 1 0 0 1 1 1v4h-2.5a1.5 1.5 0 1 0 0 3H20v8a1 1 0 0 1-1 1h-4v-2.5a1.5 1.5 0 1 0-3 0V21H5a1 1 0 0 1-1-1v-6h2.5a1.5 1.5 0 1 0 0-3H4V4a1 1 0 0 1 1-1Z"/>',
+        chev: '<path d="m15 18-6-6 6-6"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        save: '<path d="M5 3h11l4 4v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>',
+        wave: '<path d="M2 12h2M6 8v8M10 5v14M14 9v6M18 7v10M22 12h-2"/>',
+        reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+        info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>'
+      };
+      const icon = (n, cls) => '<svg class="ico' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (ICO[n] || '') + '</svg>';
+
+      /* ---------- the theme library: 11 categories × 10 design languages ----------
+         row: [name, category, light?, background, accent, accent 2, accent 3, shape, surface, type, background art, motion, glow 0–1, description]
+         shape: S sharp · s soft · r round · p pill      motion: calm · smooth · snappy · bouncy */
+      const V7_CATS = {
+        A: 'Glass & Liquid', B: 'Futuristic & Sci-Fi', C: 'Natural & Soothing', D: 'Luxury & Premium', E: 'Minimal & Professional',
+        F: 'Retro & Digital', G: 'Vibrant & Colourful', H: 'Monochrome', I: 'Cinematic & Atmospheric', J: 'Artistic & Creative', K: 'Pastel & Soft'
+      };
+      const V7_ROWS = [
+        ['Aurora Glass', 'A', 0, '#050816', '#22d3ee', '#8b5cf6', '#3b82f6', 'r', 'liquid', 'jakarta', 'aurora', 'smooth', .75, 'The signature look: dark liquid glass with cyan, violet and blue aurora light'],
+        ['Arctic Frost', 'A', 1, '#e6eff7', '#0369a1', '#6366f1', '#0d9488', 'r', 'frost', 'inter', 'mesh', 'calm', .2, 'Bright frosted ice with cool blue light'],
+        ['Violet Frost', 'A', 0, '#0c0818', '#a78bfa', '#f0abfc', '#818cf8', 'r', 'frost', 'manrope', 'orbs', 'smooth', .55, 'Lilac frost over a deep violet night'],
+        ['Ocean Glass', 'A', 0, '#031320', '#2dd4bf', '#38bdf8', '#818cf8', 'r', 'liquid', 'jakarta', 'waves', 'smooth', .6, 'Teal liquid glass with slow ocean waves'],
+        ['Rose Quartz Glass', 'A', 1, '#fbeef2', '#be185d', '#a855f7', '#f97316', 'r', 'glass', 'manrope', 'orbs', 'calm', .25, 'Soft pink quartz glass on a light blush background'],
+        ['Emerald Mist', 'A', 0, '#03140e', '#34d399', '#2dd4bf', '#a3e635', 'r', 'frost', 'inter', 'mesh', 'calm', .5, 'Frosted emerald mist'],
+        ['Champagne Crystal', 'A', 0, '#120f0a', '#f5d9a8', '#e6b980', '#fff1d6', 's', 'liquid', 'serif', 'bokeh', 'calm', .45, 'Warm crystal glass with champagne sparkle'],
+        ['Midnight Prism', 'A', 0, '#05040f', '#60a5fa', '#f472b6', '#a3e635', 'r', 'holo', 'grotesk', 'prism', 'smooth', .6, 'Prismatic borders that slowly turn through the spectrum'],
+        ['Opal Mist', 'A', 1, '#f1eef8', '#6d28d9', '#0891b2', '#db2777', 'r', 'liquid', 'manrope', 'mesh', 'calm', .25, 'Milky opal glass with shifting pastel light'],
+        ['Holographic Pearl', 'A', 1, '#f4f2fb', '#7c3aed', '#06b6d4', '#ec4899', 'p', 'holo', 'jakarta', 'prism', 'smooth', .3, 'Pearl-white panels with iridescent edges'],
+
+        ['Quantum Violet', 'B', 0, '#0a0516', '#a855f7', '#22d3ee', '#f0abfc', 's', 'neon', 'grotesk', 'orbs', 'snappy', .9, 'Electric violet energy with cyan sparks'],
+        ['Cybernetic Neon', 'B', 0, '#03070c', '#00f0ff', '#ff2bd6', '#a3ff12', 'S', 'neon', 'mono', 'circuit', 'snappy', 1, 'Hard-edged neon over glowing circuit traces'],
+        ['Synthwave Grid', 'B', 0, '#120424', '#ff6ec7', '#00d4ff', '#ffd319', 's', 'neon', 'display', 'synth', 'smooth', .9, 'A moving neon grid racing toward the horizon'],
+        ['Neon Circuit', 'B', 0, '#020a06', '#39ff88', '#00e5ff', '#c6ff00', 'S', 'outline', 'mono', 'circuit', 'snappy', .8, 'Green circuit-board outlines, terminal type'],
+        ['Plasma Core', 'B', 0, '#10030f', '#ff4ecd', '#7b2ff7', '#00f0ff', 'r', 'liquid', 'grotesk', 'glow', 'smooth', 1, 'A pulsing plasma glow beneath liquid panels'],
+        ['Deep Space Console', 'B', 0, '#02040b', '#60a5fa', '#94a3b8', '#22d3ee', 's', 'solid', 'inter', 'stars', 'calm', .35, 'Quiet mission-control panels among the stars'],
+        ['Starship Bridge', 'B', 0, '#050a14', '#38bdf8', '#f59e0b', '#e2e8f0', 'S', 'outline', 'display', 'scan', 'snappy', .5, 'Command-deck readouts with amber alerts'],
+        ['Hologram Terminal', 'B', 0, '#021012', '#5eead4', '#67e8f9', '#a7f3d0', 'S', 'crt', 'mono', 'scan', 'snappy', .8, 'A flickering aqua hologram terminal'],
+        ['Cyber Noir', 'B', 0, '#070708', '#f43f5e', '#e5e5e5', '#f59e0b', 'S', 'solid', 'grotesk', 'rain', 'snappy', .4, 'Rain-streaked black with a single red signal'],
+        ['Laserwave', 'B', 0, '#0b0418', '#ff3864', '#2de2e6', '#f9c80e', 's', 'neon', 'display', 'rays', 'snappy', .9, 'Laser rays in hot pink and aqua'],
+
+        ['Forest Canopy', 'C', 0, '#06120a', '#4ade80', '#a3e635', '#fbbf24', 'r', 'glass', 'manrope', 'bokeh', 'calm', .35, 'Sunlight through deep green leaves'],
+        ['Sage Calm', 'C', 1, '#eef2ec', '#3f6e4c', '#84a98c', '#b08968', 'r', 'solid', 'manrope', 'mesh', 'calm', 0, 'Soft sage and warm clay, very restful'],
+        ['Moss and Stone', 'C', 0, '#0e110c', '#a3b18a', '#7f8f6a', '#d6c9a8', 's', 'solid', 'inter', 'grain', 'calm', .1, 'Muted moss on textured stone'],
+        ['Coastal Breeze', 'C', 1, '#eef7fa', '#0e7490', '#0284c7', '#d97706', 'r', 'frost', 'jakarta', 'waves', 'calm', .2, 'Sea air, white sand and turquoise'],
+        ['Misty Lake', 'C', 0, '#0b1218', '#94b8c8', '#a5b4fc', '#cbd5e1', 'r', 'frost', 'manrope', 'mesh', 'calm', .25, 'Grey-blue fog over still water'],
+        ['Alpine Dawn', 'C', 1, '#f6f0f2', '#c2410c', '#4f6bb0', '#e08a3c', 'r', 'glass', 'inter', 'rays', 'calm', .2, 'First light on snowy peaks'],
+        ['Desert Dusk', 'C', 0, '#150c08', '#f4a261', '#e76f51', '#e9c46a', 's', 'solid', 'serif', 'dunes', 'calm', .3, 'Warm dunes as the sun goes down'],
+        ['Sakura Bloom', 'C', 1, '#fdf1f5', '#be185d', '#f472b6', '#4d7c5a', 'r', 'glass', 'manrope', 'petals', 'calm', .2, 'Cherry blossom petals drifting by'],
+        ['Botanical Studio', 'C', 1, '#f3f5ee', '#2f6b4f', '#c2703d', '#8a9a5b', 's', 'paper', 'serif', 'mesh', 'calm', 0, 'Pressed leaves, cream paper and ink'],
+        ['Rainforest Glass', 'C', 0, '#03140f', '#10b981', '#22d3ee', '#bef264', 'r', 'liquid', 'jakarta', 'rain', 'calm', .45, 'Wet green glass in tropical rain'],
+
+        ['Obsidian Gold', 'D', 0, '#0a0908', '#d4af37', '#f5e6b3', '#b8860b', 's', 'velvet', 'serif', 'rays', 'calm', .45, 'Black volcanic glass with gold leaf'],
+        ['Platinum Noir', 'D', 0, '#0b0c0e', '#e5e7eb', '#9ca3af', '#cbd5e1', 's', 'solid', 'inter', 'glow', 'calm', .15, 'Brushed platinum on black, understated'],
+        ['Champagne Luxe', 'D', 1, '#f7f1e6', '#8a6420', '#c9a96e', '#7c5c2e', 's', 'paper', 'serif', 'bokeh', 'calm', .1, 'Cream silk, champagne gold, fine serif type'],
+        ['Velvet Burgundy', 'D', 0, '#14040a', '#e11d48', '#f4b6c2', '#d4af37', 'r', 'velvet', 'serif', 'glow', 'calm', .5, 'Deep burgundy velvet and gold thread'],
+        ['Royal Amethyst', 'D', 0, '#0e0618', '#a855f7', '#e0aaff', '#d4af37', 'r', 'velvet', 'serif', 'orbs', 'smooth', .55, 'Amethyst velvet with royal gold'],
+        ['Onyx Silver', 'D', 0, '#08090a', '#c0c6cf', '#7d8590', '#e5e7eb', 'S', 'outline', 'grotesk', 'lines', 'calm', .1, 'Onyx black with fine silver lines'],
+        ['Pearl Ivory', 'D', 1, '#faf7f0', '#7a5c28', '#b9a27a', '#4b5b6a', 'r', 'paper', 'serif', 'mesh', 'calm', 0, 'Ivory, pearl and soft shadows'],
+        ['Midnight Sapphire', 'D', 0, '#030716', '#3b82f6', '#93c5fd', '#d4af37', 'r', 'velvet', 'inter', 'stars', 'calm', .45, 'Sapphire blue with a hint of gold'],
+        ['Copper Atelier', 'D', 0, '#120a07', '#d97745', '#e7a977', '#6b8e7f', 's', 'solid', 'serif', 'grain', 'calm', .2, 'A craftsman\'s copper and patina'],
+        ['Emerald Velvet', 'D', 0, '#03100b', '#10b981', '#6ee7b7', '#d4af37', 'r', 'velvet', 'serif', 'glow', 'calm', .4, 'Emerald velvet and antique gold'],
+
+        ['Swiss Light', 'E', 1, '#ffffff', '#d40511', '#111111', '#0057b8', 'S', 'solid', 'grotesk', 'lines', 'snappy', 0, 'Strict grid, bold sans and one red accent'],
+        ['Mono Graphite', 'E', 0, '#111214', '#e4e4e7', '#a1a1aa', '#71717a', 's', 'solid', 'inter', 'none', 'snappy', 0, 'Pure graphite greys, nothing else'],
+        ['Paper White', 'E', 1, '#fbfaf7', '#1d4ed8', '#475569', '#0f766e', 's', 'paper', 'serif', 'grain', 'calm', 0, 'Clean paper, classic type, blue ink'],
+        ['Soft Slate', 'E', 0, '#1e232b', '#93a4b8', '#7dd3fc', '#cbd5e1', 'r', 'solid', 'inter', 'none', 'calm', .05, 'Low-contrast slate for long sessions'],
+        ['Cloud Canvas', 'E', 1, '#f4f6fa', '#3f5bd6', '#7b8bb0', '#059669', 'r', 'solid', 'manrope', 'mesh', 'calm', 0, 'A calm, airy workspace'],
+        ['Nordic Mist', 'E', 1, '#eef1f4', '#4c6a94', '#5e9fb0', '#6f9a5a', 's', 'solid', 'inter', 'none', 'calm', 0, 'Scandinavian blues and frost greys'],
+        ['Warm Sand', 'E', 1, '#f6efe4', '#9a6416', '#8c6a4f', '#3f7d6e', 'r', 'paper', 'manrope', 'dunes', 'calm', 0, 'Sand, linen and a touch of teal'],
+        ['Chalkboard', 'E', 0, '#1f2a24', '#f1f5f0', '#fde68a', '#93c5fd', 's', 'outline', 'chalk', 'grain', 'calm', 0, 'Chalk on a green slate board'],
+        ['Ink and Linen', 'E', 1, '#f4efe6', '#1f2937', '#9a3412', '#4b5563', 's', 'paper', 'serif', 'grain', 'calm', 0, 'Black ink on natural linen'],
+        ['Quiet Beige', 'E', 1, '#f2ece2', '#7a6250', '#b39c86', '#6f7d6a', 'r', 'solid', 'manrope', 'none', 'calm', 0, 'Quiet neutrals, nothing loud'],
+
+        ['Retro Terminal', 'F', 0, '#00007a', '#ffff55', '#55ffff', '#ffffff', 'S', 'solid', 'mono', 'none', 'snappy', 0, 'Bright yellow and cyan text on classic DOS blue'],
+        ['Amber CRT', 'F', 0, '#0a0702', '#ffb000', '#ff8c00', '#ffd27a', 'S', 'crt', 'mono', 'scan', 'snappy', .8, 'Amber phosphor glowing on a curved tube'],
+        ['Phosphor Green', 'F', 0, '#020d06', '#4afc8a', '#00c060', '#b8ffcf', 'S', 'crt', 'mono', 'scan', 'snappy', .8, 'Green phosphor with scanlines'],
+        ['Vaporwave Sunset', 'F', 0, '#1a0b2e', '#ff71ce', '#01cdfe', '#fffb96', 's', 'glass', 'display', 'sun', 'smooth', .6, 'A striped pastel sun over violet dusk'],
+        ['80s Arcade', 'F', 0, '#07040f', '#ffd60a', '#ff2a6d', '#05d9e8', 'S', 'neon', 'mono', 'pixel', 'bouncy', .8, 'Cabinet lights, chunky pixels and high scores'],
+        ['Pixel Studio', 'F', 0, '#1b1b2f', '#ff8fab', '#8ecae6', '#ffb703', 'S', 'brutal', 'mono', 'pixel', 'bouncy', 0, 'Pixel-art panels with hard drop shadows'],
+        ['Cassette Future', 'F', 0, '#1a1410', '#ff6b35', '#f7c59f', '#2ec4b6', 's', 'solid', 'grotesk', 'lines', 'smooth', .25, 'Tape-deck stripes in orange and teal'],
+        ['Analog Film', 'F', 0, '#14110d', '#e9c46a', '#d1495b', '#8d99ae', 's', 'solid', 'serif', 'grain', 'calm', .15, 'Film grain, warm highlights, faded reds'],
+        ['Synth Nostalgia', 'F', 0, '#0d0221', '#f72585', '#4cc9f0', '#b5179e', 'r', 'glass', 'display', 'synth', 'smooth', .7, 'Late-night synth glow and a neon floor'],
+        ['Retro Tech', 'F', 1, '#e9e4d8', '#b84500', '#2c3e50', '#127a68', 's', 'brutal', 'grotesk', 'dots', 'snappy', 0, 'Beige plastic, bold labels, chunky buttons'],
+
+        ['Electric Tangerine', 'G', 0, '#160700', '#ff6a00', '#ffb800', '#ff2e63', 'r', 'glass', 'grotesk', 'glow', 'bouncy', .8, 'Hot orange energy'],
+        ['Cobalt Pop', 'G', 1, '#eef3ff', '#1f4fff', '#e11d74', '#f5b400', 'p', 'solid', 'grotesk', 'dots', 'bouncy', .1, 'Cobalt blue and pop pink, bold and bright'],
+        ['Coral Punch', 'G', 1, '#fff1ec', '#e0343a', '#00897b', '#e69500', 'p', 'solid', 'manrope', 'confetti', 'bouncy', .1, 'Coral and teal with a burst of confetti'],
+        ['Citrus Burst', 'G', 1, '#fffbea', '#c2410c', '#4d7c0f', '#ea580c', 'p', 'solid', 'rounded', 'dots', 'bouncy', .1, 'Orange, lime and lemon zest'],
+        ['Hyperpop', 'G', 0, '#12001f', '#ff00e5', '#00ffea', '#fff700', 'p', 'neon', 'display', 'confetti', 'bouncy', 1, 'Maximum saturation, maximum fun'],
+        ['Candy Neon', 'G', 0, '#150a1f', '#ff7ad9', '#7afcff', '#fffb7d', 'p', 'glass', 'rounded', 'bokeh', 'bouncy', .7, 'Sweet neon pastels glowing in the dark'],
+        ['Tropical Punch', 'G', 0, '#04161a', '#ff4d6d', '#06d6a0', '#ffd166', 'r', 'glass', 'manrope', 'bokeh', 'bouncy', .55, 'Watermelon, lime and mango'],
+        ['Spectrum Flow', 'G', 0, '#07070d', '#ff5e5e', '#5eb0ff', '#5eff8a', 'r', 'holo', 'jakarta', 'prism', 'smooth', .6, 'The whole rainbow, flowing slowly'],
+        ['Bubblegum Bloom', 'G', 1, '#fff0f7', '#d6247a', '#7c3aed', '#0891b2', 'p', 'glass', 'rounded', 'bokeh', 'bouncy', .2, 'Bubblegum pink with violet bubbles'],
+        ['Lime Energy', 'G', 0, '#0a1000', '#c6ff00', '#00e676', '#ffea00', 's', 'neon', 'grotesk', 'grid', 'snappy', .85, 'Acid lime on black, full speed'],
+
+        ['True AMOLED', 'H', 0, '#000000', '#ffffff', '#a3a3a3', '#737373', 's', 'outline', 'inter', 'none', 'snappy', 0, 'Pure black for OLED screens: every unlit pixel is off'],
+        ['Carbon Black', 'H', 0, '#0b0b0c', '#d4d4d8', '#71717a', '#a1a1aa', 's', 'solid', 'grotesk', 'dots', 'snappy', 0, 'Carbon-fibre texture and steel greys'],
+        ['Graphite Studio', 'H', 0, '#18181b', '#e4e4e7', '#a1a1aa', '#52525b', 'r', 'glass', 'manrope', 'mesh', 'calm', .05, 'Smoky graphite glass'],
+        ['Titanium', 'H', 0, '#1c1f23', '#cfd6de', '#8a96a3', '#e9edf1', 's', 'liquid', 'grotesk', 'lines', 'calm', .1, 'Brushed titanium with a cold sheen'],
+        ['Silverline', 'H', 1, '#f4f5f7', '#374151', '#9ca3af', '#111827', 's', 'outline', 'inter', 'lines', 'snappy', 0, 'Hairline silver borders on white'],
+        ['Whiteout', 'H', 1, '#ffffff', '#111111', '#6b7280', '#9ca3af', 'r', 'solid', 'inter', 'none', 'calm', 0, 'As little as possible: white, black, space'],
+        ['Blueprint', 'H', 0, '#0b2a4a', '#e0f2fe', '#7dd3fc', '#ffffff', 'S', 'outline', 'mono', 'blueprint', 'snappy', .1, 'White drafting lines on blueprint paper'],
+        ['Midnight Ink', 'H', 0, '#0a0d14', '#c7d2fe', '#94a3b8', '#e2e8f0', 's', 'paper', 'serif', 'grain', 'calm', .05, 'Dark ink paper with silver serif type'],
+        ['Slate Monochrome', 'H', 0, '#0f172a', '#cbd5e1', '#94a3b8', '#64748b', 'r', 'solid', 'inter', 'none', 'calm', 0, 'Slate blues, one hue only'],
+        ['Mono Contrast', 'H', 1, '#ffffff', '#000000', '#000000', '#555555', 'S', 'brutal', 'grotesk', 'none', 'snappy', 0, 'Black on white, thick lines, maximum contrast'],
+
+        ['Aurora Night', 'I', 0, '#020a12', '#34d399', '#a78bfa', '#22d3ee', 'r', 'glass', 'jakarta', 'curtain', 'smooth', .6, 'Green and violet curtains of light'],
+        ['Moonlit Piano', 'I', 0, '#05070f', '#cbd5e1', '#93c5fd', '#f8fafc', 'r', 'frost', 'serif', 'moon', 'calm', .35, 'A full moon over a quiet night'],
+        ['Eclipse', 'I', 0, '#030303', '#f59e0b', '#fef3c7', '#78716c', 'r', 'solid', 'display', 'eclipse', 'calm', .5, 'A black sun ringed with fire'],
+        ['Solar Flare', 'I', 0, '#120400', '#ff7a00', '#ffd000', '#ff2d00', 'r', 'glass', 'grotesk', 'glow', 'smooth', .9, 'Blazing orange plasma'],
+        ['Nebula Drift', 'I', 0, '#07041a', '#c084fc', '#f472b6', '#60a5fa', 'r', 'glass', 'manrope', 'nebula', 'smooth', .6, 'Slowly drifting violet nebula clouds'],
+        ['Stormlight', 'I', 0, '#070b12', '#93c5fd', '#e0e7ff', '#fde047', 's', 'frost', 'grotesk', 'storm', 'smooth', .35, 'Rain and cold electric light'],
+        ['Rainy Window', 'I', 0, '#0a0f16', '#7dd3fc', '#a5b4fc', '#fcd34d', 'r', 'frost', 'manrope', 'rain', 'calm', .3, 'City lights blurred through rain'],
+        ['Northern Lights', 'I', 0, '#01080d', '#22c55e', '#06b6d4', '#c084fc', 'r', 'liquid', 'jakarta', 'aurora', 'smooth', .65, 'The aurora borealis, live'],
+        ['Ocean at Midnight', 'I', 0, '#010812', '#0ea5e9', '#6366f1', '#67e8f9', 'r', 'glass', 'manrope', 'waves', 'calm', .45, 'Moonlit swells in deep blue'],
+        ['Starlit Velvet', 'I', 0, '#0a0514', '#e9d5ff', '#f0abfc', '#fde68a', 'r', 'velvet', 'serif', 'stars', 'calm', .4, 'Velvet sky sprinkled with stars'],
+
+        ['Bauhaus Modern', 'J', 1, '#f2efe8', '#c1121f', '#1d3557', '#e09f00', 'S', 'solid', 'grotesk', 'bauhaus', 'snappy', 0, 'Circles, squares and primary colours, muted'],
+        ['Memphis Shapes', 'J', 1, '#fff7ec', '#d6336c', '#0e7c86', '#e8a400', 's', 'brutal', 'rounded', 'memphis', 'bouncy', 0, 'Squiggles, dots and confetti shapes'],
+        ['Neo Brutalist', 'J', 1, '#fffbe6', '#000000', '#e04f00', '#1e5cd6', 'S', 'brutal', 'grotesk', 'none', 'snappy', 0, 'Raw borders, hard shadows, no decoration'],
+        ['Bauhaus Primary', 'J', 0, '#111111', '#ff3b30', '#3d7bff', '#ffd500', 'S', 'solid', 'display', 'bauhaus', 'snappy', 0, 'Pure red, blue and yellow on black'],
+        ['Editorial Ink', 'J', 1, '#faf8f3', '#b91c1c', '#111827', '#6b7280', 'S', 'paper', 'serif', 'lines', 'calm', 0, 'Magazine columns, big serif headlines'],
+        ['Japanese Zen', 'J', 1, '#f3efe6', '#9b2226', '#3a5a40', '#6c757d', 's', 'paper', 'serif', 'enso', 'calm', 0, 'An ensō brush circle, rice paper, vermilion'],
+        ['Art Deco', 'J', 0, '#0b0b0b', '#d4af37', '#f8e7b0', '#1f6f5c', 'S', 'outline', 'display', 'deco', 'calm', .3, 'Gold fans and geometric glamour'],
+        ['Deco Future', 'J', 0, '#071a1f', '#e9c46a', '#2ec4b6', '#f4f1de', 's', 'neon', 'display', 'deco', 'smooth', .55, 'Art deco lines lit like a space port'],
+        ['Impressionist Canvas', 'J', 1, '#f4efe3', '#3f5f96', '#c76a5f', '#5f8f6a', 'r', 'paper', 'serif', 'canvas', 'calm', 0, 'Soft brush dabs of blue, rose and green'],
+        ['Abstract Gallery', 'J', 1, '#f5f5f2', '#111111', '#d1553a', '#24877d', 's', 'solid', 'grotesk', 'abstract', 'smooth', 0, 'Bold shapes on white gallery walls'],
+
+        ['Lavender Milk', 'K', 1, '#f6f2fd', '#6d28d9', '#c4b5fd', '#db2777', 'p', 'solid', 'rounded', 'mesh', 'calm', .1, 'Milky lavender, soft and round'],
+        ['Powder Blue', 'K', 1, '#eef5fd', '#1d4ed8', '#93c5fd', '#7c3aed', 'p', 'frost', 'rounded', 'bokeh', 'calm', .1, 'Powder-blue clouds'],
+        ['Peach Sorbet', 'K', 1, '#fff4ee', '#c2410c', '#fdba74', '#db2777', 'p', 'solid', 'rounded', 'mesh', 'calm', .1, 'Peach and apricot sorbet'],
+        ['Mint Macaron', 'K', 1, '#effaf5', '#047857', '#a7f3d0', '#db2777', 'p', 'solid', 'rounded', 'dots', 'calm', .1, 'Mint with a raspberry centre'],
+        ['Butter Bloom', 'K', 1, '#fffbe8', '#a16207', '#fde68a', '#15803d', 'p', 'solid', 'rounded', 'petals', 'calm', .1, 'Buttercup yellow and spring green'],
+        ['Cloud Pink', 'K', 1, '#fdf2f8', '#be185d', '#fbcfe8', '#4f46e5', 'p', 'frost', 'rounded', 'bokeh', 'calm', .1, 'Pink clouds, frosted soft'],
+        ['Lilac Haze', 'K', 1, '#f5f0fb', '#7e22ce', '#d8b4fe', '#0e7490', 'r', 'glass', 'manrope', 'mesh', 'calm', .15, 'Lilac haze through light glass'],
+        ['Vanilla Cream', 'K', 1, '#fdf8ee', '#94600f', '#f3d9a4', '#4d7c5a', 'r', 'paper', 'serif', 'grain', 'calm', 0, 'Vanilla cream and toasted sugar'],
+        ['Pastel Confetti', 'K', 1, '#fdf6ff', '#c026d3', '#60a5fa', '#d97706', 'p', 'solid', 'rounded', 'confetti', 'bouncy', .1, 'Pastel confetti for a good mood'],
+        ['Soft Coral', 'K', 1, '#fff3f1', '#c2410c', '#fca5a5', '#0f766e', 'r', 'solid', 'manrope', 'mesh', 'calm', .05, 'Coral and seafoam, gentle']
+      ];
+      const SANS = ', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+      const SERIF = '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif';
+      const MONO = '"JetBrains Mono", ui-monospace, Consolas, monospace';
+      // [body font, heading font, heading case, heading letter-spacing, heading weight]
+      const V7_TYPE = {
+        jakarta: ['"Plus Jakarta Sans"' + SANS, '"Plus Jakarta Sans"' + SANS, 'none', '-.02em', 800],
+        inter: ['"Inter"' + SANS, '"Inter"' + SANS, 'none', '-.02em', 700],
+        manrope: ['"Manrope"' + SANS, '"Manrope"' + SANS, 'none', '-.015em', 800],
+        grotesk: ['"Space Grotesk"' + SANS, '"Space Grotesk"' + SANS, 'none', '-.02em', 700],
+        serif: ['"Inter"' + SANS, SERIF, 'none', '-.005em', 600],
+        mono: [MONO, MONO, 'none', '0', 700],
+        display: ['"Inter"' + SANS, '"Space Grotesk"' + SANS, 'uppercase', '.05em', 700],
+        rounded: ['"Manrope"' + SANS, '"Manrope"' + SANS, 'none', '-.01em', 800],
+        chalk: ['"Manrope"' + SANS, '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive', 'none', '0', 700]
+      };
+      const V7_SHAPE = { S: [6, 4, 3, 4], s: [12, 9, 7, 9], r: [22, 15, 11, 12], p: [26, 18, 13, 999] };   // panel, card, small, button radius (px)
+      const V7_MOTION = { calm: ['420ms', 'cubic-bezier(.22,1,.36,1)'], smooth: ['300ms', 'cubic-bezier(.22,1,.36,1)'], snappy: ['160ms', 'cubic-bezier(.2,.8,.2,1)'], bouncy: ['380ms', 'var(--ease-spring)'] };
+      // panel opacity, inner-card opacity, blur px, top reflection, panel shadow depth, decoration orbs
+      const V7_SURF = {
+        glass: [.42, .32, 22, .05, 1, .26], liquid: [.30, .26, 26, .07, 1, .3], frost: [.55, .4, 34, .08, 1, .22],
+        solid: [.97, .92, 0, .02, .6, .08], paper: [1, .94, 0, 0, .35, .04], outline: [.1, .06, 0, 0, 0, .05],
+        neon: [.55, .3, 12, .02, .8, .14], brutal: [1, 1, 0, 0, 0, 0], crt: [.72, .4, 4, 0, .5, .06],
+        velvet: [.72, .5, 18, .04, 1, .18], holo: [.78, .45, 20, .05, 1, .22]
+      };
+      const V7_NOISE = svgU('<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 .14 0"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>');
+      const slug = n => n.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+      // every token a theme needs, worked out from its row (contrast is checked here, so text stays readable)
+      function v7Tokens(r) {
+        const [name, cat, light, bg, a1, a2, a3, shape, surf, type, deco, motion, glow] = r;
+        const S = V7_SURF[surf] || V7_SURF.glass, T = V7_TYPE[type] || V7_TYPE.jakarta, R = V7_SHAPE[shape] || V7_SHAPE.r, M = V7_MOTION[motion] || V7_MOTION.smooth;
+        const txt = light ? mixC('#0f1222', a1, .1) : mixC('#f5f6fb', a1, .05);
+        let mut = mixC(txt, bg, light ? .4 : .36); for (let i = 1; contrastC(mut, bg) < 4.6 && i < 12; i++) mut = mixC(txt, bg, (light ? .4 : .36) - i * .03);
+        const mut2 = mixC(txt, bg, .5);
+        const c1 = ensureC(a1, bg, light ? 4.5 : 3.2), c2 = ensureC(a2, bg, 3), c3 = ensureC(a3, bg, 3);
+        const onAcc = contrastC('#ffffff', c1) >= contrastC('#0a0a14', c1) ? '#ffffff' : '#0a0a14';
+        const sC = surf === 'paper' || surf === 'brutal' || surf === 'solid' ? (light ? mixC(bg, '#ffffff', surf === 'paper' ? .55 : .8) : mixC(bg, '#ffffff', .055))
+          : light ? mixC(bg, '#ffffff', .7) : mixC(mixC(bg, '#ffffff', .1), a1, .05);
+        const s2C = light ? mixC(bg, '#ffffff', surf === 'paper' ? .3 : .55) : mixC(mixC(bg, '#ffffff', .14), a1, .04);
+        const s2Solid = light ? mixC(bg, '#ffffff', .82) : mixC(mixC(bg, '#ffffff', .085), a1, .05);
+        const bd = surf === 'brutal' ? txt : light ? rgbaC('#141428', surf === 'outline' ? .32 : .13) : rgbaC(mixC('#ffffff', a1, .3), surf === 'outline' ? .34 : .14);
+        const sh = S[4] === 0 ? 'none' : light ? '0 ' + Math.round(18 * S[4]) + 'px ' + Math.round(42 * S[4]) + 'px -26px rgba(30,30,60,.28), 0 1px 3px rgba(30,30,60,.07)'
+          : '0 ' + Math.round(26 * S[4]) + 'px ' + Math.round(64 * S[4]) + 'px -28px rgba(0,0,0,.78), 0 2px 10px rgba(0,0,0,.22)';
+        const v = {
+          '--bg': bg, '--bg2': light ? mixC(bg, '#ffffff', .5) : mixC(mixC(bg, a1, .1), '#ffffff', .03), '--sky': mixC(bg, a2, light ? .1 : .26),
+          '--txt': txt, '--mut': mut, '--mut2': mut2, '--c1': c1, '--c2': c2, '--c3': c3, '--c4': light ? '#b45309' : '#fbbf24',
+          '--ok': light ? '#15803d' : '#4ade80', '--bad': light ? '#be123c' : '#fb7185',
+          '--o1': light ? mixC(a1, '#ffffff', .45) : a1, '--o2': light ? mixC(a2, '#ffffff', .45) : a2, '--o3': light ? mixC(a3, '#ffffff', .5) : a3,
+          '--tint': c1, '--kb': mixC(bg, a1, .12), '--on-acc': onAcc, '--ring': c1,
+          '--line': bd, '--line-soft': light ? 'rgba(20,20,40,.08)' : rgbaC(mixC('#ffffff', a1, .3), .08),
+          '--grid': light ? 'rgba(20,22,40,.08)' : rgbaC(a2, .09), '--axis': mut,
+          '--surface': light ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.045)', '--surface-hi': light ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.08)',
+          '--s-c': sC, '--s-a': S[0], '--s2-c': s2C, '--s2-a': S[1], '--s2-solid': s2Solid,
+          '--in-c': light ? '#ffffff' : mixC(bg, '#000000', .3), '--in-a': light ? .75 : .55,
+          '--bd': bd, '--sh': sh, '--blur-b': S[2], '--spec-a': light ? S[3] * 3 : S[3], '--glow-a': glow, '--bw': surf === 'brutal' ? '2.5px' : '1px',
+          '--orb-a': (deco === 'orbs' ? 1.4 : 1) * S[5] * (light ? .8 : 1), '--bg-a': surf === 'brutal' ? 0 : (light ? .1 : .16) * (S[0] > .9 ? .5 : 1),
+          '--noise': V7_NOISE, '--noise-a': deco === 'grain' ? .9 : surf === 'frost' || surf === 'paper' ? .35 : 0,
+          '--r': R[0] + 'px', '--r-md': R[1] + 'px', '--r-sm': R[2] + 'px', '--r-btn': R[3] + 'px',
+          '--font': T[0], '--font-h': T[1], '--h-tf': T[2], '--h-ls': T[3], '--h-w': T[4], '--font-h3': type === 'mono' || type === 'display' ? T[1] : T[0],
+          '--dur': M[0], '--ease': M[1], '--scheme': light ? 'light' : 'dark',
+          '--shadow': sh === 'none' ? '0 0 0 transparent' : sh
+        };
+        return { v, c1, c2, c3, txt, mut, sC, s2C, bd, light: !!light, R, T, surf, deco, motion };
+      }
+      // background artwork for the active theme only (one small rule, not 110 stylesheets)
+      function v7Deco(d, c1, c2, c3, light) {
+        const A = (c, x) => rgbaC(c, light ? x * .65 : x);
+        const svg = (w, h, body) => svgU('<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' + body + '</svg>');
+        const fadeMask = m => '-webkit-mask-image:' + m + ';mask-image:' + m;
+        switch (d) {
+          case 'aurora': return 'inset:-20% -15% 28%;filter:blur(46px);opacity:.8;background:linear-gradient(100deg,transparent 8%,' + A(c1, .55) + ' 26%,transparent 40%,' + A(c2, .48) + ' 55%,transparent 68%,' + A(c3, .42) + ' 82%,transparent 94%);' + fadeMask('linear-gradient(180deg,#000 15%,transparent 88%)') + ';animation:v7aurora 24s ease-in-out infinite alternate';
+          case 'orbs': return 'background:none';
+          case 'synth': return 'inset:auto 0 0 0;height:48vh;background:linear-gradient(' + A(c1, .42) + ' 1.5px,transparent 1.5px) 0 0/100% 36px,linear-gradient(90deg,' + A(c2, .34) + ' 1.5px,transparent 1.5px) 50% 0/64px 100%;transform:perspective(300px) rotateX(60deg);transform-origin:50% 100%;' + fadeMask('linear-gradient(180deg,transparent,#000 75%)') + ';animation:v7grid 2.4s linear infinite';
+          case 'circuit': return 'opacity:.6;background:' + svg(140, 140, '<g fill="none" stroke="' + A(c1, .32) + '" stroke-width="1.2"><path d="M0 30h40l15 15h40l15-15h30M20 140v-40l20-20h50M140 100h-30l-15 15v25M70 0v25l10 10"/></g><g fill="' + A(c2, .5) + '"><circle cx="55" cy="45" r="2.5"/><circle cx="95" cy="45" r="2.5"/><circle cx="90" cy="80" r="2.5"/><circle cx="80" cy="35" r="2.5"/><circle cx="110" cy="100" r="2.5"/></g>') + ' 0 0/140px 140px;' + fadeMask('radial-gradient(ellipse at 50% 40%,#000 25%,transparent 78%)');
+          case 'nebula': return 'inset:-15%;opacity:.9;background:radial-gradient(35% 30% at 30% 35%,' + A(c1, .3) + ',transparent 70%),radial-gradient(30% 35% at 70% 55%,' + A(c2, .26) + ',transparent 70%),radial-gradient(25% 20% at 45% 75%,' + A(c3, .22) + ',transparent 70%),' + [[12, 18, 1.4], [27, 64, 1], [41, 12, 1.2], [56, 40, 1.5], [68, 22, 1], [81, 70, 1.3], [92, 16, 1], [8, 82, 1.2], [36, 88, 1], [62, 84, 1.2], [74, 48, .9], [18, 44, 1]].map(([x, y, s]) => 'radial-gradient(' + s + 'px ' + s + 'px at ' + x + '% ' + y + '%,rgba(255,255,255,.85),transparent)').join(',') + ';filter:blur(.4px);animation:v7drift 60s ease-in-out infinite alternate';
+          case 'grain': return 'background:radial-gradient(120% 90% at 50% 40%,transparent 55%,' + (light ? 'rgba(80,60,30,.12)' : 'rgba(0,0,0,.5)') + ')';
+          case 'canvas': return 'filter:blur(14px);opacity:.7;background:' + [[12, 20, 220, 120, c1], [30, 70, 260, 140, c2], [58, 30, 240, 120, c3], [80, 75, 220, 130, c1], [92, 22, 200, 110, c2], [45, 92, 260, 120, c3], [5, 85, 200, 120, c2]].map(([x, y, w, h, c]) => 'radial-gradient(' + w + 'px ' + h + 'px at ' + x + '% ' + y + '%,' + A(c, .28) + ',transparent 70%)').join(',');
+          case 'dots': return 'opacity:.8;background:radial-gradient(' + A(c1, .32) + ' 1.3px,transparent 1.7px) 0 0/22px 22px;' + fadeMask('radial-gradient(ellipse at 70% 10%,#000 10%,transparent 65%)');
+          case 'bauhaus': return 'opacity:' + (light ? .5 : .55) + ';background:' + svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice"><circle cx="1330" cy="180" r="170" fill="' + A(c1, .45) + '"/><rect x="80" y="640" width="260" height="260" fill="' + A(c2, .4) + '"/><path d="M1180 1000 1420 600 1660 1000Z" fill="' + A(c3, .5) + '"/><path d="M420 120a160 160 0 0 1 320 0Z" fill="' + A(c3, .4) + '"/><path d="M0 470h560" stroke="' + A(c2, .4) + '" stroke-width="14"/></svg>') + ' center/cover no-repeat';
+          case 'memphis': return 'opacity:.55;background:' + svg(200, 200, '<path d="M10 40q15-20 30 0t30 0 30 0" fill="none" stroke="' + A(c1, .6) + '" stroke-width="4" stroke-linecap="round"/><path d="M140 20l20 34h-40Z" fill="' + A(c3, .6) + '"/><circle cx="160" cy="150" r="12" fill="none" stroke="' + A(c2, .7) + '" stroke-width="4"/><g fill="' + A(c2, .5) + '"><circle cx="40" cy="140" r="3"/><circle cx="55" cy="140" r="3"/><circle cx="70" cy="140" r="3"/><circle cx="40" cy="155" r="3"/><circle cx="55" cy="155" r="3"/><circle cx="70" cy="155" r="3"/></g><rect x="95" y="85" width="22" height="22" fill="none" stroke="' + A(c1, .5) + '" stroke-width="4" transform="rotate(20 106 96)"/>') + ' 0 0/200px 200px';
+          case 'deco': return 'opacity:.75;background:' + svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><g fill="none" stroke="' + A(c1, .5) + '" stroke-width="1.6">' + [120, 200, 280, 360, 440, 520].map(r => '<path d="M' + (600 - r) + ' 600a' + r + ' ' + r + ' 0 0 1 ' + 2 * r + ' 0"/>').join('') + [...Array(13)].map((_, i) => { const a = Math.PI * (i + 1) / 14; return '<path d="M600 600L' + (600 - Math.cos(a) * 560).toFixed(1) + ' ' + (600 - Math.sin(a) * 560).toFixed(1) + '"/>'; }).join('') + '</g></svg>') + ' 50% 100%/min(1200px,130vw) auto no-repeat,repeating-linear-gradient(90deg,' + A(c1, .05) + ' 0 1px,transparent 1px 90px)';
+          case 'enso': return 'opacity:.6;background:' + svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><path d="M200 50a150 150 0 1 1-118 58" fill="none" stroke="' + A(c1, .55) + '" stroke-width="22" stroke-linecap="round"/><path d="M200 58a142 142 0 1 1-110 55" fill="none" stroke="' + A(c1, .25) + '" stroke-width="6" stroke-linecap="round"/></svg>') + ' 92% 28%/min(560px,62vw) no-repeat';
+          case 'blueprint': return 'background:linear-gradient(' + A(c1, .1) + ' 1px,transparent 1px) 0 0/22px 22px,linear-gradient(90deg,' + A(c1, .1) + ' 1px,transparent 1px) 0 0/22px 22px,linear-gradient(' + A(c1, .22) + ' 1px,transparent 1px) 0 0/110px 110px,linear-gradient(90deg,' + A(c1, .22) + ' 1px,transparent 1px) 0 0/110px 110px';
+          case 'pixel': return 'opacity:.55;background:' + svg(96, 96, '<g shape-rendering="crispEdges"><rect x="8" y="8" width="8" height="8" fill="' + A(c1, .6) + '"/><rect x="56" y="24" width="8" height="8" fill="' + A(c2, .6) + '"/><rect x="32" y="64" width="8" height="8" fill="' + A(c3, .6) + '"/><rect x="80" y="72" width="8" height="8" fill="' + A(c1, .4) + '"/><rect x="16" y="48" width="4" height="4" fill="' + A(c2, .8) + '"/><rect x="72" y="8" width="4" height="4" fill="' + A(c3, .8) + '"/></g>') + ' 0 0/96px 96px;' + fadeMask('linear-gradient(180deg,#000,transparent 85%)');
+          case 'prism': return 'inset:-35%;filter:blur(70px);opacity:.5;background:conic-gradient(from 0deg,' + A(c1, .5) + ',' + A(c2, .5) + ',' + A(c3, .5) + ',' + A(c1, .5) + ');animation:v7rot 50s linear infinite';
+          case 'petals': return 'opacity:.6;background:' + svg(240, 240, '<g fill="' + A(c1, .45) + '"><ellipse cx="40" cy="40" rx="9" ry="5" transform="rotate(30 40 40)"/><ellipse cx="170" cy="90" rx="8" ry="4.5" transform="rotate(-20 170 90)"/><ellipse cx="90" cy="190" rx="9" ry="5" transform="rotate(60 90 190)"/></g><g fill="' + A(c2, .45) + '"><ellipse cx="200" cy="200" rx="7" ry="4" transform="rotate(10 200 200)"/><ellipse cx="120" cy="120" rx="6" ry="3.5" transform="rotate(-45 120 120)"/></g>') + ' 0 0/240px 240px;animation:v7petal 40s linear infinite';
+          case 'confetti': return 'opacity:.6;background:' + svg(160, 160, '<rect x="20" y="20" width="10" height="4" rx="1" fill="' + A(c1, .7) + '" transform="rotate(25 25 22)"/><rect x="110" y="40" width="10" height="4" rx="1" fill="' + A(c2, .7) + '" transform="rotate(-30 115 42)"/><rect x="60" y="110" width="10" height="4" rx="1" fill="' + A(c3, .8) + '" transform="rotate(60 65 112)"/><circle cx="135" cy="125" r="3" fill="' + A(c1, .7) + '"/><circle cx="35" cy="80" r="2.5" fill="' + A(c2, .7) + '"/><circle cx="90" cy="70" r="2" fill="' + A(c3, .9) + '"/>') + ' 0 0/160px 160px;animation:v7petal 70s linear infinite';
+          case 'lines': return 'background:repeating-linear-gradient(90deg,' + A(c1, light ? .1 : .07) + ' 0 1px,transparent 1px 72px);' + fadeMask('linear-gradient(180deg,#000,transparent 90%)');
+          case 'eclipse': return 'inset:auto;left:50%;top:10vh;width:46vmin;height:46vmin;border-radius:50%;transform:translateX(-50%);background:radial-gradient(circle,' + (light ? '#ffffff' : '#000') + ' 55%,' + A(c1, .95) + ' 57%,' + A(c2, .45) + ' 62%,' + A(c1, .12) + ' 70%,transparent 74%);animation:v7pulse 9s ease-in-out infinite';
+          case 'moon': return 'background:radial-gradient(70px 70px at 82% 16%,rgba(255,255,255,.92),rgba(255,255,255,.75) 60%,transparent 64%),radial-gradient(240px 240px at 82% 16%,' + A(c2, .2) + ',transparent 70%),' + [[12, 18, 1.4], [27, 54, 1], [41, 12, 1.2], [56, 30, 1.5], [68, 42, 1], [8, 62, 1.2], [36, 70, 1], [92, 46, 1.1]].map(([x, y, s]) => 'radial-gradient(' + s + 'px ' + s + 'px at ' + x + '% ' + y + '%,rgba(255,255,255,.8),transparent)').join(',');
+          case 'storm': return THEME_DECO('rain', c1, c2, c3, light) + ';opacity:.85';
+          case 'abstract': return 'opacity:.6;background:' + svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice"><circle cx="1350" cy="250" r="260" fill="none" stroke="' + A(c2, .5) + '" stroke-width="40"/><circle cx="240" cy="820" r="180" fill="' + A(c3, .35) + '"/><path d="M700 1000a300 300 0 0 1 600 0" fill="' + A(c1, .12) + '"/><rect x="1080" y="640" width="120" height="120" fill="' + A(c1, .5) + '"/></svg>') + ' center/cover no-repeat';
+          case 'none': return 'background:none';
+          default: return THEME_DECO(d, c1, c2, c3, light);
+        }
+      }
+      const V7_KF = '@keyframes v7grid{to{background-position:0 36px,50% 0}}@keyframes v7rot{to{transform:rotate(360deg)}}@keyframes v7petal{to{background-position:240px 720px}}';
+
+      // register the 110 themes next to the existing ones (old ids are untouched, so a saved choice keeps working)
+      const V7 = {};                    // id -> row tokens (only for the new themes)
+      V7_ROWS.forEach(row => {
+        let id = slug(row[0]); if (THEMES[id]) id = 'v7-' + id;
+        const [name, cat, light, bg, a1, a2, a3, shape, surf, type, deco, motion, glow, desc] = row;
+        const hs = [a1, a2, a3].map(c => { const [r, g, b] = hx(c).map(x => x / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; if (!d) return 220; let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; return Math.round(h * 60 + 360) % 360; });
+        const t = { id, skin: 1, ds: 1, name, desc, mode: light ? 'Light' : 'Dark', grp: V7_CATS[cat], cat, sw: [bg, a1, a2, a3], hues: hueRun(hs[0], hs[1] + (hs[1] < hs[0] - 180 ? 360 : 0)), tags: [surf, type, deco, motion, shape === 'S' ? 'sharp' : shape === 'p' ? 'pill' : 'rounded'] };
+        if (light) t.base = 'light';
+        V7[id] = row; THEME_LIST.push(t); THEMES[id] = t;
+      });
+      const V7_IDS = Object.keys(V7);
+      const V7_DEFAULT = 'aurora-glass';
+      const CLASSIC = 'Classic collection';
+      // the Tools-bar Theme dropdown lists every group
+      function v7ThemeSelect() {
+        const groups = [...Object.values(V7_CATS), ...THEME_GROUPS];
+        $('#xTheme').innerHTML = groups.map(gp => { const ts = THEME_LIST.filter(t => t.grp === gp && thAvail(t)); return ts.length ? '<optgroup label="' + esc(gp) +(THEME_GROUPS.includes(gp) ? ' (classic)' : '') + '">' + ts.map(t => '<option value="' + t.id + '">' + esc(t.name) + '</option>').join('') + '</optgroup>' : ''; }).join('');
+        $('#xTheme').value = X.theme;
+      }
+
+      /* ---------- dials (Theme Studio) ---------- */
+      const TUNE_DEF = { glass: 1, blur: 1, border: 1, glow: 1, spec: 1, bg: 1, accent: '', motion: '', fav: [], recent: [] };
+      const TUNE = Object.assign({}, TUNE_DEF, LS.get('pll.tune', {}));
+      if (!Array.isArray(TUNE.fav)) TUNE.fav = []; if (!Array.isArray(TUNE.recent)) TUNE.recent = [];
+      if (!TUNE.motion) TUNE.motion = GFX.anim === 'off' ? 'off' : GFX.anim === 'reduced' ? 'reduced' : 'balanced';
+      const saveTune = () => LS.set('pll.tune', TUNE);
+      function applyTune() {
+        const st = HTML.style;
+        [['--u-glass', 'glass'], ['--u-blur', 'blur'], ['--u-border', 'border'], ['--u-glow', 'glow'], ['--u-spec', 'spec'], ['--u-bg', 'bg']].forEach(([k, n]) => { if (+TUNE[n] === 1) st.removeProperty(k); else st.setProperty(k, String(+TUNE[n])); });
+        if (/^#[0-9a-f]{6}$/i.test(TUNE.accent || '')) {
+          const bg = cssv('--bg') || '#05050f', c = ensureC(TUNE.accent, /^#[0-9a-f]{6}$/i.test(bg) ? bg : '#05050f', 3.2);
+          st.setProperty('--c1', c); st.setProperty('--tint', c); st.setProperty('--ring', c); st.setProperty('--o1', c);
+          st.setProperty('--on-acc', contrastC('#ffffff', c) >= contrastC('#0a0a14', c) ? '#ffffff' : '#0a0a14');
+        } else ['--c1', '--tint', '--ring', '--o1', '--on-acc'].forEach(k => st.removeProperty(k));
+        HTML.classList.toggle('mx-x', TUNE.motion === 'expressive' && motionOK());
+      }
+      function setMotion(m) {
+        TUNE.motion = m; saveTune();
+        GFX.anim = m === 'off' ? 'off' : m === 'reduced' ? 'reduced' : 'full'; GFX.preset = GFX_PRESETS[GFX.preset] && GFX_PRESETS[GFX.preset].anim === GFX.anim ? GFX.preset : 'custom';
+        saveGfx(); applyGfx(); applyTune();
+      }
+
+      /* ---------- applying a theme: the old skin code runs first, then the v7 tokens ---------- */
+      const dsStyle = document.createElement('style'); dsStyle.id = 'v7theme'; document.head.appendChild(dsStyle);
+      let dsShown = '';
+      function applyDS() {
+        const t = THEMES[X.theme], row = t && V7[t.id];
+        if (!row) {
+          if (dsShown) { HTML.classList.remove('ds'); ['surface', 'mode', 'deco', 'motion', 'shape'].forEach(k => delete HTML.dataset[k]); dsStyle.textContent = ''; dsShown = ''; }
+          applyTune(); return;
+        }
+        if (dsShown !== t.id) {
+          const k = v7Tokens(row), sel = 'html[data-skin=' + t.id + ']';
+          dsStyle.textContent = sel + '{' + Object.entries(k.v).map(([n, x]) => n + ':' + x).join(';') + '}\n' +
+            'html.ds:not(.hc):not(#_)' + '[data-skin=' + t.id + '] .orbs::before{' + v7Deco(k.deco, k.c1, k.c2, k.c3, k.light).replace(/opacity:([\d.]+)/, 'opacity:calc($1 * var(--u-bg))') + '}\n' + V7_KF;
+          HTML.classList.add('ds');
+          Object.assign(HTML.dataset, { surface: k.surf, mode: k.light ? 'light' : 'dark', deco: k.deco, motion: k.motion, shape: row[7] });
+          const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = row[3];
+          dsShown = t.id;
+        }
+        applyTune();
+      }
+      const _skV7 = skinApply;
+      skinApply = function () { _skV7(); applyDS(); requestAnimationFrame(tabInd); };
+      const _stV7 = setTheme;
+      setTheme = function (id) {
+        _stV7(id);
+        if (THEMES[id] && X.theme === id) { TUNE.recent = [id, ...TUNE.recent.filter(x => x !== id)].slice(0, 12); saveTune(); }
+      };
+
+      /* ---------- the saved theme comes back after a reload (it was reset to Aurora Classic when it was one of the generated themes) ---------- */
+      {
+        let want = X_THEME0;
+        if (want === 'aurora' && !LS.get('pll.v7mig', 0)) {        // the old default look → the new default look, once (Aurora Classic stays available)
+          want = V7_DEFAULT; LS.set('pll.v7mig', Date.now());
+          setTimeout(() => toast('✨ New default look: Aurora Glass. Prefer the old one? Theme Studio → Classic collection → Aurora Classic.', 'ok'), 3200);
+        } else if (!LS.get('pll.v7mig', 0)) LS.set('pll.v7mig', Date.now());
+        if (!THEMES[want] || (THEMES[want].dlc && !dlcOn(THEMES[want].dlc))) want = THEMES[X.theme] && X.theme !== 'aurora' ? X.theme : V7_DEFAULT;
+        X.theme = want;
+        v7ThemeSelect(); skinApply(); saveX();
+      }
+
+      /* ---------- navigation rail ---------- */
+      const NAV = [
+        ['Workspace'],
+        ['dash', 'Overview', 'dash', () => goTab('dash')],
+        ['live', 'Live piano', 'piano', () => goSec('stage')],
+        ['act', 'Live activity', 'activity', () => goSec('live')],
+        ['keys', 'Key statistics', 'bars', () => goTab('keys')],
+        ['analysis', 'Analysis', 'scope', () => goTab('analysis')],
+        ['hist', 'History', 'history', () => goTab('hist')],
+        ['Create'],
+        ['practice', 'Practice', 'cap', () => goTab('practice')],
+        ['studio', 'Studio', 'sparkles', () => goTab('studio')],
+        ['profile', 'Profile', 'user', () => goTab('profile')],
+        ['sound', 'Sound setup', 'music', () => goSec('sound')],
+        ['System'],
+        ['devices', 'MIDI devices', 'usb', () => openDevices()],
+        ['data', 'Data & backup', 'db', () => goTab('data')],
+        ['themes', 'Theme Studio', 'palette', () => openStudio()],
+        ['settings', 'Settings', 'gear', () => openSettings()],
+        ['news', 'What’s new', 'gift', () => openNews()],
+        ['help', 'Help', 'help', () => goTab('help')]
+      ];
+      const TAB_NAV = { dash: 1, keys: 1, analysis: 1, hist: 1, practice: 1, studio: 1, profile: 1, data: 1, help: 1 };
+      const smooth = () => motionOK() ? 'smooth' : 'auto';
+      function goTab(n) { showTab(n); const w = $('.tabs-wrap'); if (w) { if (w.classList.contains('collapsed')) w.classList.remove('collapsed'); w.scrollIntoView({ behavior: smooth(), block: 'start' }); } navClose(); }
+      function goSec(n) { const s = $('[data-sec=' + n + ']'); if (s) { s.classList.remove('collapsed'); if (s.tagName === 'DETAILS') s.open = true; s.scrollIntoView({ behavior: smooth(), block: 'start' }); } navClose(); }
+      const nav = document.createElement('nav');
+      nav.className = 'v7nav glass'; nav.id = 'v7nav'; nav.setAttribute('aria-label', 'Main navigation');
+      nav.innerHTML = '<div class="nv-brand"><span class="nv-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="17.5" cy="16" r="2.5" fill="currentColor"/></svg></span>' +
+        '<span class="nv-name"><b>Piano Logger</b><small>v' + APP_VERSION + ' · Aurora Glass Studio</small></span></div>' +
+        '<div class="nv-list">' + '<span class="nv-ind" aria-hidden="true"></span>' +
+        NAV.map(n => n.length === 1 ? '<div class="nv-sec" aria-hidden="true">' + esc(n[0]) + '</div>' : '<button type="button" class="nv-i" data-nv="' + n[0] + '" title="' + esc(n[1]) + '">' + icon(n[2]) + '<span>' + esc(n[1]) + '</span>' + (n[0] === 'news' ? '<i class="nv-dot" hidden></i>' : '') + '</button>').join('') + '</div>' +
+        '<div class="nv-foot"><div class="nv-viz" aria-hidden="true">' + '<i></i>'.repeat(18) + '</div>' +
+        '<div class="nv-status" id="nvStatus" role="status"><i></i><span>MIDI not connected</span></div>' +
+        '<button type="button" class="nv-collapse" id="nvCollapse" aria-label="Collapse the navigation">' + icon('chev') + '<span>Collapse</span></button></div>';
+      document.body.insertBefore(nav, document.body.firstChild);
+      document.body.classList.add('has-nav');
+      const scrim = document.createElement('div'); scrim.className = 'v7scrim'; scrim.onclick = () => navClose(); document.body.insertBefore(scrim, nav.nextSibling);
+      function navClose() { HTML.classList.remove('nav-open'); }
+      nav.addEventListener('click', e => { const b = e.target.closest('.nv-i'); if (!b) return; const n = NAV.find(x => x[0] === b.dataset.nv); if (n) n[3](); });
+      if (LS.get('pll.nav', '') === 'rail') HTML.classList.add('nav-rail');
+      $('#nvCollapse').onclick = () => { const r = HTML.classList.toggle('nav-rail'); LS.set('pll.nav', r ? 'rail' : 'full'); $('#nvCollapse').setAttribute('aria-label', r ? 'Expand the navigation' : 'Collapse the navigation'); setTimeout(() => { navMark(); resizeRoll(); tabInd(); }, 400); };
+      // a menu button in the top bar opens the navigation on smaller screens
+      {
+        const m = document.createElement('button'); m.type = 'button'; m.className = 'btn icon v7menu'; m.id = 'v7menu'; m.setAttribute('aria-label', 'Open navigation'); m.innerHTML = icon('menu');
+        m.onclick = () => HTML.classList.toggle('nav-open'); $('.top').insertBefore(m, $('.top').firstChild);
+        // where you are, shown in the top bar while the brand sits in the rail
+        const cr = document.createElement('div'); cr.className = 'v7crumb'; cr.innerHTML = '<small>Piano Logger</small><b id="v7crumbT" aria-live="polite">Overview</b>';
+        m.after(cr);
+      }
+      window.addEventListener('keydown', e => { if (e.key === 'Escape' && HTML.classList.contains('nav-open')) navClose(); });
+      // which item is active: the tab you are on when the tabs are in view, otherwise the section you are looking at
+      let navCur = '';
+      function navMark() {
+        const H = innerHeight, probe = H * 0.32;
+        let cur = activeTab();
+        const secs = [['stage', 'live'], ['live', 'act'], ['sound', 'sound']];
+        const tw = $('.tabs-wrap'), twr = tw && tw.getBoundingClientRect();
+        if (!(twr && twr.top < probe + 80)) for (const [s, id] of secs) { const el = $('[data-sec=' + s + ']'); if (!el || el.hidden) continue; const r = el.getBoundingClientRect(); if (r.top <= probe && r.bottom > probe) { cur = id; break; } if (r.top > probe) break; }
+        if (!TAB_NAV[cur] && !['live', 'act', 'sound'].includes(cur)) cur = 'dash';
+        navCur = cur;
+        const ind = nav.querySelector('.nv-ind'), b = nav.querySelector('.nv-i[data-nv="' + cur + '"]');
+        nav.querySelectorAll('.nv-i').forEach(x => x === b ? x.setAttribute('aria-current', 'page') : x.removeAttribute('aria-current'));
+        const ct = $('#v7crumbT'); if (ct && b && ct.textContent !== b.title) ct.textContent = b.title;
+        if (b && ind) { ind.style.transform = 'translateY(' + b.offsetTop + 'px)'; ind.style.height = b.offsetHeight + 'px'; ind.style.opacity = 1; }
+      }
+      let navRaf = 0; window.addEventListener('scroll', () => { if (!navRaf) navRaf = requestAnimationFrame(() => { navRaf = 0; navMark(); }); }, { passive: true });
+      // a small live visualiser in the rail: each bar is a part of the keyboard; it jumps with what you play
+      {
+        const bars = [...nav.querySelectorAll('.nv-viz i')], lvl = new Float32Array(bars.length); let raf = 0, last = 0;
+        const paint = now => {
+          raf = 0; const dt = Math.min(200, now - (last || now)); last = now; let more = false;
+          bars.forEach((b, i) => { lvl[i] = Math.max(0, lvl[i] - dt / 900); if (lvl[i] > 0.01) more = true; b.style.height = (6 + lvl[i] * 94).toFixed(1) + '%'; });
+          if (more && !document.hidden) raf = requestAnimationFrame(paint); else last = 0;
+        };
+        onBus('noteon', d => {
+          const i = clamp(Math.floor((d.midi - FIRST) / (LAST - FIRST + 1) * bars.length), 0, bars.length - 1), v = (d.velocity || 80) / 127;
+          lvl[i] = Math.min(1, lvl[i] + 0.5 + v * 0.5); if (i > 0) lvl[i - 1] = Math.min(1, lvl[i - 1] + v * 0.35); if (i < bars.length - 1) lvl[i + 1] = Math.min(1, lvl[i + 1] + v * 0.35);
+          if (!raf && motionOK()) raf = requestAnimationFrame(paint); else if (!motionOK()) bars.forEach((b, k) => b.style.height = (6 + lvl[k] * 94) + '%');
+        });
+      }
+
+      /* ---------- icons in the top bar (the buttons and what they do are unchanged) ---------- */
+      function v7Icons() {
+        [['btnPal', 'search'], ['btnFocus', 'focus'], ['btnThemes', 'palette'], ['btnSet', 'gear'], ['btnFs', 'max'], ['btnNews', 'gift'], ['btnApp', 'monitor'], ['btnSounds', 'music'], ['btnDlc', 'puzzle']].forEach(([id, n]) => {
+          const b = $('#' + id); if (!b || !b.classList.contains('icon') || b.dataset.ico) return;
+          [...b.childNodes].forEach(c => { if (c.nodeType === 3) c.remove(); }); b.insertAdjacentHTML('afterbegin', icon(n)); b.dataset.ico = n;
+        });
+      }
+      v7Icons();
+
+      /* ---------- status: the top-bar pill is the one source; the rail, the overview and the device centre follow it ---------- */
+      const statusNow = () => ({ s: $('#statusPill').dataset.s || 'idle', t: $('#statusText').textContent || '' });
+      function v7Status() {
+        const { s, t } = statusNow(), ns = $('#nvStatus');
+        if (ns) { ns.dataset.s = s; ns.querySelector('span').textContent = t; ns.title = t; }
+        heroPaint(); if (dvOpen()) dvPaint();
+      }
+      new MutationObserver(v7Status).observe($('#statusPill'), { attributes: true, childList: true, subtree: true, characterData: true });
+
+      /* ---------- tabs: a sliding indicator ---------- */
+      const tabsEl = $('#tabs'), tabIndEl = document.createElement('span');
+      tabIndEl.className = 'tab-ind'; tabIndEl.setAttribute('aria-hidden', 'true'); tabsEl.appendChild(tabIndEl); tabsEl.classList.add('has-ind');
+      function tabInd() {
+        const b = tabsEl.querySelector('.tab[aria-selected=true]'); if (!b || !HTML.classList.contains('ds')) return;
+        tabIndEl.style.transform = 'translate(' + b.offsetLeft + 'px,' + b.offsetTop + 'px)'; tabIndEl.style.width = b.offsetWidth + 'px'; tabIndEl.style.height = b.offsetHeight + 'px';
+      }
+      if (window.ResizeObserver) new ResizeObserver(() => tabInd()).observe(tabsEl);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { tabInd(); navMark(); });
+      const _stabV7 = showTab;
+      showTab = function (n) { _stabV7(n); tabInd(); navMark(); if (n === 'dash') heroPaint(true); };
+
+      /* ---------- dashboard overview (only numbers the app already keeps) ---------- */
+      const hero = document.createElement('section');
+      hero.className = 'v7hero'; hero.id = 'v7hero'; hero.setAttribute('aria-label', 'Overview');
+      hero.innerHTML = '<div class="hx-main"><span class="hx-eyebrow" id="hxConn" role="status"><i></i><span>Checking MIDI…</span></span>' +
+        '<h2 class="hx-title" id="hxTitle"></h2><p class="hx-sub" id="hxSub"></p>' +
+        '<div class="hx-actions"><button type="button" class="btn primary" id="hxConnect">' + icon('plug') + '<span>Connect MIDI</span></button>' +
+        '<button type="button" class="btn" id="hxDevices">' + icon('usb') + '<span>Devices</span></button>' +
+        '<button type="button" class="btn" id="hxThemes">' + icon('palette') + '<span>Theme Studio</span></button>' +
+        '<button type="button" class="btn" id="hxBackup">' + icon('save') + '<span>Back up</span></button></div></div>' +
+        '<div class="hx-stats">' + [['hxLife', 'Lifetime presses'], ['hxToday', 'Today (saved)'], ['hxSess', 'This session'], ['hxPeak', 'Fastest keys/s · session']].map(([id, l]) => '<div class="hx-stat skel"><small>' + l + '</small><b id="' + id + '">0</b></div>').join('') + '</div>' +
+        '<div class="hx-recent" id="hxRecent" aria-live="off"><small>Just played</small><span class="sub">Play a note and it appears here.</span></div>' +
+        '<div class="hx-keys"><span><kbd>Ctrl</kbd> + <kbd>K</kbd> search every action</span><span><kbd>Esc</kbd> close windows</span><span>Focus mode: the <b>focus</b> button in the top bar</span></div>' +
+        '<svg class="hx-art" viewBox="0 0 400 200" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path class="wave" d="M0 60 Q 25 20 50 60 T 100 60 T 150 60 T 200 60 T 250 60 T 300 60 T 350 60 T 400 60"/>' +
+        [...Array(10)].map((_, i) => '<rect x="' + (10 + i * 38) + '" y="100" width="36" height="96" rx="5"/>').join('') + [0, 1, 3, 4, 5, 7, 8].map(i => '<rect x="' + (36 + i * 38) + '" y="100" width="22" height="56" rx="4" fill="currentColor"/>').join('') + '</svg>';
+      $('#p-dash').insertBefore(hero, $('#p-dash').firstChild);
+      $('#hxConnect').onclick = () => connectMIDI();
+      $('#hxDevices').onclick = () => openDevices();
+      $('#hxThemes').onclick = () => openStudio();
+      $('#hxBackup').onclick = () => backupNow();
+      const HX = { shown: {}, recent: [], raf: 0 };
+      function tween(id, to) {
+        const el = $('#' + id); if (!el) return;
+        const from = HX.shown[id] == null ? to : HX.shown[id]; HX.shown[id] = to;
+        if (from === to || !motionOK() || Math.abs(to - from) > 1e7) { el.textContent = fmtInt(to); return; }
+        const t0 = performance.now(), D = 650;
+        const step = now => { const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3); el.textContent = fmtInt(Math.round(from + (to - from) * e)); if (k < 1 && HX.shown[id] === to) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      }
+      function heroPaint(force) {
+        if (!hero.isConnected || (!force && activeTab() !== 'dash')) return;
+        const h = new Date().getHours(), greet = h < 5 ? 'Late night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+        const name = (typeof PF !== 'undefined' && PF.p && PF.p.name) ? PF.p.name : '';
+        $('#hxTitle').innerHTML = esc(greet) + (name ? ', <em>' + esc(name) + '</em>' : '') + '.';
+        const { s, t } = statusNow(), c = $('#hxConn'); c.dataset.s = s; c.querySelector('span').textContent = t;
+        const live = midiAccess ? [...midiAccess.inputs.values()].filter(i => i.state === 'connected').length : 0;
+        $('#hxSub').textContent = s === 'ok' ? 'Listening to ' + live + ' MIDI input' + (live === 1 ? '' : 's') + (selectedInput !== 'all' ? ' (one selected)' : '') + '. Every key press is saved on this device the moment you release it.'
+          : 'Connect a MIDI keyboard, or play with the on-screen piano or your PC keyboard. Every press is saved on this device.';
+        $('#hxConnect span').textContent = s === 'ok' ? 'Reconnect' : 'Connect MIDI';
+        const ready = !!(cache && cache.g) || !!dbError;
+        hero.querySelectorAll('.hx-stat').forEach(x => x.classList.toggle('skel', !ready));
+        if (!ready) return;
+        const today = (cache.g.days || {})[localParts(Date.now()).date] || 0;
+        tween('hxLife', lifetime); tween('hxToday', today); tween('hxSess', sessionPresses);
+        const pk = $('#cPeakS'); $('#hxPeak').textContent = pk ? pk.textContent : '0';
+      }
+      function heroRecent() {
+        const box = $('#hxRecent'); if (!box || activeTab() !== 'dash') return;
+        if (!HX.recent.length) return;
+        box.innerHTML = '<small>Just played</small>' + HX.recent.map(m => '<span class="hx-n" style="--h:' + hueOf(m) + '">' + prettySharp(m) + '</span>').join('');
+      }
+      onBus('noteon', d => {
+        HX.recent.unshift(d.midi); if (HX.recent.length > 12) HX.recent.length = 12;
+        if (!HX.raf) HX.raf = requestAnimationFrame(() => { HX.raf = 0; heroRecent(); heroPaint(); });
+        const big = $('#bigNote'); if (big && motionOK()) { big.classList.remove('v7pop'); void big.offsetWidth; big.classList.add('v7pop'); }
+      });
+      setInterval(() => { if (!document.hidden) heroPaint(); }, 1500);
+
+      /* ---------- MIDI device centre ---------- */
+      const RUNTIME = !window.pianoApp ? 'Website' : window.pianoApp.runtime === 'tauri' ? 'Desktop app (Tauri)' : 'Desktop app (Electron)';
+      // Tauri app: a browser download (export, backup file, .mid) is saved by the app, which says where (never fires on the website)
+      window.addEventListener('pianoapp-download', e => { const d = e.detail || {}; toast(d.success ? '⬇ Saved to ' + (d.path || 'your Downloads folder') : 'The download did not finish.', d.success ? 'ok' : 'bad'); });
+      let dvTimer = 0, dvSig = '', dvPerm = 'unknown';
+      const dvOpen = () => !$('#gm').hidden && !!$('#dvBox');
+      function dvPaint() {
+        const box = $('#dvBox'); if (!box) return;
+        const { s, t } = statusNow();
+        const ins = midiAccess ? [...midiAccess.inputs.values()] : [], outs = midiAccess ? [...midiAccess.outputs.values()] : [];
+        const sig = s + t + selectedInput + dvPerm + ins.map(i => i.id + i.state + i.connection).join() + outs.map(o => o.id + o.state).join() + ($('#outSel') ? $('#outSel').value : '');
+        if (sig === dvSig) return; dvSig = sig;
+        const row = (sel, ic, name, sub, st, btn) => '<div class="dv-row' + (sel ? ' sel' : '') + '">' + icon(ic) + '<div class="dv-n"><b>' + esc(name) + '</b><small>' + esc(sub) + '</small></div>' + st + btn + '</div>';
+        const stTag = p => p.state === 'connected' ? '<span class="dv-st on">' + (p.connection === 'open' ? 'Open' : 'Connected') + '</span>' : '<span class="dv-st off">Disconnected</span>';
+        const out = $('#outSel') ? $('#outSel').value : '';
+        box.innerHTML =
+          '<div class="dv-head" data-s="' + s + '"><span class="dv-orb">' + icon(s === 'ok' ? 'check' : s === 'bad' ? 'x' : 'usb') + '</span><div style="flex:1;min-width:0"><b>' + esc(t) + '</b><span class="sub">' +
+          (!navigator.requestMIDIAccess ? 'This browser has no Web MIDI. The on-screen piano and PC keys still work.' : s === 'ok' ? 'Notes from the selected input are logged.' : s === 'bad' ? 'See the steps below the top bar to fix this.' : 'Plug in a keyboard and press Reconnect.') +
+          '</span></div><button type="button" class="btn primary" id="dvRe">' + icon('refresh') + ' Reconnect</button></div>' +
+          '<h3>Inputs · what is logged</h3><div class="dv-list">' +
+          row(selectedInput === 'all', 'piano', 'All MIDI inputs', 'Listen to every connected keyboard', '', '<button type="button" class="btn small" data-in="all"' + (selectedInput === 'all' ? ' disabled' : '') + '>' + (selectedInput === 'all' ? 'Listening' : 'Listen') + '</button>') +
+          (ins.length ? ins.map(i => row(selectedInput === i.id, 'usb', i.name || 'MIDI input', (i.manufacturer || 'Unknown maker') + (outPort && i.name === outPort.name ? ' · ignored (it is the MIDI-out cable)' : ''), stTag(i), '<button type="button" class="btn small" data-in="' + esc(i.id) + '"' + (selectedInput === i.id ? ' disabled' : '') + '>' + (selectedInput === i.id ? 'Listening' : 'Only this') + '</button>')).join('')
+            : '<p class="sub">' + (midiAccess ? 'No MIDI inputs found. Plug the keyboard in with a data USB cable; it appears here by itself.' : 'MIDI is not connected yet.') + '</p>') +
+          '</div><h3>Outputs · MIDI out</h3><div class="dv-list">' +
+          (outs.length ? outs.map(o => row(out === o.id, 'out', o.name || 'MIDI output', o.manufacturer || '', stTag(o), '<button type="button" class="btn small" data-out="' + esc(o.id) + '">' + (out === o.id ? 'Stop sending' : 'Send notes here') + '</button>')).join('') : '<p class="sub">No MIDI outputs.</p>') +
+          '</div><h3>Environment</h3><div class="dv-env"><div><small>Running in</small>' + esc(RUNTIME) + '</div><div><small>Web MIDI</small>' + (navigator.requestMIDIAccess ? 'Supported' : 'Not supported') + '</div>' +
+          '<div><small>Permission</small>' + esc(dvPerm) + '</div><div><small>Secure context</small>' + (window.isSecureContext ? 'Yes' : 'No') + '</div></div>';
+        $('#dvRe').onclick = () => { dvSig = ''; connectMIDI(); };
+        box.querySelectorAll('[data-in]').forEach(b => b.onclick = () => { const sel = $('#deviceSel'); sel.value = b.dataset.in; sel.dispatchEvent(new Event('change')); dvSig = ''; dvPaint(); v7Status(); });
+        box.querySelectorAll('[data-out]').forEach(b => b.onclick = () => { const sel = $('#outSel'); sel.value = sel.value === b.dataset.out ? '' : b.dataset.out; sel.dispatchEvent(new Event('change')); dvSig = ''; dvPaint(); });
+      }
+      function openDevices() {
+        navClose(); dvSig = '';
+        openModal('<div class="th-head"><h2 style="font-size:20px">MIDI devices</h2><span class="sub">Connection, inputs, outputs and permissions</span></div><div id="dvBox"></div>' +
+          '<div class="actions"><button class="btn primary" data-act="close">Done</button><button class="btn" id="dvHelp">Troubleshooting</button></div>');
+        $('#dvHelp').onclick = () => { $('#gm').hidden = true; goTab('help'); };
+        try { navigator.permissions && navigator.permissions.query({ name: 'midi' }).then(p => { dvPerm = p.state; dvSig = ''; dvPaint(); }).catch(() => { }); } catch (e) { }
+        dvPaint(); clearInterval(dvTimer);
+        dvTimer = setInterval(() => { if (!dvOpen()) { clearInterval(dvTimer); return; } dvPaint(); }, 1000);
+      }
+
+      /* ---------- Theme Studio ---------- */
+      const TS = { cat: 'all', mode: 'all', q: '', pick: null, committed: null, el: null, prevFocus: null };
+      function prevVars(t) {                       // the tokens the little preview card needs
+        const row = V7[t.id];
+        if (row) {
+          const k = v7Tokens(row), v = k.v, R = k.R;
+          return { bg: row[3], bgimg: 'radial-gradient(120% 90% at 0% 0%,' + rgbaC(row[4], k.light ? .18 : .32) + ',transparent 60%),radial-gradient(100% 80% at 100% 100%,' + rgbaC(row[5], k.light ? .16 : .28) + ',transparent 60%)',
+            surf: k.surf === 'outline' ? rgbaC(k.sC, .1) : rgbaC(k.sC, Math.min(1, v['--s-a'] + (k.light ? .15 : .1))), bd: k.bd, bw: k.surf === 'brutal' ? '2px' : '1px', r: Math.min(R[0], 12) + 'px', rb: (R[3] > 100 ? 99 : Math.min(R[3], 8)) + 'px',
+            sh: k.surf === 'brutal' ? '3px 3px 0 ' + k.txt : k.surf === 'neon' ? '0 0 10px -2px ' + k.c1 : 'none', txt: k.txt, mut: k.mut, c1: k.c1, c2: k.c2,
+            btn: k.surf === 'neon' || k.surf === 'crt' ? 'transparent' : 'linear-gradient(135deg,' + k.c1 + ',' + mixC(k.c1, k.c2, .5) + ')', btnsh: k.surf === 'neon' || k.surf === 'crt' ? 'inset 0 0 0 1px ' + k.c1 + ',0 0 8px ' + k.c1 : k.surf === 'brutal' ? '2px 2px 0 ' + k.txt : 'none',
+            font: v['--font'], fonth: v['--font-h'], tf: v['--h-tf'] };
+        }
+        const [bg, c1, c2, c3] = t.sw, light = t.mode === 'Light';
+        return { bg, bgimg: 'radial-gradient(120% 90% at 0% 0%,' + rgbaC(c1, .3) + ',transparent 60%),radial-gradient(100% 80% at 100% 100%,' + rgbaC(c2, .26) + ',transparent 60%)', surf: light ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,.08)', bd: light ? 'rgba(20,20,40,.12)' : 'rgba(255,255,255,.14)', bw: '1px', r: '10px', rb: '7px', sh: 'none',
+          txt: light ? '#111827' : '#f4f5fb', mut: light ? '#6b7280' : '#9b9dbb', c1, c2, btn: 'linear-gradient(135deg,' + c1 + ',' + c2 + ')', btnsh: 'none', font: 'var(--font)', fonth: 'var(--font)', tf: 'none' };
+      }
+      function tsCard(t, i) {
+        const p = prevVars(t), st = Object.entries(p).map(([k, x]) => '--p-' + k + ':' + x).join(';').replace(/"/g, '&quot;');
+        const fav = TUNE.fav.includes(t.id);
+        return '<div class="ts-card' + (t.id === TS.pick ? ' on' : '') + (t.id === TS.committed ? ' cur' : '') + '" data-th="' + t.id + '" style="--i:' + i + '">' +
+          '<button type="button" class="ts-pick" aria-pressed="' + (t.id === TS.pick) + '" aria-label="Preview ' + esc(t.name) + '"><span class="tp" style="' + st + '" aria-hidden="true"><span class="tp-side"><i></i><i></i><i></i><i></i></span><span class="tp-body"><span class="tp-card"><b>' + esc(t.name) + '</b><u><s></s><s></s></u></span>' +
+          '<span class="tp-card"><span class="tp-bars">' + [40, 70, 55, 90, 65, 80].map(h => '<i style="height:' + h + '%"></i>').join('') + '</span></span></span></span>' +
+          '<span class="ts-meta"><b>' + esc(t.name) + '</b><small>' + esc(t.desc) + '</small><span class="ts-sw">' + t.sw.map(c => '<i style="background:' + c + '"></i>').join('') + '</span></span></button>' +
+          '<button type="button" class="ts-fav" aria-pressed="' + fav + '" aria-label="' + (fav ? 'Remove from' : 'Add to') + ' favourites: ' + esc(t.name) + '">' + icon('star') + '</button></div>';
+      }
+      const tsAll = () => THEME_LIST.filter(thAvail);
+      function tsList() {
+        const q = TS.q.trim().toLowerCase();
+        let L = tsAll();
+        if (TS.cat === 'fav') L = TUNE.fav.map(id => THEMES[id]).filter(t => t && thAvail(t));
+        else if (TS.cat === 'recent') L = TUNE.recent.map(id => THEMES[id]).filter(t => t && thAvail(t));
+        else if (TS.cat === 'classic') L = L.filter(t => !t.ds);
+        else if (TS.cat !== 'all') L = L.filter(t => t.cat === TS.cat);
+        else L = [...L.filter(t => t.ds), ...L.filter(t => !t.ds)];
+        if (TS.mode !== 'all') L = L.filter(t => t.mode.toLowerCase() === TS.mode);
+        if (q) L = L.filter(t => (t.name + ' ' + t.desc + ' ' + t.grp + ' ' + t.mode + ' ' + (t.tags || []).join(' ') + (t.ds ? '' : ' classic')).toLowerCase().includes(q));
+        return L;
+      }
+      function tsPaintGrid() {
+        const L = tsList(), g = TS.el.querySelector('.ts-grid');
+        g.innerHTML = L.length ? L.map(tsCard).join('') : '<div class="ts-empty">' + (TS.cat === 'fav' ? 'No favourites yet. Press the star on any theme.' : TS.cat === 'recent' ? 'Themes you apply appear here.' : 'No theme matches “' + esc(TS.q) + '”.') + '</div>';
+        TS.el.querySelector('#tsCount').textContent = L.length + ' shown';
+        TS.el.querySelectorAll('.ts-cat').forEach(b => b.setAttribute('aria-pressed', b.dataset.c === TS.cat));
+      }
+      function tsCats() {
+        const AV = tsAll(), n = c => AV.filter(t => t.cat === c).length;
+        return '<button type="button" class="ts-cat" data-c="all">All themes<small>' + AV.length + '</small></button>' +
+          '<button type="button" class="ts-cat" data-c="fav">Favourites<small id="tsFavN">' + TUNE.fav.length + '</small></button>' +
+          '<button type="button" class="ts-cat" data-c="recent">Recently used<small>' + TUNE.recent.length + '</small></button><h4>Collections</h4>' +
+          Object.entries(V7_CATS).map(([k, v]) => '<button type="button" class="ts-cat" data-c="' + k + '">' + esc(v) + '<small>' + n(k) + '</small></button>').join('') +
+          '<button type="button" class="ts-cat" data-c="classic">' + CLASSIC + '<small>' + AV.filter(t => !t.ds).length + '</small></button>';
+      }
+      function tsSide() {
+        const t = THEMES[TS.pick] || THEMES[X.theme], row = V7[t.id], applied = t.id === TS.committed;
+        const dial = (k, label, min, max) => '<label class="ts-dial">' + label + ' <output id="tsO_' + k + '">' + Math.round(TUNE[k] * 100) + '%</output><input type="range" min="' + min + '" max="' + max + '" step="0.05" value="' + TUNE[k] + '" data-k="' + k + '"' + (row ? '' : ' disabled') + '></label>';
+        const AC = ['', '#22d3ee', '#8b5cf6', '#f472b6', '#f97316', '#facc15', '#4ade80', '#3b82f6', '#ef4444'];
+        return '<div class="ts-now"><span class="sub">' + (applied ? 'Active theme' : 'Previewing') + '</span><b>' + esc(t.name) + '</b><span class="sub">' + esc(t.desc) + '</span>' +
+          '<span class="ts-tags"><span>' + esc(t.grp) + '</span><span>' + t.mode + '</span>' + (t.tags || ['classic glass']).map(x => '<span>' + esc(x) + '</span>').join('') + '</span></div>' +
+          '<div class="ts-acts"><button type="button" class="btn primary" id="tsApply"' + (applied ? ' disabled' : '') + '>' + (applied ? icon('check') + ' Applied' : 'Apply theme') + '</button>' +
+          '<button type="button" class="btn" id="tsRnd">Surprise me</button><button type="button" class="btn" id="tsReset">' + icon('reset') + ' Reset all</button></div>' +
+          '<h4>Accent colour</h4><div class="ts-acc">' + AC.map(c => '<button type="button" class="sw" style="--sw:' + (c || 'conic-gradient(' + t.sw.slice(1).join(',') + ',' + t.sw[1] + ')') + '" data-acc="' + c + '" aria-pressed="' + ((TUNE.accent || '') === c) + '" aria-label="' + (c ? 'Accent ' + c : 'Theme accent') + '"></button>').join('') +
+          '<input type="color" id="tsAccC" value="' + (TUNE.accent || t.sw[1]) + '" aria-label="Custom accent colour"></div>' +
+          '<h4>Glass &amp; light</h4><div class="ts-dials">' + dial('glass', 'Glass opacity', 0.2, 1.6) + dial('blur', 'Background blur', 0, 1.6) + dial('spec', 'Reflections', 0, 2) + dial('border', 'Border brightness', 0.2, 2) + dial('glow', 'Glow', 0, 2) + dial('bg', 'Background intensity', 0, 1.5) +
+          (row ? '' : '<p class="sub">These dials shape the 110 new themes. Classic themes keep their original glass.</p>') + '</div>' +
+          '<h4>Motion</h4><div class="seg" id="tsMotion" role="group" aria-label="Motion">' + [['off', 'Off'], ['reduced', 'Reduced'], ['balanced', 'Balanced'], ['expressive', 'Expressive']].map(([v, l]) => '<button type="button" data-m="' + v + '" class="' + (TUNE.motion === v ? 'on' : '') + '" aria-pressed="' + (TUNE.motion === v) + '">' + l + '</button>').join('') + '</div>' +
+          '<p class="sub">' + (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'Your system asks for reduced motion, so big animations stay off whatever you choose here.' : 'Expressive adds magnetic buttons, card tilt and light sweeps.') + '</p>' +
+          '<label class="sub"><input type="checkbox" id="tsNotes"' + (LOOK.themeNotes ? ' checked' : '') + '> Colour notes and keys to match the theme</label>';
+      }
+      function tsPaintSide() {
+        const s = TS.el.querySelector('.ts-side'); s.innerHTML = tsSide();
+        $('#tsApply').onclick = () => tsApply(TS.pick);
+        $('#tsRnd').onclick = () => { const L = tsList().filter(t => t.id !== TS.pick); if (L.length) tsPreview(L[Math.floor(Math.random() * L.length)].id, true); };
+        $('#tsReset').onclick = () => {
+          if (!confirm('Reset to the default theme (Aurora Glass) and put every dial back?')) return;
+          Object.assign(TUNE, { glass: 1, blur: 1, border: 1, glow: 1, spec: 1, bg: 1, accent: '' }); saveTune(); setMotion('balanced');
+          TS.committed = null; tsApply(V7_DEFAULT); toast('Theme and appearance reset to default.', 'ok');
+        };
+        s.querySelectorAll('input[type=range][data-k]').forEach(r => r.oninput = () => { TUNE[r.dataset.k] = +r.value; $('#tsO_' + r.dataset.k).textContent = Math.round(r.value * 100) + '%'; applyTune(); clearTimeout(r._s); r._s = setTimeout(saveTune, 300); });
+        s.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => { TUNE.accent = b.dataset.acc; saveTune(); applyTune(); vizRefresh(); s.querySelectorAll('[data-acc]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+        $('#tsAccC').oninput = e => { TUNE.accent = e.target.value; applyTune(); s.querySelectorAll('[data-acc]').forEach(x => x.setAttribute('aria-pressed', 'false')); clearTimeout(e.target._s); e.target._s = setTimeout(() => { saveTune(); vizRefresh(); }, 250); };
+        $('#tsMotion').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; setMotion(b.dataset.m); $('#tsMotion').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); };
+        $('#tsNotes').onchange = e => { LOOK.themeNotes = e.target.checked; LS.set('pll.look', LOOK); skinApply(); };
+      }
+      let vizT = 0;
+      function vizRefresh() { clearTimeout(vizT); vizT = setTimeout(() => { try { resizeRoll(); if (activeTab() === 'dash') renderDashboard(); } catch (e) { } }, 120); }
+      // preview = the whole app switches to that theme until you apply it or close the studio
+      function tsPreview(id, scroll) {
+        if (!THEMES[id]) return;
+        TS.pick = id;
+        if (X.theme !== id) { X.theme = id; HTML.classList.add('theme-x'); clearTimeout(tsPreview.t); tsPreview.t = setTimeout(() => HTML.classList.remove('theme-x'), 450); skinApply(); vizRefresh(); }
+        TS.el.querySelectorAll('.ts-card').forEach(c => { const on = c.dataset.th === id; c.classList.toggle('on', on); c.querySelector('.ts-pick').setAttribute('aria-pressed', on); });
+        if (scroll) { const c = TS.el.querySelector('.ts-card[data-th="' + id + '"]'); if (c) c.scrollIntoView({ block: 'nearest', behavior: smooth() }); }
+        tsPaintSide();
+      }
+      function tsApply(id) {
+        if (!THEMES[id]) return;
+        const was = TS.committed; X.theme = was || X.theme;   // let setTheme see a real change
+        if (X.theme === id) { X.theme = id; applyX(); TUNE.recent = [id, ...TUNE.recent.filter(x => x !== id)].slice(0, 12); saveTune(); } else setTheme(id);
+        TS.committed = id; TS.pick = id; vizRefresh();
+        TS.el.querySelectorAll('.ts-card').forEach(c => c.classList.toggle('cur', c.dataset.th === id));
+        tsPaintSide(); toast('Theme applied: ' + THEMES[id].name, 'ok');
+        const rc = TS.el.querySelector('.ts-cat[data-c=recent] small'); if (rc) rc.textContent = TUNE.recent.length;
+      }
+      function closeStudio() {
+        if (!TS.el || TS.el.hidden) return;
+        if (TS.committed && X.theme !== TS.committed) { X.theme = TS.committed; skinApply(); vizRefresh(); }
+        saveX(); TS.el.hidden = true; document.body.style.overflow = '';
+        if (TS.prevFocus && TS.prevFocus.focus) try { TS.prevFocus.focus(); } catch (e) { }
+      }
+      function openStudio() {
+        navClose(); $('#gm').hidden = true;
+        if (!TS.el) {
+          const el = document.createElement('div'); el.className = 'ts'; el.id = 'v7studio'; el.hidden = true; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'tsTitle');
+          el.innerHTML = '<div class="ts-win glass"><div class="ts-head"><h2 class="ts-title" id="tsTitle">' + icon('palette') + 'Theme Studio</h2><span class="sub"><span id="tsCount"></span> · ' + V7_IDS.length + ' new + ' + THEME_LIST.filter(t => !t.ds && !t.dlc).length + ' classic themes</span>' +
+            '<div class="ts-search">' + icon('search') + '<input type="search" id="tsQ" placeholder="Search: glass, neon, serif, calm, pink…" aria-label="Search themes" autocomplete="off"></div>' +
+            '<div class="seg" id="tsMode" role="group" aria-label="Light or dark"><button type="button" data-v="all" class="on">All</button><button type="button" data-v="dark">Dark</button><button type="button" data-v="light">Light</button></div>' +
+            '<button type="button" class="btn icon ts-close" id="tsClose" aria-label="Close Theme Studio">' + icon('x') + '</button></div>' +
+            '<div class="ts-cats" role="group" aria-label="Theme categories"></div><div class="ts-main"><div class="ts-grid"></div></div><aside class="ts-side" aria-label="Theme details and customisation"></aside></div>';
+          document.body.appendChild(el); TS.el = el;
+          el.addEventListener('click', e => {
+            if (e.target === el) return closeStudio();
+            const fav = e.target.closest('.ts-fav');
+            if (fav) { const id = fav.closest('.ts-card').dataset.th, on = !TUNE.fav.includes(id); TUNE.fav = on ? [...TUNE.fav, id] : TUNE.fav.filter(x => x !== id); saveTune(); fav.setAttribute('aria-pressed', on); $('#tsFavN').textContent = TUNE.fav.length; if (TS.cat === 'fav') tsPaintGrid(); return; }
+            const pick = e.target.closest('.ts-pick'); if (pick) return tsPreview(pick.closest('.ts-card').dataset.th);
+            const cat = e.target.closest('.ts-cat'); if (cat) { TS.cat = cat.dataset.c; tsPaintGrid(); TS.el.querySelector('.ts-main').scrollTop = 0; return; }
+          });
+          el.addEventListener('dblclick', e => { const p = e.target.closest('.ts-pick'); if (p) tsApply(p.closest('.ts-card').dataset.th); });
+          el.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); return closeStudio(); }
+            if (e.key === 'Tab') {                                     // keep the keyboard inside the studio
+              const f = [...el.querySelectorAll('button:not([disabled]),input:not([disabled]),select,[tabindex="0"]')].filter(x => x.offsetParent !== null);
+              if (!f.length) return; const i = f.indexOf(document.activeElement);
+              if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+            }
+          });
+          $('#tsClose').onclick = closeStudio;
+          $('#tsQ').oninput = e => { TS.q = e.target.value; tsPaintGrid(); };
+          $('#tsMode').onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; TS.mode = b.dataset.v; $('#tsMode').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); tsPaintGrid(); };
+        }
+        TS.prevFocus = document.activeElement; TS.committed = X.theme; TS.pick = X.theme;
+        TS.el.querySelector('.ts-cats').innerHTML = tsCats();
+        TS.el.hidden = false; document.body.style.overflow = 'hidden';
+        tsPaintGrid(); tsPaintSide();
+        const cur = TS.el.querySelector('.ts-card.cur'); if (cur) cur.scrollIntoView({ block: 'center' });
+        setTimeout(() => $('#tsQ').focus(), 50);
+      }
+      openThemes = openStudio;
+      $('#btnThemes').onclick = openStudio; $('#pfThemesBtn').onclick = openStudio;
+      // Esc closes the studio wherever the focus is (for example after a confirm box took it away)
+      window.addEventListener('keydown', e => { if (e.key === 'Escape' && TS.el && !TS.el.hidden && !TS.el.contains(e.target)) { e.preventDefault(); e.stopImmediatePropagation(); closeStudio(); } }, true);
+
+      /* ---------- motion engine: ripple, light sweep, magnetic buttons, spotlight, tilt ---------- */
+      const mLevel = () => !motionOK() ? 'off' : TUNE.motion;
+      document.addEventListener('pointerdown', e => {
+        const b = e.target.closest('.btn, .nv-i, .ts-pick'); if (!b || b.disabled || !HTML.classList.contains('ds') || ['off', 'reduced'].includes(mLevel())) return;
+        let w = b.querySelector(':scope > .v7rpl'); if (!w) { w = document.createElement('span'); w.className = 'v7rpl'; b.appendChild(w); }
+        const r = b.getBoundingClientRect(), i = document.createElement('i');
+        i.style.left = (e.clientX - r.left) + 'px'; i.style.top = (e.clientY - r.top) + 'px'; i.style.setProperty('--s', (Math.max(r.width, r.height) / 4.5).toFixed(1));
+        w.appendChild(i); setTimeout(() => i.remove(), 700);
+      }, { passive: true });
+      let magEl = null, spotEl = null, tiltEl = null, ptrRaf = 0, ptrEv = null;
+      const unMag = () => { if (magEl) { magEl.style.transform = ''; magEl = null; } };
+      const unSpot = () => { if (spotEl) { spotEl.style.setProperty('--spot', 0); spotEl = null; } };
+      const unTilt = () => { if (tiltEl) { tiltEl.style.removeProperty('--rx'); tiltEl.style.removeProperty('--ry'); tiltEl.classList.remove('v7tilt'); tiltEl = null; } };
+      function ptrFrame() {
+        ptrRaf = 0; const e = ptrEv; if (!e) return; const lv = mLevel();
+        if (lv === 'off' || lv === 'reduced' || !HTML.classList.contains('ds')) { unMag(); unSpot(); unTilt(); return; }
+        const t = e.target.nodeType === 1 ? e.target : null; if (!t) return;
+        const g = t.closest('.glass'); if (g !== spotEl) unSpot();
+        if (g && !g.classList.contains('ts')) { const r = g.getBoundingClientRect(); g.style.setProperty('--mx', (e.clientX - r.left) + 'px'); g.style.setProperty('--my', (e.clientY - r.top) + 'px'); g.style.setProperty('--spot', 1); spotEl = g; }
+        if (lv !== 'expressive') { unMag(); unTilt(); return; }
+        const m = t.closest('.btn.primary, .nv-logo, .hx-actions .btn'); if (m !== magEl) unMag();
+        if (m && !m.disabled) {
+          const r = m.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+          m.style.transform = 'translate(' + clamp(dx * 0.16, -6, 6).toFixed(1) + 'px,' + clamp(dy * 0.22, -4, 4).toFixed(1) + 'px)'; magEl = m;
+          if (m.classList.contains('primary') && !m.querySelector(':scope > .v7sweep')) m.insertAdjacentHTML('beforeend', '<span class="v7sweep" aria-hidden="true"></span>');
+        }
+        const c = t.closest('.hx-stat, #p-dash .cards > .card'); if (c !== tiltEl) unTilt();
+        if (c) { const r = c.getBoundingClientRect(), px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5; c.classList.add('v7tilt'); c.style.setProperty('--ry', (px * 7).toFixed(2) + 'deg'); c.style.setProperty('--rx', (-py * 7).toFixed(2) + 'deg'); tiltEl = c; }
+      }
+      document.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; ptrEv = e; if (!ptrRaf) ptrRaf = requestAnimationFrame(ptrFrame); }, { passive: true });
+      HTML.addEventListener('mouseleave', () => { unMag(); unSpot(); unTilt(); });
+      document.addEventListener('visibilitychange', () => HTML.classList.toggle('doc-hidden', document.hidden));
+      // the motion level also follows changes made in Settings → Graphics → Page animations
+      const _agV7 = applyGfx;
+      applyGfx = function () {
+        _agV7();
+        const m = GFX.anim === 'off' ? 'off' : GFX.anim === 'reduced' ? 'reduced' : (TUNE.motion === 'expressive' ? 'expressive' : 'balanced');
+        if (m !== TUNE.motion) { TUNE.motion = m; saveTune(); }
+        applyTune();
+      };
+
+      /* ---------- piano-roll backgrounds (v7.0 fixes) ----------
+         · animated backgrounds only moved for 8 s after the last key press, so choosing one in Settings showed a still picture;
+           they now keep moving while the roll is on screen and the window is visible (idle frames capped at 30 fps)
+         · with the "Classic (original)" note style every background was ignored; the classic bars are now drawn by the
+           visualizer too, so any background works with them (Classic + Octave lines is still the original drawing) */
+      const ROLLV = { on: true, last: 0 };
+      if ('IntersectionObserver' in window) new IntersectionObserver(es => { ROLLV.on = es[0].isIntersecting; if (ROLLV.on) startLoop(); }).observe($('#roll'));
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) startLoop(); });
+      const bgAnimating = () => VIZ.on() && !!VIZ_ANIM[GFX.bg] && motionOK() && ROLLV.on && !document.hidden;
+      const _busyV7 = VIZ.busy;
+      VIZ.busy = now => _busyV7(now) || bgAnimating();
+      VIZ.on = () => !S.lite && (GFX.style !== 'classic' || GFX.bg !== 'lines');
+      const _vbV7 = vizBar;
+      vizBar = function (c, b, x, y1, w, h, al, headTop, gl, many) {
+        if (GFX.style !== 'classic') return _vbV7.apply(this, arguments);
+        c.fillStyle = 'hsla(' + b.h + ',100%,60%,' + al + ')';                          // the original flat bar with its light edge
+        if (!many) { c.shadowColor = 'hsla(' + b.h + ',100%,60%,.9)'; c.shadowBlur = 10; }
+        rr(c, x, y1, w, h, 3); c.fill(); c.shadowBlur = 0;
+        c.fillStyle = 'hsla(' + b.h + ',100%,88%,' + al + ')'; c.fillRect(x, headTop ? y1 + h - 3 : y1, w, 3);
+      };
+      const _loopV7 = loop;
+      loop = function (now) {
+        const idle = !bars.length && !downCount.size && !VZ.embers.length && !FXP.length && now - VZ.act > 1500;
+        if (idle && bgAnimating() && ROLLV.last && now - ROLLV.last < 32) { requestAnimationFrame(loop); return; }
+        ROLLV.last = now; _loopV7(now);
+      };
+      // settings dropdowns are a fixed width now: hovering one shows the whole chosen option (e.g. "Synthwave grid (animated)")
+      $('#gbox').addEventListener('pointerover', e => { const s = e.target.closest && e.target.closest('.set-grid select'); if (s && s.selectedIndex >= 0) s.title = s.options[s.selectedIndex].text; });
+      const _agRoll = applyGfx;
+      applyGfx = function () { _agRoll(); startLoop(); };
+      setTimeout(startLoop, 600);
+
+      /* ---------- Restore: settings, themes and profile come back too ----------
+         A v7 backup has a "settings" part before "logs"; the recovery "extras" file (kind recovery-extras) has the same data
+         without presses. Presses are restored exactly as before; then the settings are applied and the page reloads. */
+      async function readBackupMeta(file) {
+        const CH = 1 << 20, LIM = 64 << 20; let text = '', pos = 0, at = -1;
+        while (pos < file.size && pos < LIM && at < 0) { text += await file.slice(pos, pos + CH).text(); pos += CH; at = text.indexOf('"logs":['); }
+        let head = null;
+        if (at >= 0) { try { head = JSON.parse(text.slice(0, at).replace(/,\s*$/, '') + '}'); } catch (e) { } }
+        else if (file.size <= 200 << 20) { try { head = JSON.parse(pos >= file.size ? text : await file.text()); } catch (e) { } }
+        if (!head || typeof head !== 'object') return { hasLogs: at >= 0, settings: null };
+        let s = head.settings || null;
+        if (!s && head.kind === 'recovery-extras') s = { localStorage: head.localStorage || {}, gestures: (head.pianoLoggerExtras && head.pianoLoggerExtras.gestures) || [] };
+        if (s && (typeof s.localStorage !== 'object' || !s.localStorage)) s = null;
+        return { hasLogs: at >= 0, settings: s };
+      }
+      async function applySettingsBackup(s) {
+        const keys = Object.keys(s.localStorage).filter(k => /^pll\./.test(k) && !BK_SKIP.includes(k) && typeof s.localStorage[k] === 'string');
+        let n = 0, g = 0;
+        if (Array.isArray(s.gestures) && s.gestures.length) {
+          try {
+            const d = await xdb(), have = await reqP(d.transaction('gestures').objectStore('gestures').getAll());
+            const sig = o => { const { id, ...r } = o || {}; return JSON.stringify(r); }, seen = new Set(have.map(sig));
+            await new Promise((res, rej) => {
+              const tx = d.transaction('gestures', 'readwrite'), st = tx.objectStore('gestures');
+              s.gestures.forEach(o => { if (o && typeof o === 'object' && !seen.has(sig(o))) { const { id, ...r } = o; st.add(r); seen.add(sig(o)); g++; } });
+              tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+            });
+          } catch (e) { }
+        }
+        // write every setting and, in the same step, stop the running page from saving its old ones over them until the reload
+        // (the profile, for example, is saved now and then; any pause here would let it overwrite the restored profile)
+        const _set = Storage.prototype.setItem;
+        keys.forEach(k => { try { _set.call(localStorage, k, s.localStorage[k]); n++; } catch (e) { } });
+        Storage.prototype.setItem = function (k, v) { if (this === localStorage && /^pll\./.test(String(k))) return; return _set.call(this, k, v); };
+        return { n, g };
+      }
+      {
+        const mode = $('#restoreMode');
+        mode.insertAdjacentHTML('afterend', '<label class="sub rs-set" title="Theme, colours, graphics, sound, layout, profile name, quests, badges and the pitch-bend log, when the file has them"><input type="checkbox" id="restoreSettings" checked> Also restore settings, themes &amp; profile</label>');
+        const _rsV7 = $('#btnRestore').onclick;
+        $('#btnRestore').onclick = async () => {
+          if (RS) return;
+          const file = $('#restoreFile').files[0];
+          if (!file) return _rsV7();
+          let meta = { hasLogs: true, settings: null };
+          try { meta = await readBackupMeta(file); } catch (e) { }
+          const want = $('#restoreSettings').checked && meta.settings;
+          if (!meta.hasLogs && !want) return _rsV7();             // the usual message for a file without presses
+          if (want && !confirm('Restore the settings, themes and profile saved in “' + file.name + '”?\nYour current appearance and profile settings are replaced by the ones in the file. Your presses are not affected by this part.')) {
+            if (!meta.hasLogs) return; return _rsV7();
+          }
+          if (meta.hasLogs) {
+            await _rsV7();
+            const box = $('#rsProg'); if (!box || !box.classList.contains('ok')) return;     // presses did not restore cleanly: leave the settings alone
+          }
+          if (!want) return;
+          const r = await applySettingsBackup(meta.settings);
+          toast('⚙ Restored ' + r.n + ' settings' + (r.g ? ' and ' + r.g + ' pitch-bend / mod-wheel records' : '') + '. Reloading to apply them…', 'ok');
+          setTimeout(() => location.reload(), 900);
+        };
+      }
+
+      /* ---------- Settings: a Motion & appearance tab ---------- */
+      const _osV7 = openSettings;
+      openSettings = function (pane) {
+        navClose();
+        _osV7(pane === 'v7' ? 'app' : pane);
+        const box = $('#gbox'), tabs = box.querySelector('.set-tabs'); if (!tabs) return;
+        tabs.insertAdjacentHTML('beforeend', '<button type="button" role="tab" data-p="v7">✨ Motion &amp; themes</button>');
+        const p = document.createElement('div'); p.className = 'set-pane'; p.dataset.p = 'v7'; p.hidden = true;
+        p.innerHTML = '<h3>Theme</h3><p class="sub">Active: <b>' + esc((THEMES[X.theme] || {}).name || X.theme) + '</b> · ' + THEME_LIST.filter(thAvail).length + ' themes in the library.</p>' +
+          '<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" id="v7sStudio">' + icon('palette') + ' Open Theme Studio</button><button type="button" class="btn" id="v7sDef">Use the default theme</button></div>' +
+          '<h3>Motion</h3><div class="seg" id="v7sMotion" role="group" aria-label="Motion level">' + [['off', 'Off'], ['reduced', 'Reduced'], ['balanced', 'Balanced'], ['expressive', 'Expressive']].map(([v, l]) => '<button type="button" data-m="' + v + '" class="' + (TUNE.motion === v ? 'on' : '') + '" aria-pressed="' + (TUNE.motion === v) + '">' + l + '</button>').join('') + '</div>' +
+          '<p class="sub">Off: nothing moves. Reduced: only small fades. Balanced: smooth page and panel animations. Expressive: also magnetic buttons, card tilt and light sweeps. Your system’s “reduce motion” setting always wins.</p>' +
+          '<h3>Navigation</h3><div class="set-grid"><label><input type="checkbox" id="v7sRail"' + (HTML.classList.contains('nav-rail') ? ' checked' : '') + '> Compact navigation rail (icons only)</label></div>';
+        const acts = [...box.children].filter(k => k.classList.contains('actions')).pop(); box.insertBefore(p, acts || null);
+        $('#v7sStudio').onclick = () => { $('#gm').hidden = true; openStudio(); };
+        $('#v7sDef').onclick = () => { setTheme(V7_DEFAULT); toast('Aurora Glass is on.', 'ok'); };
+        $('#v7sMotion').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; setMotion(b.dataset.m); $('#v7sMotion').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); };
+        $('#v7sRail').onchange = e => { HTML.classList.toggle('nav-rail', e.target.checked); LS.set('pll.nav', e.target.checked ? 'rail' : 'full'); setTimeout(() => { navMark(); resizeRoll(); }, 400); };
+        if (pane === 'v7') tabs.querySelector('[data-p=v7]').click();
+      };
+      $('#btnSet').onclick = () => openSettings();
+
+      /* ---------- What's new: a release timeline with an About card ---------- */
+      VERSIONS.unshift({
+        v: '7.0', date: '2026-10-31', title: 'Aurora Glass Studio: a complete redesign',
+        groups: [
+          ['New features', [
+            'Theme Studio: ' + V7_IDS.length + ' new themes in 11 collections (Glass & Liquid, Futuristic, Natural, Luxury, Minimal, Retro, Vibrant, Monochrome, Cinematic, Artistic, Pastel), plus every classic theme',
+            'Each new theme is its own design language: shape (sharp to pill), surface (liquid glass, frost, solid, paper, outline, neon, brutalist, CRT, velvet, holographic), typeface, background artwork and motion style',
+            'Search, collections, light / dark filter, favourites, recently used, live preview of the whole app before you apply, “Surprise me” and Reset',
+            'Your own accent colour and dials for glass opacity, background blur, reflections, border brightness, glow and background intensity',
+            'Motion levels: Off, Reduced, Balanced and Expressive (Settings → Motion & themes, or the Theme Studio)',
+            'MIDI device centre: connection status, every input and output with its state, listen to one keyboard or all, MIDI out, permission and environment',
+            'Overview at the top of the Dashboard: connection, lifetime / today / session presses, your fastest speed, the notes you just played and quick actions']],
+          ['UI & UX', [
+            'New navigation rail with every area of the app, an animated active marker, a live keyboard visualiser and the MIDI status; collapse it to icons, or open it from the menu button on smaller screens',
+            'Tabs have a sliding indicator; the panel you open fades in from a soft blur',
+            'One consistent line-icon set in the top bar and navigation',
+            'Redesigned What’s new with a version timeline and an About card']],
+          ['Visual effects', [
+            'Layered glass: tinted surfaces, top reflections, inner light, fine noise, gradient and holographic borders',
+            'Animated backgrounds per theme: aurora, nebula, synth grid, prism, rain, petals, confetti, circuit, blueprint, art-deco fans, ensō and more',
+            'A soft light follows the pointer over panels; ripples on buttons; numbers count up; the newest note pops in']],
+          ['Performance', [
+            'Only the active theme’s tokens and background are written (one small style rule), so 190+ themes cost nothing until you pick one',
+            'Animations pause while the window is hidden, and stop completely with Motion Off, Lite effects or your system’s reduce-motion setting']],
+          ['Bug fixes', [
+            'Fixed: the 55 generated themes (Vaporwave, Nebula, Glacier…) were reset to Aurora Classic after every reload; your choice is now kept',
+            'Fixed: the “Updated to …” message always described version 6.1',
+            'Fixed: pressing Connect MIDI again while connected could make every key press arrive (and be logged) twice; the old connection is now released first',
+            'Fixed: animated piano-roll backgrounds (Aurora, Meteor shower, Synthwave grid, Ocean waves, Fireflies) only moved for 8 seconds after a key press; they now keep moving while the piano is on screen',
+            'Fixed: with the Classic note style, the chosen piano-roll background was ignored',
+            'Fixed: long names in Settings dropdowns pushed them out of their boxes and made the window scroll sideways']],
+          ['Backups', [
+            'Backups and “Download all as JSON” now also contain your settings, themes, Theme Studio choices, graphics and sound settings, profile, quests, badges and the pitch-bend / mod-wheel log',
+            'Restore brings them back too (the new “Also restore settings, themes & profile” option); older backups restore their presses as before, and older Piano Logger versions can still restore presses from new backups',
+            'Add-ons are not included in backups, because they are code']],
+          ['Compatibility', [
+            'The website still works on its own in Chrome, Edge, Brave and Opera; nothing here needs the desktop app',
+            'New Windows desktop app built with Tauri 2 (beside the existing app), sharing this same page',
+            'The “Download app” window now describes the new app: 64-bit Windows 10 and 11, about 2 MB']]
+        ]
+      });
+      VERSIONS[0].items = VERSIONS[0].groups.flatMap(g => g[1]);
+      let wnSel = 0;
+      function openNewsV7(i) {
+        navClose(); LS.set('pll.seenVer', APP_VERSION); const nb = $('#btnNews'); if (nb) nb.classList.remove('new'); const nd = nav.querySelector('.nv-dot'); if (nd) nd.hidden = true;
+        wnSel = typeof i === 'number' ? i : 0;
+        const r = VERSIONS[wnSel], when = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+        let k = 0;
+        const body = '<div class="wn-hero"><b>v' + esc(r.v) + '</b><time datetime="' + r.date + '">' + when(r.date) + '</time>' + (wnSel === 0 ? ' <span class="th-tag">Current</span>' : '') + '<p style="margin-top:6px">' + esc(r.title) + '</p></div>' +
+          (r.groups ? r.groups.map(([g, L]) => '<div class="wn-grp">' + esc(g) + '</div><ul>' + L.map(t => '<li class="wn-item" style="animation-delay:' + (k++ * 25) + 'ms">' + esc(t) + '</li>').join('') + '</ul>').join('')
+            : '<ul>' + r.items.map(t => '<li class="wn-item" style="animation-delay:' + (k++ * 25) + 'ms">' + esc(t) + '</li>').join('') + '</ul>');
+        const about = '<div class="wn-grp">About</div><div class="wn-about"><div><small>Version</small>Piano Logger ' + APP_VERSION + '</div><div><small>Running in</small>' + esc(RUNTIME) + '</div>' +
+          '<div><small>Themes</small>' + THEME_LIST.filter(thAvail).length + '</div><div><small>Web MIDI</small>' + (navigator.requestMIDIAccess ? 'Available' : 'Not available') + '</div></div>' +
+          '<p class="sub" style="margin-top:8px">' + (window.pianoApp ? 'The desktop app checks the website for a newer page when it starts (see App features).' : 'The website always loads the newest version. There is no automatic installer update.') + '</p>';
+        openModal('<div class="th-head"><h2 style="font-size:20px">What’s new</h2><span class="sub">Version ' + APP_VERSION + ' · release history</span></div>' +
+          '<div class="wn"><nav class="wn-nav" aria-label="Versions">' + VERSIONS.map((x, j) => '<button type="button" data-v="' + j + '" aria-current="' + (j === wnSel) + '"><b>v' + esc(x.v) + '</b><small>' + when(x.date) + '</small></button>').join('') + '</nav>' +
+          '<div class="wn-body">' + body + (wnSel === 0 ? about : '') + '</div></div>' +
+          '<div class="actions"><button class="btn primary" data-act="close">Close</button><button class="btn" id="newsGuide">Open the guide</button><button class="btn" id="wnStudio">' + icon('palette') + ' Theme Studio</button></div>');
+        $('#gbox').querySelector('.wn-nav').onclick = e => { const b = e.target.closest('[data-v]'); if (b) openNewsV7(+b.dataset.v); };
+        $('#newsGuide').onclick = () => { $('#gm').hidden = true; const g = $('#btnGuide'); if (g) g.click(); };
+        $('#wnStudio').onclick = () => { $('#gm').hidden = true; openStudio(); };
+        const bx = $('#gbox'); if (bx) bx.scrollTop = 0;
+      }
+      openNews = openNewsV7;
+      { const b = $('#btnNews'); if (b) b.onclick = () => openNewsV7(); const v = $('.ver-tag'); if (v) v.onclick = () => openNewsV7(); const h = $('#helpNews'); if (h) h.onclick = () => openNewsV7(); }
+      if (LS.get('pll.seenVer', '') !== APP_VERSION) { const nd = nav.querySelector('.nv-dot'); if (nd) nd.hidden = false; }
+
+      /* ---------- Help, quick search and the tour know about the new things ---------- */
+      {
+        const h6 = $('#p-help .help-v6 h2'); if (h6) h6.textContent = '✨ New in v6';
+        const first = $('#p-help .help-v6') || $('#p-help .help-new');
+        if (first) {
+          first.insertAdjacentHTML('beforebegin', '<div class="help-new help-v7"><h2>✨ New in v' + APP_VERSION + '</h2><div class="help-tiles">' +
+            [['🎨', 'Theme Studio', V7_IDS.length + ' new design languages', 'ts'], ['🧭', 'Navigation', 'Every area in one rail', 'nav'], ['🎹', 'MIDI devices', 'Inputs, outputs, permission', 'dv'], ['✨', 'Motion', 'Off · Reduced · Balanced · Expressive', 'mo'], ['🆕', 'What’s new', 'Release timeline', 'wn']]
+              .map(([i, t, d, k]) => '<button type="button" class="help-tile" data-h7="' + k + '"><span>' + i + '</span><b>' + t + '</b><small>' + esc(d) + '</small></button>').join('') + '</div></div>');
+          $('#p-help .help-v7 .help-tiles').onclick = e => {
+            const b = e.target.closest('[data-h7]'); if (!b) return; const k = b.dataset.h7;
+            if (k === 'ts') openStudio(); else if (k === 'dv') openDevices(); else if (k === 'mo') openSettings('v7'); else if (k === 'wn') openNewsV7();
+            else { if (innerWidth < 1100) HTML.classList.add('nav-open'); nav.querySelector('.nv-i').focus(); }
+          };
+        }
+      }
+      const _cmdV7 = commands;
+      commands = function () {
+        const C = _cmdV7();
+        C.push(['Open Theme Studio', 'Theme', openStudio], ['MIDI devices (inputs, outputs, permission)', 'MIDI', openDevices],
+          ['Motion: off', 'Motion', () => setMotion('off')], ['Motion: reduced', 'Motion', () => setMotion('reduced')], ['Motion: balanced', 'Motion', () => setMotion('balanced')], ['Motion: expressive', 'Motion', () => setMotion('expressive')],
+          ['Navigation: compact rail on / off', 'View', () => $('#nvCollapse').click()], ['Default theme (Aurora Glass)', 'Theme', () => setTheme(V7_DEFAULT)]);
+        return C;
+      };
+      { const t = TOUR.find(x => x[0] === '#btnThemes'); if (t) { t[1] = '🎨 Theme Studio'; t[2] = V7_IDS.length + ' new themes in 11 collections plus the classic ones. Preview any theme on the whole app, keep favourites, and tune glass, glow, accent colour and motion.'; } }
+      window.addEventListener('resize', () => { navMark(); tabInd(); if (innerWidth >= 1100) navClose(); });
+
+      // debugging / automated checks only: read-only facts about the theme registry
+      window.__pl7 = Object.freeze({ version: APP_VERSION, themes: () => V7_IDS.slice(), classic: () => THEME_LIST.filter(t => !t.ds).map(t => t.id), tokens: id => V7[id] ? v7Tokens(V7[id]).v : null, contrast: contrastC });
+      navMark(); tabInd(); heroPaint(true); v7Status();
 
     })();
   </script>
