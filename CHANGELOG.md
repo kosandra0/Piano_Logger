@@ -3,6 +3,17 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 7.0.4 — 2026-10-31 · Animations even with Windows animations off
+
+### New features
+- New option "Play animations even when Windows animations are switched off" (Settings → Motion & themes, and the Theme Studio's Motion section). When "Show animations in Windows" is off, Windows asks every app to reduce motion and Piano Logger follows it, so the animated piano-roll backgrounds (Aurora, Meteor shower, Synthwave grid, Ocean waves, Fireflies) stood still. With this option they, and the other animations, play anyway. Off by default; saved with your theme settings and backups.
+
+### UI & UX
+- Choosing an animated piano-roll background while animations are blocked now explains why it does not move and where to change it.
+
+### Compatibility
+- Page-only update: the installed Windows app downloads it from the website by itself and uses it from the next start.
+
 ## 7.0.3 — 2026-10-31 · Rounded window corners you can adjust
 
 ### New features

@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 7.0.3: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="7.0.3">
+  <meta name="description" content="Piano Logger 7.0.4: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="7.0.4">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -9271,20 +9271,16 @@
       transition: none !important
     }
 
+    /* html.mo-force: the user chose to play animations even though the system asks for reduced motion */
     @media (prefers-reduced-motion: reduce) {
 
-      .v7hero,
-      .hx-n,
-      #bigNote.v7pop,
-      .v7rpl i,
-      .hx-art .wave,
-      html.ds .glass,
-      html.ds .orbs::before {
+      html:not(.mo-force) :is(.v7hero, .hx-n, #bigNote.v7pop, .v7rpl i, .hx-art .wave),
+      html.ds:not(.mo-force) .glass,
+      html.ds:not(.mo-force) .orbs::before {
         animation: none !important
       }
 
-      .nv-ind,
-      .tab-ind {
+      html:not(.mo-force) :is(.nv-ind, .tab-ind) {
         transition: none !important
       }
     }
@@ -10333,12 +10329,12 @@
 
     @media (prefers-reduced-motion: reduce) {
 
-      .tb-l,
-      .tb-l svg {
+      html:not(.mo-force) .tb-l,
+      html:not(.mo-force) .tb-l svg {
         transition: none
       }
 
-      .tb-l:active {
+      html:not(.mo-force) .tb-l:active {
         transform: none
       }
     }
@@ -16850,7 +16846,8 @@ PianoLogger.on('noteon', e => {
       const VIZ_ANIM = {}, VIZ_STILL = {};
       function gfxExtra(sel) { return ''; }               // extra settings rows (DLC packs replace these two)
       function gfxExtraWire(set) { }
-      const motionOK = () => GFX.anim !== 'off' && !X2.calm && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+      var MOTION_OVER_OS = false;           // 7.0.4: the user can play animations even when Windows animations are switched off (set from 'pll.tune')
+      const motionOK = () => GFX.anim !== 'off' && !X2.calm && (MOTION_OVER_OS || !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches));
       const VZ = { beam: new Float32Array(128), embers: [], act: 0, frameAt: 0, last: 0, g: null, fps: [], col: null, stars: null };
       function vizCols() { VZ.col = { c1: cssv('--c1') || '#22d3ee', c2: cssv('--c2') || '#e879f9', c3: cssv('--c3') || '#a3e635' }; }
       function applyGfx() {
@@ -17346,7 +17343,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.0.3';
+      const APP_VERSION = '7.0.4';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -19542,8 +19539,20 @@ PianoLogger.on('noteon', e => {
           st.setProperty('--c1', c); st.setProperty('--tint', c); st.setProperty('--ring', c); st.setProperty('--o1', c);
           st.setProperty('--on-acc', contrastC('#ffffff', c) >= contrastC('#0a0a14', c) ? '#ffffff' : '#0a0a14');
         } else ['--c1', '--tint', '--ring', '--o1', '--on-acc'].forEach(k => st.removeProperty(k));
+        MOTION_OVER_OS = !!TUNE.overOS; HTML.classList.toggle('mo-force', MOTION_OVER_OS);
         HTML.classList.toggle('mx-x', TUNE.motion === 'expressive' && motionOK());
       }
+      // Windows "Show animations in Windows" off = the system asks every app for reduced motion. By default Piano Logger follows it;
+      // this option lets the user play the animations anyway (animated piano-roll backgrounds, hit effects, page motion).
+      const osReduce = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+      const osMotionRow = id => '<label class="sub" style="display:flex;gap:8px;align-items:flex-start;margin-top:6px"><input type="checkbox" id="' + id + '"' + (TUNE.overOS ? ' checked' : '') + '> <span>Play animations even when Windows animations are switched off' +
+        (osReduce() ? ' <b style="color:var(--c4)">· Windows animations are off on this device, so without this option animated backgrounds stay still.</b>' : ' (they are on at the moment)') + '</span></label>';
+      function wireOverOS(id) { const el = $('#' + id); if (el) el.onchange = e => { TUNE.overOS = e.target.checked; saveTune(); applyTune(); applyGfx(); toast(e.target.checked ? '✨ Animations will play even with Windows animations off.' : 'Animations follow the Windows setting again.', 'ok'); }; }
+      // choosing an animated piano-roll background while motion is blocked: say why it does not move, and how to change it
+      document.addEventListener('change', e => {
+        if (!e.target || e.target.id !== 'gfBg' || !VIZ_ANIM[e.target.value] || motionOK()) return;
+        toast(osReduce() && !TUNE.overOS ? 'Animated backgrounds are paused because Windows animations are switched off. Turn on “Play animations even when Windows animations are switched off” in Settings → Motion & themes.' : 'Animated backgrounds are paused because Motion is Off or Calm mode is on (Settings → Motion & themes).', 'bad');
+      });
       function setMotion(m) {
         TUNE.motion = m; saveTune();
         GFX.anim = m === 'off' ? 'off' : m === 'reduced' ? 'reduced' : 'full'; GFX.preset = GFX_PRESETS[GFX.preset] && GFX_PRESETS[GFX.preset].anim === GFX.anim ? GFX.preset : 'custom';
@@ -19866,7 +19875,7 @@ PianoLogger.on('noteon', e => {
             (HAS_WIN ? '<label class="ts-dial">Window corners <output id="tsO_winR">' + winRadius() + ' px</output><input type="range" min="0" max="24" step="1" value="' + winRadius() + '" id="tsWinR" aria-label="Window corner roundness in pixels"></label>' : '') +
           (row ? '' : '<p class="sub">These dials shape the 110 new themes. Classic themes keep their original glass.</p>') + '</div>' +
           '<h4>Motion</h4><div class="seg" id="tsMotion" role="group" aria-label="Motion">' + [['off', 'Off'], ['reduced', 'Reduced'], ['balanced', 'Balanced'], ['expressive', 'Expressive']].map(([v, l]) => '<button type="button" data-m="' + v + '" class="' + (TUNE.motion === v ? 'on' : '') + '" aria-pressed="' + (TUNE.motion === v) + '">' + l + '</button>').join('') + '</div>' +
-          '<p class="sub">' + (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'Your system asks for reduced motion, so big animations stay off whatever you choose here.' : 'Expressive adds magnetic buttons, card tilt and light sweeps.') + '</p>' +
+          '<p class="sub">Expressive adds magnetic buttons, card tilt and light sweeps.</p>' + osMotionRow('tsOverOS') +
           '<label class="sub"><input type="checkbox" id="tsNotes"' + (LOOK.themeNotes ? ' checked' : '') + '> Colour notes and keys to match the theme</label>';
       }
       function tsPaintSide() {
@@ -19882,6 +19891,7 @@ PianoLogger.on('noteon', e => {
         s.querySelectorAll('input[type=range][data-k]').forEach(r => r.oninput = () => { TUNE[r.dataset.k] = +r.value; $('#tsO_' + r.dataset.k).textContent = Math.round(r.value * 100) + '%'; applyTune(); clearTimeout(r._s); r._s = setTimeout(saveTune, 300); });
         s.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => { TUNE.accent = b.dataset.acc; saveTune(); applyTune(); vizRefresh(); s.querySelectorAll('[data-acc]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
         $('#tsAccC').oninput = e => { TUNE.accent = e.target.value; applyTune(); s.querySelectorAll('[data-acc]').forEach(x => x.setAttribute('aria-pressed', 'false')); clearTimeout(e.target._s); e.target._s = setTimeout(() => { saveTune(); vizRefresh(); }, 250); };
+        wireOverOS('tsOverOS');
         $('#tsMotion').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; setMotion(b.dataset.m); $('#tsMotion').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); };
         $('#tsNotes').onchange = e => { LOOK.themeNotes = e.target.checked; LS.set('pll.look', LOOK); skinApply(); };
       }
@@ -20154,12 +20164,13 @@ PianoLogger.on('noteon', e => {
         p.innerHTML = '<h3>Theme</h3><p class="sub">Active: <b>' + esc((THEMES[X.theme] || {}).name || X.theme) + '</b> · ' + THEME_LIST.filter(thAvail).length + ' themes in the library.</p>' +
           '<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" id="v7sStudio">' + icon('palette') + ' Open Theme Studio</button><button type="button" class="btn" id="v7sDef">Use the default theme</button></div>' +
           '<h3>Motion</h3><div class="seg" id="v7sMotion" role="group" aria-label="Motion level">' + [['off', 'Off'], ['reduced', 'Reduced'], ['balanced', 'Balanced'], ['expressive', 'Expressive']].map(([v, l]) => '<button type="button" data-m="' + v + '" class="' + (TUNE.motion === v ? 'on' : '') + '" aria-pressed="' + (TUNE.motion === v) + '">' + l + '</button>').join('') + '</div>' +
-          '<p class="sub">Off: nothing moves. Reduced: only small fades. Balanced: smooth page and panel animations. Expressive: also magnetic buttons, card tilt and light sweeps. Your system’s “reduce motion” setting always wins.</p>' +
+          '<p class="sub">Off: nothing moves. Reduced: only small fades. Balanced: smooth page and panel animations. Expressive: also magnetic buttons, card tilt and light sweeps.</p>' + osMotionRow('v7sOverOS') +
           '<h3>Navigation</h3><div class="set-grid"><label><input type="checkbox" id="v7sRail"' + (HTML.classList.contains('nav-rail') ? ' checked' : '') + '> Compact navigation rail (icons only)</label></div>' +
           (HAS_WIN ? '<h3>Window</h3><div class="set-grid"><label>Rounded corners <input type="range" id="v7sWinR" min="0" max="24" step="1" value="' + winRadius() + '" aria-label="Window corner roundness in pixels"><output id="v7sWinRo">' + winRadius() + ' px</output></label></div><p class="sub">0 = square corners. Corners are always square while the window is maximized.</p>' : '');
         const acts = [...box.children].filter(k => k.classList.contains('actions')).pop(); box.insertBefore(p, acts || null);
         $('#v7sStudio').onclick = () => { $('#gm').hidden = true; openStudio(); };
         $('#v7sDef').onclick = () => { setTheme(V7_DEFAULT); toast('Aurora Glass is on.', 'ok'); };
+        wireOverOS('v7sOverOS');
         $('#v7sMotion').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; setMotion(b.dataset.m); $('#v7sMotion').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); };
         if ($('#v7sWinR')) $('#v7sWinR').oninput = e => { TUNE.winR = +e.target.value; $('#v7sWinRo').textContent = TUNE.winR + ' px'; applyTune(); clearTimeout(e.target._s); e.target._s = setTimeout(saveTune, 300); };
         $('#v7sRail').onchange = e => { HTML.classList.toggle('nav-rail', e.target.checked); LS.set('pll.nav', e.target.checked ? 'rail' : 'full'); setTimeout(() => { navMark(); resizeRoll(); }, 400); };
@@ -20229,12 +20240,22 @@ PianoLogger.on('noteon', e => {
       });
       VERSIONS[0].items = VERSIONS[0].groups.flatMap(g => g[1]); VERSIONS[1].items = VERSIONS[1].groups.flatMap(g => g[1]);
       VERSIONS.unshift({
+        v: '7.0.4', date: '2026-10-31', title: 'Animations even with Windows animations off',
+        groups: [
+          ['New features', ['New option “Play animations even when Windows animations are switched off” (Settings → Motion & themes, and the Theme Studio). When “Show animations in Windows” is off, Windows asks every app to reduce motion, so the animated piano-roll backgrounds stood still; with this option they play anyway']],
+          ['UI & UX', ['Choosing an animated piano-roll background while animations are blocked now tells you why it does not move and where to change it']]
+        ]
+      });
+      VERSIONS.unshift({
         v: '7.0.3', date: '2026-10-31', title: 'Rounded window corners you can adjust',
         groups: [
           ['New features', ['Windows app: choose how rounded the window corners are, from 0 (square) to 24 pixels, in the Theme Studio or Settings → Motion & themes; it is saved with your theme settings and backups']],
           ['Bug fixes', ['Windows app: the window corners were not actually rounded (and the bottom corners were square); all four corners are now rounded, and square while the window is maximized']]
         ]
-      });      VERSIONS[0].items = VERSIONS[0].groups.flatMap(g => g[1]);
+      });
+      // newest version first (compared number by number), and every grouped entry also gets its flat list of items
+      const verCmp = (a, b) => { const x = String(a.v).split('.').map(Number), y = String(b.v).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (y[i] || 0) - (x[i] || 0); if (d) return d; } return 0; };
+      VERSIONS.sort(verCmp); VERSIONS.forEach(r => { if (r.groups) r.items = r.groups.flatMap(g => g[1]); });
       let wnSel = 0;
       function openNewsV7(i) {
         navClose(); LS.set('pll.seenVer', APP_VERSION); const nb = $('#btnNews'); if (nb) nb.classList.remove('new'); const nd = nav.querySelector('.nv-dot'); if (nd) nd.hidden = true;
