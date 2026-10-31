@@ -3,6 +3,16 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 7.0.3 — 2026-10-31 · Rounded window corners you can adjust
+
+### New features
+- Windows app: choose how rounded the window corners are, from 0 (square) to 24 pixels, in the Theme Studio or Settings → Motion & themes. Saved with your theme settings (and in backups).
+
+### Bug fixes
+- Windows app: the window corners were not actually rounded and the bottom corners were square, because the browser engine does not round the full-window background through the page's outer element. The page now scrolls inside its body, which is rounded, so all four corners are rounded (square while maximized).
+
+### Compatibility
+- Page-only update: the installed 7.0.2 Windows app downloads it from the website by itself and uses it from the next start.
 ## 7.0.2 — 2026-10-31 · Glass title bar with window controls
 
 ### New features

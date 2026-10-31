@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 7.0.2: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="7.0.2">
+  <meta name="description" content="Piano Logger 7.0.3: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="7.0.3">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10281,22 +10281,42 @@
       scroll-padding-top: calc(var(--tb-h) + 8px)
     }
 
-    /* the Windows app's window itself has rounded corners (the window is transparent; Windows 10 cannot round windows),
-       square again when maximized */
-    html.tb-round {
-      clip-path: inset(0 round 12px);
+    /* the Windows app's window itself has rounded corners (the window is transparent; Windows 10 cannot round windows).
+       7.0.3: Chromium does not clip the full-window background through the root element, so in the app the page scrolls
+       inside <body> and <body> is clipped instead (all four corners). --win-r is chosen by the user; 0 while maximized. */
+    :root {
+      --win-r: 12px
+    }
+
+    html.tb-app {
+      overflow: hidden;
+      height: 100%;
       background: transparent
     }
 
-    html.tb-round body {
-      background: transparent
+    html.tb-app body {
+      height: 100%;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      background: transparent;
+      clip-path: inset(0 round var(--win-r));
+      scroll-padding-top: calc(var(--tb-h) + 8px)
     }
 
-    html.tb-round::after {
+    html.tb-app.tb-max {
+      --win-r: 0px !important
+    }
+
+    html.tb-app.tb-max::after {
+      display: none
+    }
+
+    html.tb-app::after {
       content: "";
       position: fixed;
       inset: 0;
-      border-radius: 12px;
+      border-radius: var(--win-r);
       border: 1px solid color-mix(in srgb, var(--txt, #fff) 13%, transparent);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
       pointer-events: none;
@@ -17326,7 +17346,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.0.2';
+      const APP_VERSION = '7.0.3';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -19506,12 +19526,15 @@ PianoLogger.on('noteon', e => {
       }
 
       /* ---------- dials (Theme Studio) ---------- */
-      const TUNE_DEF = { glass: 1, blur: 1, border: 1, glow: 1, spec: 1, bg: 1, accent: '', motion: '', fav: [], recent: [] };
+      const TUNE_DEF = { glass: 1, blur: 1, border: 1, glow: 1, spec: 1, bg: 1, accent: '', motion: '', fav: [], recent: [], winR: 12 };   // winR: the Windows app's corner roundness (px)
       const TUNE = Object.assign({}, TUNE_DEF, LS.get('pll.tune', {}));
       if (!Array.isArray(TUNE.fav)) TUNE.fav = []; if (!Array.isArray(TUNE.recent)) TUNE.recent = [];
       if (!TUNE.motion) TUNE.motion = GFX.anim === 'off' ? 'off' : GFX.anim === 'reduced' ? 'reduced' : 'balanced';
       const saveTune = () => LS.set('pll.tune', TUNE);
+      const HAS_WIN = !!(window.pianoApp && window.pianoApp.window);         // the frameless Windows app (7.0.2+)
+      const winRadius = () => Math.max(0, Math.min(24, Math.round(+TUNE.winR))) || 0;
       function applyTune() {
+        HTML.style.setProperty('--win-r', (Number.isFinite(+TUNE.winR) ? winRadius() : 12) + 'px');
         const st = HTML.style;
         [['--u-glass', 'glass'], ['--u-blur', 'blur'], ['--u-border', 'border'], ['--u-glow', 'glow'], ['--u-spec', 'spec'], ['--u-bg', 'bg']].forEach(([k, n]) => { if (+TUNE[n] === 1) st.removeProperty(k); else st.setProperty(k, String(+TUNE[n])); });
         if (/^#[0-9a-f]{6}$/i.test(TUNE.accent || '')) {
@@ -19840,6 +19863,7 @@ PianoLogger.on('noteon', e => {
           '<h4>Accent colour</h4><div class="ts-acc">' + AC.map(c => '<button type="button" class="sw" style="--sw:' + (c || 'conic-gradient(' + t.sw.slice(1).join(',') + ',' + t.sw[1] + ')') + '" data-acc="' + c + '" aria-pressed="' + ((TUNE.accent || '') === c) + '" aria-label="' + (c ? 'Accent ' + c : 'Theme accent') + '"></button>').join('') +
           '<input type="color" id="tsAccC" value="' + (TUNE.accent || t.sw[1]) + '" aria-label="Custom accent colour"></div>' +
           '<h4>Glass &amp; light</h4><div class="ts-dials">' + dial('glass', 'Glass opacity', 0.2, 1.6) + dial('blur', 'Background blur', 0, 1.6) + dial('spec', 'Reflections', 0, 2) + dial('border', 'Border brightness', 0.2, 2) + dial('glow', 'Glow', 0, 2) + dial('bg', 'Background intensity', 0, 1.5) +
+            (HAS_WIN ? '<label class="ts-dial">Window corners <output id="tsO_winR">' + winRadius() + ' px</output><input type="range" min="0" max="24" step="1" value="' + winRadius() + '" id="tsWinR" aria-label="Window corner roundness in pixels"></label>' : '') +
           (row ? '' : '<p class="sub">These dials shape the 110 new themes. Classic themes keep their original glass.</p>') + '</div>' +
           '<h4>Motion</h4><div class="seg" id="tsMotion" role="group" aria-label="Motion">' + [['off', 'Off'], ['reduced', 'Reduced'], ['balanced', 'Balanced'], ['expressive', 'Expressive']].map(([v, l]) => '<button type="button" data-m="' + v + '" class="' + (TUNE.motion === v ? 'on' : '') + '" aria-pressed="' + (TUNE.motion === v) + '">' + l + '</button>').join('') + '</div>' +
           '<p class="sub">' + (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'Your system asks for reduced motion, so big animations stay off whatever you choose here.' : 'Expressive adds magnetic buttons, card tilt and light sweeps.') + '</p>' +
@@ -19851,9 +19875,10 @@ PianoLogger.on('noteon', e => {
         $('#tsRnd').onclick = () => { const L = tsList().filter(t => t.id !== TS.pick); if (L.length) tsPreview(L[Math.floor(Math.random() * L.length)].id, true); };
         $('#tsReset').onclick = () => {
           if (!confirm('Reset to the default theme (Aurora Glass) and put every dial back?')) return;
-          Object.assign(TUNE, { glass: 1, blur: 1, border: 1, glow: 1, spec: 1, bg: 1, accent: '' }); saveTune(); setMotion('balanced');
+          Object.assign(TUNE, { glass: 1, blur: 1, border: 1, glow: 1, spec: 1, bg: 1, accent: '', winR: 12 }); saveTune(); setMotion('balanced');
           TS.committed = null; tsApply(V7_DEFAULT); toast('Theme and appearance reset to default.', 'ok');
         };
+        if ($('#tsWinR')) $('#tsWinR').oninput = e => { TUNE.winR = +e.target.value; $('#tsO_winR').textContent = TUNE.winR + ' px'; applyTune(); clearTimeout(e.target._s); e.target._s = setTimeout(saveTune, 300); };
         s.querySelectorAll('input[type=range][data-k]').forEach(r => r.oninput = () => { TUNE[r.dataset.k] = +r.value; $('#tsO_' + r.dataset.k).textContent = Math.round(r.value * 100) + '%'; applyTune(); clearTimeout(r._s); r._s = setTimeout(saveTune, 300); });
         s.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => { TUNE.accent = b.dataset.acc; saveTune(); applyTune(); vizRefresh(); s.querySelectorAll('[data-acc]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
         $('#tsAccC').oninput = e => { TUNE.accent = e.target.value; applyTune(); s.querySelectorAll('[data-acc]').forEach(x => x.setAttribute('aria-pressed', 'false')); clearTimeout(e.target._s); e.target._s = setTimeout(() => { saveTune(); vizRefresh(); }, 250); };
@@ -19989,7 +20014,17 @@ PianoLogger.on('noteon', e => {
           document.body.insertBefore(tb, document.body.firstChild);
           HTML.classList.add('has-tb');
           const maxBtn = tb.querySelector('[data-w=max]');
-          const paintMax = on => { if (W) HTML.classList.toggle('tb-round', !on); maxBtn.innerHTML = sv(on ? g.r : g.x); const l = W ? (on ? 'Restore' : 'Maximize') : (on ? 'Exit full screen' : 'Full screen'); maxBtn.setAttribute('aria-label', l); maxBtn.title = l; };
+          if (W) {
+            // rounded window: the page scrolls inside <body> (see the tb-app styles); keep window.scrollTo and window
+            // scroll listeners (navigation marker, tour) working as before
+            HTML.classList.add('tb-app');
+            const bd = document.body;
+            bd.addEventListener('scroll', () => window.dispatchEvent(new Event('scroll')), { passive: true });
+            const _st = window.scrollTo.bind(window), _sb = window.scrollBy.bind(window);
+            window.scrollTo = (...a) => HTML.classList.contains('tb-app') ? bd.scrollTo(...a) : _st(...a);
+            window.scrollBy = (...a) => HTML.classList.contains('tb-app') ? bd.scrollBy(...a) : _sb(...a);
+          }
+          const paintMax = on => { if (W) HTML.classList.toggle('tb-max', !!on); maxBtn.innerHTML = sv(on ? g.r : g.x); const l = W ? (on ? 'Restore' : 'Maximize') : (on ? 'Exit full screen' : 'Full screen'); maxBtn.setAttribute('aria-label', l); maxBtn.title = l; };
           const sync = () => { if (W) W.state().then(s => paintMax(s.maximized)).catch(() => { }); else paintMax(!!document.fullscreenElement); };
           const toggleMax = () => W ? W.toggleMaximize().then(paintMax).catch(() => { }) : (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => { });
           tb.addEventListener('click', e => {
@@ -20120,11 +20155,13 @@ PianoLogger.on('noteon', e => {
           '<div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" id="v7sStudio">' + icon('palette') + ' Open Theme Studio</button><button type="button" class="btn" id="v7sDef">Use the default theme</button></div>' +
           '<h3>Motion</h3><div class="seg" id="v7sMotion" role="group" aria-label="Motion level">' + [['off', 'Off'], ['reduced', 'Reduced'], ['balanced', 'Balanced'], ['expressive', 'Expressive']].map(([v, l]) => '<button type="button" data-m="' + v + '" class="' + (TUNE.motion === v ? 'on' : '') + '" aria-pressed="' + (TUNE.motion === v) + '">' + l + '</button>').join('') + '</div>' +
           '<p class="sub">Off: nothing moves. Reduced: only small fades. Balanced: smooth page and panel animations. Expressive: also magnetic buttons, card tilt and light sweeps. Your system’s “reduce motion” setting always wins.</p>' +
-          '<h3>Navigation</h3><div class="set-grid"><label><input type="checkbox" id="v7sRail"' + (HTML.classList.contains('nav-rail') ? ' checked' : '') + '> Compact navigation rail (icons only)</label></div>';
+          '<h3>Navigation</h3><div class="set-grid"><label><input type="checkbox" id="v7sRail"' + (HTML.classList.contains('nav-rail') ? ' checked' : '') + '> Compact navigation rail (icons only)</label></div>' +
+          (HAS_WIN ? '<h3>Window</h3><div class="set-grid"><label>Rounded corners <input type="range" id="v7sWinR" min="0" max="24" step="1" value="' + winRadius() + '" aria-label="Window corner roundness in pixels"><output id="v7sWinRo">' + winRadius() + ' px</output></label></div><p class="sub">0 = square corners. Corners are always square while the window is maximized.</p>' : '');
         const acts = [...box.children].filter(k => k.classList.contains('actions')).pop(); box.insertBefore(p, acts || null);
         $('#v7sStudio').onclick = () => { $('#gm').hidden = true; openStudio(); };
         $('#v7sDef').onclick = () => { setTheme(V7_DEFAULT); toast('Aurora Glass is on.', 'ok'); };
         $('#v7sMotion').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; setMotion(b.dataset.m); $('#v7sMotion').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); };
+        if ($('#v7sWinR')) $('#v7sWinR').oninput = e => { TUNE.winR = +e.target.value; $('#v7sWinRo').textContent = TUNE.winR + ' px'; applyTune(); clearTimeout(e.target._s); e.target._s = setTimeout(saveTune, 300); };
         $('#v7sRail').onchange = e => { HTML.classList.toggle('nav-rail', e.target.checked); LS.set('pll.nav', e.target.checked ? 'rail' : 'full'); setTimeout(() => { navMark(); resizeRoll(); }, 400); };
         if (pane === 'v7') tabs.querySelector('[data-p=v7]').click();
       };
@@ -20191,6 +20228,13 @@ PianoLogger.on('noteon', e => {
         ]
       });
       VERSIONS[0].items = VERSIONS[0].groups.flatMap(g => g[1]); VERSIONS[1].items = VERSIONS[1].groups.flatMap(g => g[1]);
+      VERSIONS.unshift({
+        v: '7.0.3', date: '2026-10-31', title: 'Rounded window corners you can adjust',
+        groups: [
+          ['New features', ['Windows app: choose how rounded the window corners are, from 0 (square) to 24 pixels, in the Theme Studio or Settings → Motion & themes; it is saved with your theme settings and backups']],
+          ['Bug fixes', ['Windows app: the window corners were not actually rounded (and the bottom corners were square); all four corners are now rounded, and square while the window is maximized']]
+        ]
+      });      VERSIONS[0].items = VERSIONS[0].groups.flatMap(g => g[1]);
       let wnSel = 0;
       function openNewsV7(i) {
         navClose(); LS.set('pll.seenVer', APP_VERSION); const nb = $('#btnNews'); if (nb) nb.classList.remove('new'); const nd = nav.querySelector('.nv-dot'); if (nd) nd.hidden = true;
