@@ -8713,12 +8713,13 @@
     .nv-viz i {
       flex: 1;
       min-width: 2px;
-      height: 6%;
+      height: 100%;
       border-radius: 3px;
       background: linear-gradient(180deg, var(--c1), var(--c2));
       opacity: .75;
       transform-origin: bottom;
-      transition: height 520ms var(--ease-out)
+      transform: scaleY(.06);
+      transition: transform 520ms var(--ease-out)
     }
 
     .nv-status {
@@ -11395,7 +11396,8 @@
       const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
       const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
       const nowEpoch = () => performance.timeOrigin + performance.now();
-      const fmtInt = n => Number(n || 0).toLocaleString();
+      const fmtNF = new Intl.NumberFormat();
+      const fmtInt = n => fmtNF.format(Number(n || 0));
       const FIRST = 21, LAST = 108;
       const SRC = { midi: ['🎹', 'MIDI keyboard (ST50)'], computer: ['⌨', 'PC keyboard'], screen: ['🖱', 'On-screen click'] };
       const srcText = s => SRC[s] ? SRC[s][0] + ' ' + SRC[s][1] : s;
@@ -12350,8 +12352,10 @@
         const dpr = S.lite ? 1 : Math.min(window.devicePixelRatio || 1, 2);
         const w = cv.clientWidth, h = cv.clientHeight;
         if (!w || !h) return null;
-        cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-        const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // 7.1: same size → just reset the drawing (re-allocating the canvas 8 times a second was costly while playing)
+        const W = Math.round(w * dpr), H = Math.round(h * dpr), ctx = cv.getContext('2d');
+        if (cv.width !== W || cv.height !== H || !ctx.reset) { cv.width = W; cv.height = H; } else ctx.reset();
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         return { w, h, ctx };
       }
       function niceStep(x) { if (x <= 1) return 1; const p = Math.pow(10, Math.floor(Math.log10(x))), f = x / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
@@ -13807,6 +13811,11 @@
         }
       };
       onBus('noteoff', () => { if (activeTab() === 'studio') drawStaff(); });
+      // 7.1: the staff is drawn at most once per frame, and only while the Studio tab (where it lives) is open
+      {
+        const _dsNow = drawStaff; let dsRaf = 0;
+        drawStaff = function () { if (!dsRaf) dsRaf = requestAnimationFrame(() => { dsRaf = 0; if (activeTab() === 'studio') _dsNow(); }); };
+      }
 
       /* =====================================================================
          KEY GUESS + PEDAL INDICATOR
@@ -15180,7 +15189,7 @@ PianoLogger.on('noteon', e => {
         $('#cNow').textContent = LIVE.t.length; $('#cPeakS').textContent = LIVE.peak;
       }
       function liveDraw() {
-        if (!LIVE.dirty) return; LIVE.dirty = false;
+        if (!LIVE.dirty || HTML.classList.contains('pl-tray')) return; LIVE.dirty = false;
         const cv = $('#spdLive'), s = setupCanvas(cv); if (!s) return; const { w, h, ctx } = s;
         const mx = Math.max(4, ...LIVE.hist), bw = w / 60;
         LIVE.hist.forEach((v, i) => {
@@ -15231,7 +15240,7 @@ PianoLogger.on('noteon', e => {
           pill.querySelector('b').textContent = cur; pill.classList.toggle('hot', cur >= 8); pill.classList.toggle('on', cur > 0);
           pill.querySelector('i').style.width = Math.min(100, liveSmooth / 15 * 100) + '%';
         }
-        if (activeTab() !== 'dash' || !$('#liveCards')) return;
+        if (activeTab() !== 'dash' || !$('#liveCards') || HTML.classList.contains('pl-tray')) return;   // 7.2: nothing to show while in the system tray
         const sAvg = SES.active ? SES.n / (SES.active / 1000) : 0;
         const card = (l, v, s2, cls) => '<div class="card' + (cls ? ' ' + cls : '') + '"><span>' + l + '</span><b>' + v + '</b><em>' + (s2 || '&nbsp;') + '</em></div>';
         $('#liveCards').innerHTML =
@@ -17343,7 +17352,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.0.4';
+      const APP_VERSION = '7.2.2';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -18625,6 +18634,8 @@ PianoLogger.on('noteon', e => {
       };
       HTML.classList.toggle('is-app', !!APPX);
       const APP_FEATURES = [
+        ['🎮', 'MIDI Keyboard Bridge — play Roblox with your keyboard', 'New in 7.1+: play Roblox Virtual Piano (all 88 keys), web pianos and other games with your real MIDI keyboard. Your notes become key presses, sent only to the game window you choose — with sustain, octave and transpose controls, a mapping studio and an Emergency stop (Ctrl+Alt+End). The website can only show a preview.'],
+        ['🗕', 'Keep running in the system tray', 'New in 7.2: close the window and Piano Logger keeps logging in the tray, using very little memory and no graphics.'],
         ['🎹', 'Your own instruments', 'Load SoundFont (.sf2) files: free sampled grand pianos, electric pianos, strings and more. Every instrument inside a file appears in the 🎻 sound library.'],
         ['💾', 'Automatic backups', 'A backup of your whole history is saved every day into Documents → Piano Logger Backups, without asking. The newest 30 are kept.'],
         ['📌', 'Always on top', 'Keep the piano window above other windows, for example over a video lesson or sheet music.'],
@@ -18656,7 +18667,7 @@ PianoLogger.on('noteon', e => {
           '<div class="row" style="margin:14px 0 6px;flex-wrap:wrap;gap:8px"><a class="btn primary" id="dlGo" href="' + APP_DL.file + '" target="_blank" rel="noopener">⬇ Download for Windows (free)</a>' +
           '<a class="btn" href="' + APP_DL.page + '" target="_blank" rel="noopener">All versions</a></div>' +
           (win ? '' : '<p class="sub">⚠ This download is for Windows PCs. On other devices keep using the website.</p>') +
-          '<ol class="app-steps"><li>Open the downloaded <b>Piano-Logger-Setup.exe</b> (64-bit Windows 10 or 11; about 2 MB). If Microsoft Edge WebView2 is missing, which is rare, the installer downloads it.</li>' +
+          '<ol class="app-steps"><li>Open the downloaded <b>Piano-Logger-Setup.exe</b> (64-bit Windows 10 or 11; about 2 MB to download). If Microsoft Edge WebView2 is missing, which is rare, the installer downloads it.</li>' +
           '<li>If Windows shows “Windows protected your PC”, click <b>More info → Run anyway</b>. This appears because the app is new and not signed by a company.</li>' +
           '<li>Choose where to install, then open <b>Piano Logger</b> from the desktop or Start menu.</li>' +
           '<li><b>Bring your history:</b> the app keeps its own copy of your data. Here on the website go to <b>Data → Create backup file</b>, then in the app go to <b>Data → Restore</b> and pick that file. Your XP and level are worked out again from it.</li></ol>' +
@@ -19671,7 +19682,7 @@ PianoLogger.on('noteon', e => {
         const bars = [...nav.querySelectorAll('.nv-viz i')], lvl = new Float32Array(bars.length); let raf = 0, last = 0;
         const paint = now => {
           raf = 0; const dt = Math.min(200, now - (last || now)); last = now; let more = false;
-          bars.forEach((b, i) => { lvl[i] = Math.max(0, lvl[i] - dt / 900); if (lvl[i] > 0.01) more = true; b.style.height = (6 + lvl[i] * 94).toFixed(1) + '%'; });
+          bars.forEach((b, i) => { lvl[i] = Math.max(0, lvl[i] - dt / 900); if (lvl[i] > 0.01) more = true; b.style.transform = 'scaleY(' + (0.06 + lvl[i] * 0.94).toFixed(3) + ')';   /* 7.1: transform instead of height — no page layout per frame */ });
           if (more && !document.hidden) raf = requestAnimationFrame(paint); else last = 0;
         };
         onBus('noteon', d => {
@@ -19763,10 +19774,12 @@ PianoLogger.on('noteon', e => {
       }
       onBus('noteon', d => {
         HX.recent.unshift(d.midi); if (HX.recent.length > 12) HX.recent.length = 12;
-        if (!HX.raf) HX.raf = requestAnimationFrame(() => { HX.raf = 0; heroRecent(); heroPaint(); });
-        const big = $('#bigNote'); if (big && motionOK()) { big.classList.remove('v7pop'); void big.offsetWidth; big.classList.add('v7pop'); }
+        // 7.1: the header updates at most ~8 times a second, and the note "pop" restarts without forcing a page layout
+        if (!HX.raf) HX.raf = setTimeout(() => { HX.raf = 0; heroRecent(); heroPaint(); }, 120);
+        const big = $('#bigNote');
+        if (big && motionOK() && big.animate) big.animate([{ transform: 'scale(.82)', filter: 'blur(4px)', opacity: .4 }, { transform: 'none', filter: 'none', opacity: 1 }], { duration: 360, easing: 'cubic-bezier(.34,1.56,.64,1)' });
       });
-      setInterval(() => { if (!document.hidden) heroPaint(); }, 1500);
+      setInterval(() => { if (!document.hidden && !HTML.classList.contains('pl-tray')) heroPaint(); }, 1500);
 
       /* ---------- MIDI device centre ---------- */
       const RUNTIME = !window.pianoApp ? 'Website' : window.pianoApp.runtime === 'tauri' ? 'Desktop app (Tauri)' : 'Desktop app (Electron)';
@@ -20247,6 +20260,65 @@ PianoLogger.on('noteon', e => {
         ]
       });
       VERSIONS.unshift({
+        v: '7.2.2', date: '2026-11-01', title: 'Glass drop-down menus',
+        groups: [
+          ['Bug fixes', ['MIDI Bridge → Musical controls: when you changed two settings one after the other (for example octave shift, then transpose), only the first change was kept. Every change is kept now']],
+          ['UI & UX', [
+            'Every drop-down menu now opens as a frosted-glass menu in your theme’s colours (macOS style), instead of the dark, square list Windows draws. It works with the mouse and the keyboard (Space / Enter / Alt+↓ to open, arrows, Home / End, typing to jump, Enter to choose, Esc to close); phones and tablets keep their own pickers',
+            'The “Download for Windows” window on the website now leads with the MIDI Keyboard Bridge (play Roblox and other games with your MIDI keyboard) and the system tray option']]
+        ]
+      });
+      VERSIONS.unshift({
+        v: '7.2.1', date: '2026-11-01', title: 'MIDI Bridge fixes from real ST50 + Roblox testing',
+        groups: [
+          ['Bug fixes', [
+            'Wrong or missing notes in Roblox: when a Roblox profile differs from the standard Roblox piano (for example C4, C#4 and D4 changed by accident in the Mapping studio), the bridge now says exactly which notes differ and restores them with one button',
+            'Sustain on the keyboard kept every key pressed in Roblox (“Hold notes until released”). The Roblox profile now uses the game’s Space sustain (switch on SpaceSustain in the game), and a profile still set to hold notes offers a one-button switch',
+            'The bridge chip’s “Open” button only opened Piano Logger’s own settings. It is now “Go to Roblox” (brings the game window to the front) plus a separate “Bridge” button; pressing Start in Live mode also switches to the game']],
+          ['UI & UX', [
+            'Overview shows whether your keyboard’s sustain is on and what it does in the game',
+            'A warning when octave shift or transpose is on, with one button to play exactly what you press',
+            'Mapping studio: every change can be undone once; learn mode stops by itself when you leave the window']]
+        ]
+      });
+      VERSIONS.unshift({
+        v: '7.2', date: '2026-11-01', title: 'Keep running in the system tray, 88-key Roblox piano, tidier bridge controls',
+        groups: [
+          ['New features', [
+            'Windows app: choose what the close button does — quit, or keep Piano Logger running in the system tray (Settings → Appearance & layout, or App features → Window). In the tray it keeps logging what you play and updating your statistics, uses little memory and no graphics; click the tray icon to bring it back, right-click it to quit',
+            'The MIDI Bridge never presses keys while Piano Logger is in the tray: it switches off when the window hides (the app refuses key presses then too). Keep the window open — it may be minimised — to play Roblox or web pianos',
+            'MIDI Bridge: the Roblox / Virtual Piano profile now covers the full 88-key piano (A0–C8). The 27 extra keys below C2 and above C7 — the underlined keys on the Roblox piano — are played with Ctrl held. Your 61-key profile is upgraded only if you never changed its keys; otherwise an 88-key profile is added next to it',
+            'Safety: Ctrl key mappings are never sent to web browsers (Ctrl+W, Ctrl+R… would close or reload tabs); those notes are skipped there and shown in the Monitor']],
+          ['UI & UX', [
+            'Musical controls: the text fields and the sustain choices no longer spill out of their boxes; clearer names (“Minimum velocity”, “Press the sustain key”, “Hold notes until released”) and a short explanation of the sustain pedal',
+            'Monitor → Diagnostics: long values wrap instead of running out of the table',
+            'Mapping studio: keys played with Ctrl / Shift show ⌃ / ⇧ so the labels fit']]
+        ]
+      });
+      VERSIONS.unshift({
+        v: '7.1', date: '2026-11-01', title: 'MIDI Keyboard Bridge, 26 calm roll backgrounds, smoother playing',
+        groups: [
+          ['New features', [
+            'MIDI Keyboard Bridge (navigation → MIDI Bridge): play Roblox Virtual Piano, web pianos and other games with your MIDI keyboard. Notes become computer-keyboard keys using a profile; your playing is still logged exactly as before',
+            'The bridge uses the MIDI connection Piano Logger already has — no second connection, nothing else to set up',
+            'Windows app: real key presses go only to the window you choose (for example RobloxPlayerBeta.exe), and only while it is in front; never into Piano Logger itself. The website shows a preview of the keys instead',
+            'Profiles: Roblox / Virtual Piano (61 keys), PC keys (2 rows) and Custom; create, rename, duplicate, delete, import and export them',
+            'Mapping studio with all 88 keys: click a key and type or press the computer key, or play a note and then press a key (learn mode); search, shared-key and invalid-key warnings',
+            'Musical controls: octave shift, transpose, note range, ignored notes, softest velocity, MIDI channel, split keyboard with a second profile, sustain pedal (hold a key, or keep keys down), soft pedal and other controllers',
+            'Safety: chords are counted so no key gets stuck; every key is released when the target loses focus, the keyboard is unplugged, you press Emergency stop, or Ctrl+Alt+End anywhere in Windows',
+            'Monitor: every note and key, filters, refusals, and the measured delay from your keyboard to Windows',
+            '26 calm, animated piano-roll backgrounds: haze, clouds, rain, raindrops on glass, snow, blossoms, leaves, dandelion seeds, dust motes, a moonlit lake, caustics, plankton, currents, light rays, tides, silk, ink, watercolour, bokeh, light orbs, lanterns, cloud shadows, mountains, desert twilight, frosted glass and a meadow',
+            'Background studio (Settings → Graphics → Browse & customise): categories, search, favourites, thumbnails, a live preview, and per-background speed, brightness, opacity, amount, colours and direction, with Reset to default']],
+          ['Performance', [
+            'Smoother while you play: the music staff is only drawn when you can see it (and once per frame), the header no longer forces a page layout for every note, decorative background animations pause while you play, and dense note runs skip a costly glow effect',
+            'The new backgrounds draw their still parts once and only animate what moves, at up to 30 frames a second when nothing else is happening; they follow the quality preset, Lite mode and reduced motion']],
+          ['Data safety', ['Nothing in this update changes your logged presses, statistics, badges or backups. The bridge and background settings are stored separately (pll.bridge, pll.rollfx) and are included in full backups']],
+          ['Known limitations', [
+            'The website and desktop apps older than 7.1 show a preview only; real key presses need the 7.1 (or newer) Windows app',
+            'Mappings with digits and symbols (1–0, ! @ $ % ^ * ( and keys like ; [ ] \' / -) assume a US English keyboard layout. On UK, German, French and other layouts some of them type a different character; letters work on every Latin layout. Keep an English layout active in the game window']]
+        ]
+      });
+      VERSIONS.unshift({
         v: '7.0.3', date: '2026-10-31', title: 'Rounded window corners you can adjust',
         groups: [
           ['New features', ['Windows app: choose how rounded the window corners are, from 0 (square) to 24 pixels, in the Theme Studio or Settings → Motion & themes; it is saved with your theme settings and backups']],
@@ -20310,6 +20382,1295 @@ PianoLogger.on('noteon', e => {
       // debugging / automated checks only: read-only facts about the theme registry
       window.__pl7 = Object.freeze({ version: APP_VERSION, themes: () => V7_IDS.slice(), classic: () => THEME_LIST.filter(t => !t.ds).map(t => t.id), tokens: id => V7[id] ? v7Tokens(V7[id]).v : null, contrast: contrastC });
       navMark(); tabInd(); heroPaint(true); v7Status();
+
+      /* =====================================================================
+         7.1 — smoother while playing · 26 calm roll backgrounds · MIDI Keyboard Bridge
+         Nothing here touches the logging database: the bridge only listens to the same MIDI messages
+         the logger already receives, and its settings live in 'pll.bridge' / 'pll.rollfx'.
+         ===================================================================== */
+      {
+        const st = document.createElement('style'); st.id = 'v71css';
+        st.textContent = `
+html.pl-lean .glass,html.pl-lean .v7nav,html.pl-lean .top{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.pl-busy .orbs i,html.pl-busy .orbs::before,html.pl-busy .v7hero,html.pl-busy .hx-art .wave,html.pl-busy .btn.guide,html.pl-busy .news-dot,html.pl-busy .nv-dot{animation-play-state:paused!important}
+#gbox:has(.v71w){max-width:1120px!important}
+.br-health{border:1px solid rgba(245,158,11,.45);background:rgba(245,158,11,.1);border-radius:12px;padding:6px 12px;margin-bottom:12px}
+.br-health p{margin:6px 0;font-size:13px;line-height:1.5}.br-health .btn{margin-left:6px}
+html.pl-tray *,html.pl-tray *::before,html.pl-tray *::after{animation-play-state:paused!important}
+.tray-note{margin-top:6px}
+.v71w .th-head{margin-bottom:10px}
+.v71tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+.v71tabs button,.v71chip{border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt);border-radius:999px;padding:6px 13px;font:inherit;font-size:13px;cursor:pointer}
+.v71tabs button[aria-selected=true],.v71chip[aria-pressed=true]{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border-color:transparent}
+.v71grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px}
+@media (max-width:860px){.v71grid2{grid-template-columns:1fr}}
+.v71card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.04)}
+.v71card h4{margin:0 0 8px;font-size:14px}
+.v71muted{color:var(--mut);font-size:12.5px;line-height:1.45}
+.v71row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.v71stat{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+.v71stat i{width:11px;height:11px;border-radius:50%;background:#64748b;box-shadow:0 0 0 4px rgba(100,116,139,.18)}
+.v71stat[data-s=prev] i{background:#38bdf8;box-shadow:0 0 0 4px rgba(56,189,248,.2)}
+.v71stat[data-s=wait] i{background:#fbbf24;box-shadow:0 0 0 4px rgba(251,191,36,.2)}
+.v71stat[data-s=live] i{background:#4ade80;box-shadow:0 0 0 4px rgba(74,222,128,.22)}
+.btn.v71stop{background:#dc2626!important;color:#fff!important;border-color:#b91c1c!important;font-weight:800}
+.v71out{font:600 15px ui-monospace,Consolas,monospace;min-height:44px;max-height:90px;overflow:auto;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.22);word-break:break-all;white-space:pre-wrap}
+.v71nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.v71nums div{border:1px solid var(--line);border-radius:10px;padding:7px 9px}
+.v71nums b{display:block;font-size:17px}.v71nums small{color:var(--mut);font-size:11.5px}
+.brkb{position:relative;height:132px;margin:8px 0 6px;user-select:none}
+.brkb button{position:absolute;top:0;padding:0 0 4px;border:1px solid rgba(0,0,0,.35);border-radius:0 0 5px 5px;background:linear-gradient(#f8fafc,#dfe3ea);color:#0f172a;font:700 10px ui-monospace,Consolas,monospace;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;cursor:pointer;overflow:hidden}
+.brkb button.bk{height:62%;z-index:2;background:linear-gradient(#334155,#0b1220);color:#e2e8f0;border-color:#000}
+.brkb button.wk{height:100%}
+.brkb button small{font-size:8.5px;opacity:.55;font-weight:600}
+.brkb button.sel{outline:3px solid var(--c1);outline-offset:-3px;z-index:3}
+.brkb button.on{background:linear-gradient(var(--c1),var(--c2))!important;color:#fff}
+.brkb button.dup{box-shadow:inset 0 -5px 0 #f59e0b}
+.brkb button.bad{box-shadow:inset 0 -5px 0 #ef4444}
+.brkb button.hit{outline:2px dashed #facc15;outline-offset:-2px}
+.brkb button.off{opacity:.45}
+.v71tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.v71tbl{table-layout:fixed}
+.v71tbl td,.v71tbl th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:normal;overflow-wrap:anywhere;vertical-align:top}
+#brDiag th{width:46%}
+#brMonB td:nth-child(3){width:auto}
+.v71tbl thead th:nth-child(1){width:92px}.v71tbl thead th:nth-child(2){width:72px}.v71tbl thead th:nth-child(4){width:64px}
+#brPane .set-grid.br-ctl{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))!important}
+#brPane .set-grid label{flex-wrap:wrap;gap:6px 10px;min-width:0}
+#brPane .set-grid label>select{width:clamp(120px,48%,210px)!important;max-width:100%}
+#brPane .set-grid label input[type=text]{flex:1 1 140px;min-width:0;max-width:100%;width:auto!important}
+#brPane .set-grid label>.row{flex:1 1 150px;min-width:0;display:flex;align-items:center;gap:8px}
+#brPane .set-grid label>.row input[type=range]{flex:1;min-width:0}
+#brPane .v71card{min-width:0}
+#brBox .th-head{flex-wrap:wrap;gap:4px 14px}
+#brBox .th-head .sub{min-width:0}
+.v71tbl td.ok{color:#4ade80}.v71tbl td.no{color:#fb7185}
+.v71mon{max-height:320px;overflow:auto}
+.v71prof{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.v71prof input[type=text]{width:100%}
+.v71learn{animation:v71pulse 1.2s ease-in-out infinite}
+@keyframes v71pulse{50%{box-shadow:0 0 0 5px rgba(250,204,21,.35)}}
+#v71chip{position:fixed;right:18px;bottom:18px;z-index:60;display:flex;gap:8px;align-items:center;padding:8px 10px 8px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(15,18,32,.9);color:#fff;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+#v71chip[hidden]{display:none}
+#v71chip i{width:9px;height:9px;border-radius:50%;background:#38bdf8}
+#v71chip[data-s=live] i{background:#4ade80}#v71chip[data-s=wait] i{background:#fbbf24}
+.rbs-top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.rbs-top input{flex:1 1 220px;min-width:180px}
+.rbs-main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,1fr);gap:14px}
+@media (max-width:860px){.rbs-main{grid-template-columns:1fr}}
+.rbs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;max-height:58vh;overflow:auto;padding:2px}
+.rbs-card{position:relative;border:1px solid var(--line);border-radius:12px;padding:0 0 7px;background:rgba(255,255,255,.04);color:var(--txt);font:inherit;text-align:left;cursor:pointer;overflow:hidden}
+.rbs-card canvas,.rbs-card .rbs-ph{display:block;width:100%;aspect-ratio:16/9;background:linear-gradient(160deg,#0b1020,#151a33)}
+.rbs-card .rbs-ph{display:grid;place-items:center;font-size:22px;opacity:.75}
+.rbs-card b{display:block;font-size:12.5px;padding:6px 8px 0}
+.rbs-card small{display:block;font-size:11px;color:var(--mut);padding:0 8px}
+.rbs-card[aria-pressed=true]{outline:2px solid var(--c1);outline-offset:-2px}
+.rbs-card .rbs-cur{position:absolute;left:6px;top:6px;font-size:10.5px;padding:2px 7px;border-radius:999px;background:var(--c1);color:#fff}
+.rbs-card .rbs-star{position:absolute;right:6px;top:4px;font-size:15px;color:#facc15;text-shadow:0 1px 3px #000}
+.rbs-side canvas{display:block;width:100%;aspect-ratio:16/8;border-radius:12px;border:1px solid var(--line);background:linear-gradient(160deg,#0b1020,#151a33)}
+.rbs-side h4{margin:10px 0 2px;font-size:16px}
+.rbs-side .set-grid{margin-top:10px}
+`;
+        document.head.appendChild(st);
+      }
+
+      /* ---------- smoother while you play ----------
+         Measured on this PC: with an animated theme, an animated roll background and chords, the page was busy 100 % of the
+         time — mostly the music staff redrawn for every note (even when hidden), a forced page layout per note, and the
+         decorative background animations re-blurring the glass panels. While you play (and 2.5 s after) the decorative
+         animations pause, and dense note runs skip the costly canvas shadow. */
+      {
+        let t = 0;
+        onBus('noteon', () => {
+          if (!HTML.classList.contains('pl-busy')) { HTML.classList.add('pl-busy'); HTML.classList.toggle('pl-lean', GFX.preset !== 'ultra'); }
+          clearTimeout(t); t = setTimeout(() => HTML.classList.remove('pl-busy', 'pl-lean'), 2500);
+        });
+        // the rolling counters change at most once per frame: a chord rolls once instead of three times
+        const _rc71 = rollCore;
+        rollCore = function (el, st, text) { st.pend = text; if (!st.raf) st.raf = requestAnimationFrame(() => { st.raf = 0; _rc71(el, st, st.pend); }); };
+        const _vb71 = vizBar;
+        vizBar = function (c, b, x, y1, w, h, al, headTop, gl, many) { return _vb71.call(this, c, b, x, y1, w, h, al, headTop, gl, many || (GFX.preset !== 'ultra' && bars.length > 12)); };
+      }
+
+      /* ---------- 26 calm roll backgrounds ----------
+         Each one: a still base (drawn once into the roll's background layer) + a light animated layer.
+         With motion off (or Windows animations off) the base and one still frame are shown instead. */
+      const RB_CATS = [['sky', 'Sky & weather'], ['water', 'Water'], ['nature', 'Nature'], ['light', 'Light'], ['flow', 'Flowing & abstract']];
+      const RB_PAL = {
+        blue: ['Soft blue', ['#8ec5ff', '#5b8def', '#d6ebff']], lavender: ['Misty lavender', ['#c4b5fd', '#8b7fd6', '#ede9fe']], amber: ['Warm amber', ['#fcd34d', '#f59e0b', '#ffe8b0']],
+        aqua: ['Pale aqua', ['#99f6e4', '#3fbfb0', '#d9fffa']], silver: ['Moonlight silver', ['#e2e8f0', '#94a3b8', '#f8fafc']], teal: ['Muted teal', ['#6fb7b4', '#2f7f7d', '#b7e0d2']],
+        rose: ['Gentle rose', ['#fda4af', '#f472b6', '#ffe4e6']], forest: ['Forest green', ['#86efac', '#4d9b6a', '#d9f99d']]
+      };
+      const RB_DIR = {
+        lr: [['1', 'Left → right'], ['-1', 'Right → left']],
+        wind: [['1', 'Breeze to the right'], ['0', 'Still air'], ['-1', 'Breeze to the left']],
+        rain: [['-1', 'Slanted left'], ['0', 'Straight down'], ['1', 'Slanted right']],
+        vert: [['-1', 'Rising'], ['1', 'Sinking']]
+      };
+      const RBD = {}, RB_LIST = [];
+      const RBS = Object.assign({ fx: {}, fav: [] }, LS.get('pll.rollfx', {}));
+      if (!RBS.fx || typeof RBS.fx !== 'object') RBS.fx = {}; if (!Array.isArray(RBS.fav)) RBS.fav = [];
+      const saveRB = () => LS.set('pll.rollfx', RBS);
+      const RGB = {};
+      function rgbOf(c) {
+        if (RGB[c]) return RGB[c]; let r = [140, 170, 220]; const s = String(c || '').trim(), m6 = /^#([0-9a-f]{6})$/i.exec(s), m3 = /^#([0-9a-f]{3})$/i.exec(s), mr = /rgba?\(\s*(\d+)[ ,]+(\d+)[ ,]+(\d+)/i.exec(s);
+        if (m6) { const v = parseInt(m6[1], 16); r = [v >> 16, (v >> 8) & 255, v & 255]; } else if (m3) r = m3[1].split('').map(h => parseInt(h + h, 16)); else if (mr) r = [+mr[1], +mr[2], +mr[3]];
+        return (RGB[c] = r);
+      }
+      const ca = (c, a) => { const r = rgbOf(c); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + Math.max(0, Math.min(1, a)).toFixed(3) + ')'; };
+      const SPR = new Map();
+      function spr(col) {                                                    // a soft round light, drawn once and reused
+        let s = SPR.get(col); if (s) return s;
+        s = document.createElement('canvas'); s.width = s.height = 64; const g = s.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+        gr.addColorStop(0, ca(col, 1)); gr.addColorStop(.35, ca(col, .55)); gr.addColorStop(.7, ca(col, .15)); gr.addColorStop(1, ca(col, 0));
+        g.fillStyle = gr; g.fillRect(0, 0, 64, 64); if (SPR.size > 120) SPR.clear(); SPR.set(col, s); return s;
+      }
+      // draw a soft light: a = brightness 0..1 (the layer opacity is applied on top)
+      const glow = (c, E, col, x, y, rx, ry, a) => { if (a <= 0.003) return; c.globalAlpha = Math.min(1, a * E.A); c.drawImage(spr(col), x - rx, y - ry, rx * 2, ry * 2); c.globalAlpha = 1; };
+      const wrapv = (v, lo, hi) => { const w = hi - lo; return v < lo ? v + w * Math.ceil((lo - v) / w) : v > hi ? v - w * Math.ceil((v - hi) / w) : v; };
+      function rbAdd(d) { d.def = Object.assign({ speed: 1, intensity: 1, opacity: 1, density: 1, palette: 'default', dir: d.dir ? RB_DIR[d.dir][0][0] : '0' }, d.def || {}); RBD[d.id] = d; RB_LIST.push(d); }
+      const rbOpts = id => Object.assign({}, RBD[id].def, RBS.fx[id] || {});
+      function rbPal(d, o) { if (o.palette === 'theme') { if (!VZ.col) vizCols(); return [VZ.col.c1, VZ.col.c2, VZ.col.c3]; } return RB_PAL[o.palette] ? RB_PAL[o.palette][1] : d.pal; }
+      function rbQ() {                                                       // how much detail: follows Graphics quality, Lite mode and reduced motion
+        let q = { low: .45, medium: .75, high: 1, ultra: 1.35 }[GFX.preset] || ({ off: .55, normal: 1, lots: 1.3 }[GFX.particles] || 1);
+        if (S.lite) q = Math.min(q, .45); if (GFX.anim === 'reduced') q *= .75; return q;
+      }
+      function rbEnv(d, W, H, o, q, P) {
+        let seed = 918273;
+        const area = Math.max(.45, Math.min(2.2, Math.sqrt(W * H / (1100 * 380))));
+        const E = { d, W, H, o, P, q, A: +o.opacity, I: +o.intensity, dir: +o.dir || 0, t: 0, last: 0, it: [], ex: {} };
+        E.rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+        E.R = (a, b) => a + E.rnd() * (b - a);
+        E.n = base => Math.max(1, Math.round(base * (d.dens === false ? 1 : +o.density) * q * area));
+        E.sp = +o.speed * (GFX.anim === 'reduced' ? .6 : 1);
+        if (d.init) d.init(E);
+        return E;
+      }
+      const RBC = new Map();                                                 // one live environment per place (roll / preview)
+      function rbGet(slot, id, W, H) {
+        const d = RBD[id], o = rbOpts(id), q = slot === 'thumb' ? 1 : rbQ(), P = rbPal(d, o);
+        const key = id + '|' + Math.round(W) + '|' + Math.round(H) + '|' + JSON.stringify(o) + '|' + q + '|' + P.join(',');
+        let E = RBC.get(slot); if (!E || E.key !== key) { E = rbEnv(d, W, H, o, q, P); E.key = key; RBC.set(slot, E); }
+        return E;
+      }
+      function rbFrame(c, E, dt) { c.save(); E.t += dt; E.d.frame(c, E, dt, E.t); c.restore(); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; }
+      function rbBase(g, E) { if (!E.d.base) return; g.save(); g.globalAlpha = E.A; E.d.base(g, E); g.restore(); }
+      function rbStill(g, E) { rbBase(g, E); rbFrame(g, E, 0); }            // a calm still picture: base + the first frame
+
+      // ---- Sky & weather ----
+      rbAdd({
+        id: 'c-mist', name: 'Misty morning haze', cat: 'sky', desc: 'Pale layers of haze drifting slowly across.', pal: ['#dbe7f5', '#9fb6d6', '#f3f6fb'], dir: 'lr',
+        init(E) { for (let i = 0, n = E.n(7); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(.12, .95) * E.H, w: E.R(.5, 1.1) * E.W, h: E.R(.12, .3) * E.H, v: E.R(.006, .016), a: E.R(.22, .45), k: i % 3, ph: E.R(0, 6) }); },
+        base(g, E) { const gr = g.createLinearGradient(0, 0, 0, E.H); gr.addColorStop(0, ca(E.P[2], .1)); gr.addColorStop(1, ca(E.P[1], 0)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt, t) { const s = E.dir || 1; E.it.forEach(m => { m.x = wrapv(m.x + m.v * dt * s, -m.w / 2, E.W + m.w / 2); glow(c, E, E.P[m.k], m.x, m.y + Math.sin(t * .0003 + m.ph) * m.h * .12, m.w / 2, m.h / 2, m.a * .55 * E.I); }); }
+      });
+      rbAdd({
+        id: 'c-clouds', name: 'Slow cloud drift', cat: 'sky', desc: 'Soft clouds sailing across a pale sky.', pal: ['#bcd4f0', '#7f9cc6', '#ffffff'], dir: 'lr',
+        init(E) {
+          for (let i = 0, n = E.n(6); i < n; i++) {
+            const s = E.R(.07, .14) * E.W, p = []; for (let j = 0; j < 7; j++) p.push([E.R(-1.3, 1.3) * s, E.R(-.35, .3) * s, E.R(.45, .85) * s]);
+            E.it.push({ x: E.R(0, E.W), y: E.R(.08, .55) * E.H, s, v: E.R(.004, .01), p });
+          }
+        },
+        base(g, E) { const gr = g.createLinearGradient(0, 0, 0, E.H); gr.addColorStop(0, ca(E.P[0], .14)); gr.addColorStop(.7, ca(E.P[0], 0)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt) {
+          const s = E.dir || 1;
+          E.it.forEach(m => { m.x = wrapv(m.x + m.v * dt * s, -m.s * 2.5, E.W + m.s * 2.5); m.p.forEach(([dx, dy, r]) => { glow(c, E, E.P[1], m.x + dx, m.y + dy + r * .35, r, r * .6, .1 * E.I); glow(c, E, E.P[2], m.x + dx, m.y + dy, r, r * .75, .3 * E.I); }); });
+        }
+      });
+      rbAdd({
+        id: 'c-rain', name: 'Gentle rainfall', cat: 'sky', desc: 'Light rain with small ripples where it lands.', pal: ['#a9c7e8', '#5b7fa8', '#dbeafe'], dir: 'rain', def: { dir: '0' },
+        init(E) { for (let i = 0, n = E.n(90); i < n; i++) E.it.push({ x: E.R(-.1, 1.1) * E.W, y: E.R(0, E.H), l: E.R(9, 24), v: E.R(.22, .42), f: i % 3 === 0 }); E.ex.rip = []; },
+        base(g, E) { const gr = g.createLinearGradient(0, 0, 0, E.H); gr.addColorStop(0, ca(E.P[1], .16)); gr.addColorStop(1, ca(E.P[1], .02)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt) {
+          const sl = E.dir * .28;
+          [[true, 1.3, .5], [false, .8, .26]].forEach(([near, lw, a]) => {
+            c.beginPath();
+            E.it.forEach(m => {
+              if (m.f !== near) return;
+              m.y += m.v * dt; m.x += m.v * dt * sl;
+              if (m.y > E.H + m.l) { if (E.ex.rip.length < 30 && E.rnd() < .35) E.ex.rip.push({ x: m.x, age: 0 }); m.y = -m.l - E.R(0, 40); m.x = E.R(-.1, 1.1) * E.W; }
+              c.moveTo(m.x, m.y); c.lineTo(m.x - m.l * sl, m.y - m.l);
+            });
+            c.lineWidth = lw; c.strokeStyle = ca(E.P[0], a * E.I * E.A); c.stroke();
+          });
+          c.lineWidth = 1;
+          E.ex.rip = E.ex.rip.filter(r => (r.age += dt) < 700);
+          E.ex.rip.forEach(r => { const k = r.age / 700; c.strokeStyle = ca(E.P[2], (1 - k) * .4 * E.I * E.A); c.beginPath(); c.ellipse(r.x, E.H - 5, 3 + k * 16, 1 + k * 3.5, 0, 0, 6.283); c.stroke(); });
+        }
+      });
+      rbAdd({
+        id: 'c-glass', name: 'Raindrops on glass', cat: 'sky', desc: 'Droplets on a window pane, a few sliding gently down.', pal: ['#b9d3ee', '#6d8fb8', '#ffffff'],
+        init(E) {
+          for (let i = 0, n = E.n(34); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(0, E.H), r: E.rnd() < .2 ? E.R(5, 8) : E.R(2, 4.5), sl: E.rnd() < .3, v: E.R(.008, .03), ph: E.R(0, 6) });
+          E.ex.fine = []; for (let i = 0, n = E.n(200); i < n; i++) E.ex.fine.push([E.R(0, E.W), E.R(0, E.H), E.R(.5, 1.5)]);
+        },
+        base(g, E) { g.fillStyle = ca(E.P[1], .07); g.fillRect(0, 0, E.W, E.H); g.fillStyle = ca(E.P[2], .16); g.beginPath(); E.ex.fine.forEach(([x, y, r]) => { g.moveTo(x + r, y); g.arc(x, y, r, 0, 6.283); }); g.fill(); },
+        frame(c, E, dt, t) {
+          E.it.forEach(m => {
+            if (m.sl) { const go = Math.max(0, Math.sin(t * .0007 + m.ph)); m.y += m.v * dt * go * (m.r / 4); if (m.y > E.H + m.r) { m.y = -m.r; m.x = E.R(0, E.W); } }
+            if (m.sl) { c.strokeStyle = ca(E.P[2], .1 * E.I * E.A); c.lineWidth = m.r * .5; c.beginPath(); c.moveTo(m.x, m.y - m.r * 7); c.lineTo(m.x, m.y); c.stroke(); }
+            c.fillStyle = ca(E.P[0], .16 * E.I * E.A); c.beginPath(); c.arc(m.x, m.y, m.r, 0, 6.283); c.fill();
+            c.lineWidth = 1; c.strokeStyle = ca(E.P[2], .38 * E.I * E.A); c.stroke();
+            c.fillStyle = ca('#ffffff', .6 * E.I * E.A); c.beginPath(); c.arc(m.x - m.r * .35, m.y - m.r * .35, m.r * .28, 0, 6.283); c.fill();
+          });
+        }
+      });
+      rbAdd({
+        id: 'c-snow', name: 'Feather-light snowfall', cat: 'sky', desc: 'Soft snowflakes swaying as they fall.', pal: ['#e8f0fb', '#a9bedb', '#ffffff'], dir: 'wind', def: { dir: '0' },
+        init(E) { for (let i = 0, n = E.n(70); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(0, E.H), r: E.R(1, 3.2), v: E.R(.012, .032), ph: E.R(0, 6.3), sw: E.R(8, 26) }); },
+        base(g, E) { const gr = g.createLinearGradient(0, E.H, 0, E.H * .6); gr.addColorStop(0, ca(E.P[1], .12)); gr.addColorStop(1, ca(E.P[1], 0)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt, t) {
+          E.it.forEach(m => { m.y += m.v * dt * (m.r / 2); m.x += E.dir * .01 * dt; if (m.y > E.H + 6) { m.y = -6; m.x = E.R(0, E.W); } m.x = wrapv(m.x, -30, E.W + 30); const x = m.x + Math.sin(t * .0006 + m.ph) * m.sw; glow(c, E, E.P[2], x, m.y, m.r * 2.4, m.r * 2.4, .8 * E.I); });
+        }
+      });
+      // ---- Nature ----
+      const leafy = (petal) => function (c, E, dt, t) {
+        E.it.forEach(m => {
+          m.y += m.v * dt; m.x += (E.dir * .014 + Math.sin(t * .0007 + m.ph) * .01) * dt; m.rot += m.vr * dt;
+          if (m.y > E.H + 20) { m.y = -20; m.x = E.R(-.1, 1.1) * E.W; } m.x = wrapv(m.x, -40, E.W + 40);
+          c.save(); c.translate(m.x, m.y); c.rotate(m.rot); c.scale(1, .35 + .65 * Math.abs(Math.cos(t * .0016 + m.ph)));
+          const s = m.s; c.beginPath();
+          if (petal) { c.moveTo(0, -s); c.bezierCurveTo(s * .95, -s * .55, s * .7, s * .85, 0, s * .7); c.bezierCurveTo(-s * .7, s * .85, -s * .95, -s * .55, 0, -s); }
+          else { c.moveTo(0, -s); c.quadraticCurveTo(s * .75, -s * .1, 0, s); c.quadraticCurveTo(-s * .75, -s * .1, 0, -s); }
+          c.fillStyle = ca(E.P[m.k], (petal ? .6 : .55) * E.I * E.A); c.fill();
+          if (!petal) { c.strokeStyle = ca(E.P[1], .5 * E.I * E.A); c.lineWidth = .8; c.beginPath(); c.moveTo(0, -s * .85); c.lineTo(0, s * 1.15); c.stroke(); }
+          c.restore();
+        });
+      };
+      rbAdd({
+        id: 'c-blossom', name: 'Cherry blossom drift', cat: 'nature', desc: 'Pink petals floating down on a light breeze.', pal: ['#fbcfe8', '#f9a8d4', '#ffe4ec'], dir: 'wind',
+        init(E) { for (let i = 0, n = E.n(26); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(0, E.H), s: E.R(3.5, 7), v: E.R(.012, .028), rot: E.R(0, 6), vr: E.R(-.0012, .0012), ph: E.R(0, 6), k: i % 3 }); },
+        base(g, E) { const gr = g.createRadialGradient(E.W * .15, 0, 0, E.W * .15, 0, E.W * .7); gr.addColorStop(0, ca(E.P[0], .12)); gr.addColorStop(1, ca(E.P[0], 0)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame: leafy(true)
+      });
+      rbAdd({
+        id: 'c-leaves', name: 'Autumn leaves', cat: 'nature', desc: 'Warm leaves tumbling slowly to the ground.', pal: ['#f59e0b', '#b45309', '#ea580c'], dir: 'wind',
+        init(E) { for (let i = 0, n = E.n(15); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(0, E.H), s: E.R(7, 12), v: E.R(.01, .022), rot: E.R(0, 6), vr: E.R(-.0009, .0009), ph: E.R(0, 6), k: [0, 2, 0][i % 3] }); },
+        base(g, E) { const gr = g.createLinearGradient(0, E.H, 0, E.H * .5); gr.addColorStop(0, ca(E.P[1], .14)); gr.addColorStop(1, ca(E.P[1], 0)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame: leafy(false)
+      });
+      rbAdd({
+        id: 'c-dandelion', name: 'Dandelion seeds', cat: 'nature', desc: 'Feathery seeds floating gently upwards.', pal: ['#fef3c7', '#cbd5e1', '#f8fafc'], dir: 'vert', def: { dir: '-1' },
+        init(E) { for (let i = 0, n = E.n(13); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(0, E.H), s: E.R(6, 11), v: E.R(.007, .016), ph: E.R(0, 6) }); },
+        base(g, E) { const gr = g.createLinearGradient(0, E.H, 0, 0); gr.addColorStop(0, ca(E.P[0], .12)); gr.addColorStop(.6, ca(E.P[0], 0)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt, t) {
+          const up = E.dir || -1;
+          E.it.forEach(m => {
+            m.y += up * m.v * dt; m.x += (.006 + Math.sin(t * .0005 + m.ph) * .009) * dt;
+            if (m.y < -30) m.y = E.H + 30; if (m.y > E.H + 30) m.y = -30; m.x = wrapv(m.x, -30, E.W + 30);
+            c.save(); c.translate(m.x, m.y); c.rotate(Math.sin(t * .001 + m.ph) * .35);
+            const s = m.s; c.strokeStyle = ca(E.P[2], .55 * E.I * E.A); c.lineWidth = .7; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, s * 1.5);
+            for (let j = 0; j < 9; j++) { const a = -Math.PI + (j + .5) * Math.PI / 9; c.moveTo(0, 0); c.lineTo(Math.cos(a) * s, Math.sin(a) * s); } c.stroke();
+            c.fillStyle = ca(E.P[1], .7 * E.I * E.A); c.beginPath(); c.arc(0, s * 1.55, 1.3, 0, 6.283); c.fill();
+            c.restore();
+          });
+        }
+      });
+      rbAdd({
+        id: 'c-meadow', name: 'Gentle meadow breeze', cat: 'nature', desc: 'Tall grass swaying in a soft wind.', pal: ['#86efac', '#4d9b6a', '#bef264'], dir: 'wind', def: { dir: '1' },
+        init(E) {
+          for (let i = 0, n = E.n(150); i < n; i++) E.it.push({ x: E.R(-.02, 1.02) * E.W, h: E.R(.07, .22) * E.H, lean: E.R(-.18, .18), k: i % 3 });
+          E.ex.pol = []; for (let i = 0, n = E.n(12); i < n; i++) E.ex.pol.push({ x: E.R(0, E.W), y: E.R(.4, .95) * E.H, ph: E.R(0, 6) });
+        },
+        base(g, E) { const gr = g.createLinearGradient(0, E.H, 0, E.H * .55); gr.addColorStop(0, ca(E.P[1], .2)); gr.addColorStop(1, ca(E.P[1], 0)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt, t) {
+          const wind = Math.sin(t * .0006) * .35 + Math.sin(t * .0017) * .12 + E.dir * .22;
+          for (let k = 0; k < 3; k++) {
+            c.beginPath();
+            E.it.forEach(m => { if (m.k !== k) return; const sw = (m.lean + wind * (.65 + .35 * Math.sin(t * .002 + m.x * .012))) * m.h; c.moveTo(m.x, E.H); c.quadraticCurveTo(m.x + sw * .25, E.H - m.h * .6, m.x + sw, E.H - m.h); });
+            c.lineWidth = 1.6; c.strokeStyle = ca(E.P[k], .5 * E.I * E.A); c.stroke();
+          }
+          E.ex.pol.forEach(p => { p.x = wrapv(p.x + (wind * .02 + .004) * dt, -10, E.W + 10); glow(c, E, '#fef9c3', p.x, p.y + Math.sin(t * .001 + p.ph) * 8, 3, 3, .7 * E.I); });
+        }
+      });
+      rbAdd({
+        id: 'c-shadows', name: 'Moving cloud shadows', cat: 'nature', desc: 'Sunlit ground with slow cloud shadows passing over.', pal: ['#fde68a', '#86efac', '#fef9c3'], dir: 'lr',
+        init(E) { for (let i = 0, n = E.n(5); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(.15, .9) * E.H, w: E.R(.35, .7) * E.W, h: E.R(.3, .6) * E.H, v: E.R(.007, .014) }); },
+        base(g, E) { const gr = g.createLinearGradient(0, 0, E.W, E.H); gr.addColorStop(0, ca(E.P[0], .18)); gr.addColorStop(.6, ca(E.P[1], .08)); gr.addColorStop(1, ca(E.P[2], .05)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt) { const s = E.dir || 1; E.it.forEach(m => { m.x = wrapv(m.x + m.v * dt * s, -m.w / 2, E.W + m.w / 2); glow(c, E, '#0b1020', m.x, m.y, m.w / 2, m.h / 2, .32 * E.I); }); }
+      });
+      rbAdd({
+        id: 'c-mountains', name: 'Distant mountain mist', cat: 'nature', desc: 'Layered mountains with mist drifting between them.', pal: ['#c4b5fd', '#5b4f8a', '#ede9fe'], dir: 'lr',
+        init(E) {
+          E.ex.ridge = [0, 1, 2, 3].map(i => {
+            const p = new Path2D(), base = E.H * (.38 + i * .14), amp = E.H * (.13 - i * .018), ph = [E.R(0, 6), E.R(0, 6), E.R(0, 6)];
+            p.moveTo(0, E.H); for (let x = 0; x <= E.W + 16; x += 16) { const u = x / E.W; p.lineTo(x, base - amp * (.55 * Math.sin(u * 5.1 + ph[0]) + .3 * Math.sin(u * 11.3 + ph[1]) + .15 * Math.sin(u * 23 + ph[2]) + .45)); }
+            p.lineTo(E.W, E.H); p.closePath(); return p;
+          });
+          for (let i = 0, n = E.n(6); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.H * E.R(.45, .8), w: E.R(.4, .8) * E.W, h: E.R(.06, .12) * E.H, v: E.R(.004, .01), L: i % 2 });
+        },
+        base(g, E) { const gr = g.createLinearGradient(0, 0, 0, E.H); gr.addColorStop(0, ca(E.P[0], .14)); gr.addColorStop(.6, ca(E.P[2], .06)); gr.addColorStop(1, ca(E.P[1], 0)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); g.fillStyle = ca(E.P[1], .22); g.fill(E.ex.ridge[0]); g.fillStyle = ca(E.P[1], .32); g.fill(E.ex.ridge[1]); },
+        frame(c, E, dt) {
+          const s = E.dir || 1, mist = L => E.it.forEach(m => { if (m.L !== L) return; m.x = wrapv(m.x + m.v * dt * s, -m.w / 2, E.W + m.w / 2); glow(c, E, E.P[2], m.x, m.y + L * E.H * .1, m.w / 2, m.h, .35 * E.I); });
+          mist(0); c.globalAlpha = E.A; c.fillStyle = ca(E.P[1], .45); c.fill(E.ex.ridge[2]); mist(1); c.globalAlpha = E.A; c.fillStyle = ca(E.P[1], .6); c.fill(E.ex.ridge[3]); c.globalAlpha = 1;
+        }
+      });
+      rbAdd({
+        id: 'c-desert', name: 'Desert twilight haze', cat: 'nature', desc: 'Dunes under a violet-to-amber twilight, first stars appearing.', pal: ['#fb923c', '#7c3aed', '#fda4af'],
+        init(E) {
+          E.ex.dunes = [[.66, .05, 1.7], [.78, .06, 2.6]].map(([b, a, f], i) => { const p = new Path2D(), ph = E.R(0, 6); p.moveTo(0, E.H); for (let x = 0; x <= E.W + 16; x += 16) p.lineTo(x, E.H * (b - a * Math.sin(x / E.W * f * 3.14 + ph) - (i ? 0 : .02 * Math.sin(x / E.W * 9 + ph)))); p.lineTo(E.W, E.H); p.closePath(); return p; });
+          for (let i = 0, n = E.n(40); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(0, .45) * E.H, r: E.R(.5, 1.4), ph: E.R(0, 6), f: E.R(.5, 1.4) });
+          E.ex.haze = [0, 1, 2].map(() => ({ x: E.R(0, E.W), v: E.R(.003, .007), y: E.H * E.R(.56, .7) }));
+        },
+        base(g, E) {
+          const gr = g.createLinearGradient(0, 0, 0, E.H * .7); gr.addColorStop(0, ca(E.P[1], .26)); gr.addColorStop(.6, ca(E.P[2], .18)); gr.addColorStop(1, ca(E.P[0], .26));
+          g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); g.fillStyle = ca('#2a1530', .45); g.fill(E.ex.dunes[0]); g.fillStyle = ca('#1a0d22', .6); g.fill(E.ex.dunes[1]);
+        },
+        frame(c, E, dt, t) {
+          c.fillStyle = '#ffffff';
+          E.it.forEach(s => { c.globalAlpha = Math.max(0, .25 + .55 * Math.sin(t * .0011 * s.f + s.ph)) * E.I * E.A; c.fillRect(s.x, s.y, s.r, s.r); });
+          c.globalAlpha = 1; E.ex.haze.forEach(h => { h.x = wrapv(h.x + h.v * dt, -E.W * .4, E.W * 1.4); glow(c, E, E.P[0], h.x, h.y, E.W * .4, E.H * .05, .22 * E.I); });
+        }
+      });
+      // ---- Water ----
+      rbAdd({
+        id: 'c-lake', name: 'Moonlit lake ripples', cat: 'water', desc: 'A moon over still water, its reflection shimmering.', pal: ['#e2e8f0', '#334a6e', '#f8fafc'],
+        init(E) { E.ex.mx = E.W * .7; E.ex.hz = E.H * .42; E.ex.rip = []; E.ex.next = 0; for (let i = 0, n = E.n(26); i < n; i++) E.it.push({ u: E.R(0, 1), ph: E.R(0, 6) }); },
+        base(g, E) {
+          const hz = E.ex.hz, gr = g.createLinearGradient(0, hz, 0, E.H); gr.addColorStop(0, ca(E.P[1], .28)); gr.addColorStop(1, ca(E.P[1], .1)); g.fillStyle = gr; g.fillRect(0, hz, E.W, E.H - hz);
+          g.globalAlpha = E.A * .5; g.drawImage(spr(E.P[0]), E.ex.mx - E.H * .3, E.H * .18 - E.H * .3, E.H * .6, E.H * .6); g.globalAlpha = E.A;
+          g.fillStyle = ca(E.P[2], .9); g.beginPath(); g.arc(E.ex.mx, E.H * .18, E.H * .065, 0, 6.283); g.fill();
+        },
+        frame(c, E, dt, t) {
+          const hz = E.ex.hz;
+          c.strokeStyle = ca(E.P[2], .45 * E.I * E.A); c.lineWidth = 1.4; c.beginPath();
+          E.it.forEach((m, i) => { const y = hz + 4 + m.u * (E.H - hz - 6), w = (6 + (y - hz) * .18) * (.35 + .65 * Math.abs(Math.sin(t * .0016 + m.ph))); c.moveTo(E.ex.mx - w, y); c.lineTo(E.ex.mx + w, y); });
+          c.stroke();
+          if ((E.ex.next -= dt) <= 0) { E.ex.next = 900; if (E.ex.rip.length < 8) E.ex.rip.push({ x: E.R(.05, .95) * E.W, y: E.R(hz + 12, E.H - 8), age: E.t ? 0 : 1200 }); }
+          c.lineWidth = 1; E.ex.rip = E.ex.rip.filter(r => (r.age += dt) < 3200);
+          E.ex.rip.forEach(r => { const k = r.age / 3200, rx = 6 + k * 70; c.strokeStyle = ca(E.P[0], (1 - k) * .35 * E.I * E.A); c.beginPath(); c.ellipse(r.x, r.y, rx, rx * .22, 0, 0, 6.283); c.stroke(); });
+        }
+      });
+      rbAdd({
+        id: 'c-caustics', name: 'Underwater caustics', cat: 'water', desc: 'Dancing light patterns, as seen on a pool floor.', pal: ['#99f6e4', '#0f766e', '#ccfbf1'], dens: false,
+        init(E) { const w = Math.round(48 + 40 * Math.min(1.3, E.q)), h = Math.round(w * E.H / E.W) || 20; E.ex.cv = document.createElement('canvas'); E.ex.cv.width = w; E.ex.cv.height = h; E.ex.g = E.ex.cv.getContext('2d'); E.ex.img = E.ex.g.createImageData(w, h); E.ex.acc = 999; },
+        base(g, E) { const gr = g.createLinearGradient(0, 0, 0, E.H); gr.addColorStop(0, ca(E.P[1], .22)); gr.addColorStop(1, ca(E.P[1], .08)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt, t) {
+          const X = E.ex, w = X.cv.width, h = X.cv.height;
+          if ((X.acc += dt) >= 45) {                                         // a tiny picture recalculated ~20× a second, then stretched smoothly
+            X.acc = 0; const d = X.img.data, [r, g, b] = rgbOf(E.P[2]), T = t * .001, sx = 7.5 / w;
+            for (let y = 0, i = 0; y < h; y++) for (let x = 0; x < w; x++, i += 4) {
+              const u = x * sx, v = y * sx;
+              const s = Math.sin(u * 1.7 + T * .9) + Math.sin(v * 2.1 - T * .7) + Math.sin((u + v) * 1.3 + T * .5) + Math.sin(Math.sqrt((u - 3.5) * (u - 3.5) + (v - 2) * (v - 2)) * 2.4 - T * 1.1);
+              let k = 1 - Math.abs(Math.sin(s * 1.25)); k = k * k * k;
+              d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = Math.min(255, k * 210 * E.I);
+            }
+            X.g.putImageData(X.img, 0, 0);
+          }
+          c.globalAlpha = E.A; c.imageSmoothingEnabled = true; c.drawImage(X.cv, 0, 0, E.W, E.H); c.globalAlpha = 1;
+        }
+      });
+      rbAdd({
+        id: 'c-plankton', name: 'Bioluminescent plankton', cat: 'water', desc: 'Tiny glowing specks pulsing softly in dark water.', pal: ['#5eead4', '#38bdf8', '#a7f3d0'],
+        init(E) { for (let i = 0, n = E.n(110); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(0, E.H), r: E.R(.6, 1.8), ph: E.R(0, 6.3), f: E.R(.35, 1.1), vx: E.R(-1, 1) * .004, vy: E.R(-1, 1) * .003, k: i % 3 }); },
+        base(g, E) { g.fillStyle = ca('#020617', .28); g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt, t) {
+          c.globalCompositeOperation = 'lighter';
+          E.it.forEach(m => { m.x = wrapv(m.x + m.vx * dt + Math.sin(t * .0004 + m.ph) * .004 * dt, -6, E.W + 6); m.y = wrapv(m.y + m.vy * dt, -6, E.H + 6); const b = .12 + .88 * Math.pow(Math.max(0, Math.sin(t * .0011 * m.f + m.ph)), 3); glow(c, E, E.P[m.k], m.x, m.y, m.r * (3 + 3 * b), m.r * (3 + 3 * b), b * .85 * E.I); });
+        }
+      });
+      rbAdd({
+        id: 'c-currents', name: 'Deep-sea currents', cat: 'water', desc: 'Long streaks following slow, deep currents.', pal: ['#60a5fa', '#1e3a8a', '#93c5fd'], dir: 'lr',
+        init(E) { for (let i = 0, n = E.n(34); i < n; i++) { const x = E.R(0, E.W), y = E.R(0, E.H); E.it.push({ x, y, tr: [], k: i % 2 ? 0 : 2, v: E.R(.6, 1.2) }); } for (let s = 0; s < 18; s++) this.frame(null, E, 33, s * 33); },
+        base(g, E) { const gr = g.createLinearGradient(0, 0, 0, E.H); gr.addColorStop(0, ca(E.P[1], .06)); gr.addColorStop(1, ca(E.P[1], .26)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt, t) {
+          const s = E.dir || 1;
+          E.it.forEach(m => {
+            const a = Math.sin(m.x * .004 + t * .00015) * .7 + Math.cos(m.y * .007 - t * .0001) * .5;
+            m.x += Math.cos(a) * .028 * dt * m.v * s; m.y += Math.sin(a) * .014 * dt * m.v;
+            if (dt) { m.tr.push(m.x, m.y); if (m.tr.length > 36) m.tr.splice(0, 2); }
+            if (m.x < -20 || m.x > E.W + 20 || m.y < -20 || m.y > E.H + 20) { m.x = s > 0 ? -10 : E.W + 10; m.y = E.R(0, E.H); m.tr.length = 0; }
+          });
+          if (!c) return;
+          [0, 2].forEach(k => { c.beginPath(); E.it.forEach(m => { if (m.k !== k || m.tr.length < 4) return; c.moveTo(m.tr[0], m.tr[1]); for (let i = 2; i < m.tr.length; i += 2) c.lineTo(m.tr[i], m.tr[i + 1]); }); c.lineWidth = 1.4; c.lineCap = 'round'; c.strokeStyle = ca(E.P[k], .32 * E.I * E.A); c.stroke(); });
+        }
+      });
+      rbAdd({
+        id: 'c-tides', name: 'Slow gradient tides', cat: 'water', desc: 'Layers of colour rising and falling like a calm tide.', pal: ['#8ec5ff', '#5eead4', '#c4b5fd'], dens: false,
+        frame(c, E, dt, t) {
+          for (let i = 0; i < 3; i++) {
+            const yb = E.H * (.42 + i * .18) + Math.sin(t * .00025 + i * 1.3) * E.H * .06, gr = c.createLinearGradient(0, yb - E.H * .08, 0, E.H);
+            gr.addColorStop(0, ca(E.P[i], .2 * E.I * E.A)); gr.addColorStop(1, ca(E.P[i], .03 * E.A)); c.fillStyle = gr; c.beginPath(); c.moveTo(0, E.H);
+            for (let x = 0; x <= E.W + 24; x += 24) c.lineTo(x, yb + Math.sin(x / E.W * 6.283 * (1 + i * .4) + t * .0004 * (i + 1) + i) * E.H * .035);
+            c.lineTo(E.W, E.H); c.closePath(); c.fill();
+          }
+        }
+      });
+      // ---- Light ----
+      rbAdd({
+        id: 'c-dust', name: 'Sunlit dust motes', cat: 'light', desc: 'Shafts of sunlight with tiny drifting specks.', pal: ['#fde68a', '#f59e0b', '#fff7d6'],
+        init(E) {
+          E.ex.sh = [[.18, .1], [.42, .07], [.68, .12]].map(([x, w]) => ({ x: x * E.W, w: w * E.W, k: .55 }));
+          for (let i = 0, n = E.n(70); i < n; i++) { const sh = E.ex.sh[i % 3]; E.it.push({ sh, u: E.R(0, 1), o: E.R(-.5, .5), r: E.R(.8, 2), ph: E.R(0, 6), f: E.R(.5, 1.4), vu: E.R(-1, 1) * .00002 }); }
+        },
+        base(g, E) {
+          E.ex.sh.forEach(s => { const gr = g.createLinearGradient(0, 0, 0, E.H); gr.addColorStop(0, ca(E.P[0], .2)); gr.addColorStop(1, ca(E.P[0], 0)); g.fillStyle = gr; g.beginPath(); g.moveTo(s.x - s.w / 2, 0); g.lineTo(s.x + s.w / 2, 0); g.lineTo(s.x + s.w / 2 + E.H * s.k + s.w * .6, E.H); g.lineTo(s.x - s.w / 2 + E.H * s.k - s.w * .6, E.H); g.closePath(); g.fill(); });
+        },
+        frame(c, E, dt, t) {
+          E.it.forEach(m => {
+            m.u = wrapv(m.u + m.vu * dt + .000004 * dt, 0, 1); const y = m.u * E.H, wid = m.sh.w + m.u * m.sh.w * 1.2, x = m.sh.x + y * m.sh.k + m.o * wid + Math.sin(t * .0005 + m.ph) * 6;
+            const b = .3 + .7 * Math.max(0, Math.sin(t * .0018 * m.f + m.ph)); glow(c, E, E.P[2], x, y, m.r * 2.6, m.r * 2.6, b * .8 * E.I);
+          });
+        }
+      });
+      rbAdd({
+        id: 'c-rays', name: 'Soft coral light rays', cat: 'light', desc: 'Warm rays of light swaying gently from above.', pal: ['#fda4af', '#fdba74', '#fecdd3'],
+        init(E) { for (let i = 0, n = E.n(6); i < n; i++) E.it.push({ x: E.R(-.05, 1.05) * E.W, w: E.R(.04, .11) * E.W, ph: E.R(0, 6), f: E.R(.5, 1.2), k: i % 3 }); },
+        base(g, E) { const gr = g.createLinearGradient(0, 0, 0, E.H * .5); gr.addColorStop(0, ca(E.P[0], .16)); gr.addColorStop(1, ca(E.P[0], 0)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt, t) {
+          c.globalCompositeOperation = 'lighter';
+          E.it.forEach(m => {
+            const tilt = .2 + Math.sin(t * .0003 * m.f + m.ph) * .12, a = (.14 + .06 * Math.sin(t * .0007 + m.ph)) * E.I * E.A, gr = c.createLinearGradient(0, 0, 0, E.H);
+            gr.addColorStop(0, ca(E.P[m.k], a)); gr.addColorStop(1, ca(E.P[m.k], 0)); c.fillStyle = gr; c.beginPath();
+            c.moveTo(m.x - m.w / 2, 0); c.lineTo(m.x + m.w / 2, 0); c.lineTo(m.x + E.H * tilt + m.w * 1.8, E.H); c.lineTo(m.x + E.H * tilt - m.w * 1.8, E.H); c.closePath(); c.fill();
+          });
+        }
+      });
+      rbAdd({
+        id: 'c-bokeh', name: 'Dreamy bokeh', cat: 'light', desc: 'Large out-of-focus circles of light floating by.', pal: ['#fcd34d', '#f472b6', '#93c5fd'],
+        init(E) { for (let i = 0, n = E.n(20); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(0, E.H), r: E.R(12, 44), vx: E.R(-1, 1) * .005, vy: E.R(-1, 1) * .003, ph: E.R(0, 6), k: i % 3 }); },
+        frame(c, E, dt, t) {
+          c.globalCompositeOperation = 'lighter'; c.lineWidth = 1.5;
+          E.it.forEach(m => { m.x = wrapv(m.x + m.vx * dt, -m.r, E.W + m.r); m.y = wrapv(m.y + m.vy * dt, -m.r, E.H + m.r); const a = (.07 + .05 * Math.sin(t * .0008 + m.ph)) * E.I * E.A; c.beginPath(); c.arc(m.x, m.y, m.r, 0, 6.283); c.fillStyle = ca(E.P[m.k], a); c.fill(); c.strokeStyle = ca(E.P[m.k], a * 1.9); c.stroke(); });
+        }
+      });
+      rbAdd({
+        id: 'c-orbs', name: 'Floating light orbs', cat: 'light', desc: 'Small glowing orbs rising and bobbing softly.', pal: ['#a5f3fc', '#c4b5fd', '#ffffff'], dir: 'vert', def: { dir: '-1' },
+        init(E) { for (let i = 0, n = E.n(16); i < n; i++) E.it.push({ x: E.R(0, E.W), y: E.R(0, E.H), r: E.R(2.5, 6), v: E.R(.006, .014), ph: E.R(0, 6), k: i % 2 }); },
+        frame(c, E, dt, t) {
+          c.globalCompositeOperation = 'lighter'; const up = E.dir || -1;
+          E.it.forEach(m => { m.y += up * m.v * dt; if (m.y < -40) m.y = E.H + 40; if (m.y > E.H + 40) m.y = -40; const x = m.x + Math.sin(t * .0009 + m.ph) * 14, p = .75 + .25 * Math.sin(t * .002 + m.ph); glow(c, E, E.P[m.k], x, m.y, m.r * 7, m.r * 7, .3 * p * E.I); glow(c, E, E.P[2], x, m.y, m.r * 1.6, m.r * 1.6, .95 * p * E.I); });
+        }
+      });
+      rbAdd({
+        id: 'c-lanterns', name: 'Floating paper lanterns', cat: 'light', desc: 'Warm paper lanterns drifting up into the night.', pal: ['#fbbf24', '#f97316', '#fde68a'], dir: 'vert', def: { dir: '-1' },
+        init(E) { for (let i = 0, n = E.n(9); i < n; i++) E.it.push({ x: E.R(.03, .97) * E.W, y: E.R(0, E.H), s: E.R(8, 16), v: E.R(.005, .011), ph: E.R(0, 6) }); E.it.sort((a, b) => a.s - b.s); },
+        base(g, E) { const gr = g.createLinearGradient(0, 0, 0, E.H); gr.addColorStop(0, ca('#1e1b4b', .25)); gr.addColorStop(1, ca(E.P[1], .08)); g.fillStyle = gr; g.fillRect(0, 0, E.W, E.H); },
+        frame(c, E, dt, t) {
+          const up = E.dir || -1;
+          E.it.forEach(m => {
+            m.y += up * m.v * dt * (m.s / 12); if (m.y < -50) m.y = E.H + 50; if (m.y > E.H + 50) m.y = -50;
+            const x = m.x + Math.sin(t * .0005 + m.ph) * 10, fl = (.85 + .15 * Math.sin(t * .009 + m.ph * 3)) * E.I, w = m.s * 1.1, h = m.s * 1.4;
+            c.globalCompositeOperation = 'lighter'; glow(c, E, E.P[0], x, m.y, m.s * 3.4, m.s * 3.4, .3 * fl); c.globalCompositeOperation = 'source-over';
+            c.fillStyle = ca(E.P[1], .78 * fl * E.A); rr(c, x - w / 2, m.y - h / 2, w, h, w * .4); c.fill();
+            glow(c, E, E.P[2], x, m.y + h * .08, w * .45, h * .42, .8 * fl);
+            c.fillStyle = ca('#3b2410', .7 * E.A); c.fillRect(x - w * .3, m.y - h / 2 - 1.5, w * .6, 2.5); c.fillRect(x - w * .25, m.y + h / 2 - 1, w * .5, 2.5);
+          });
+        }
+      });
+      rbAdd({
+        id: 'c-frost', name: 'Frosted glass reflections', cat: 'light', desc: 'Light gliding across frosted glass.', pal: ['#bae6fd', '#e0f2fe', '#ffffff'], dir: 'lr', dens: false,
+        init(E) { E.ex.cr = []; for (let i = 0; i < Math.round(160 * E.q); i++) E.ex.cr.push([E.R(0, E.W), E.R(0, E.H), E.R(2, 6), E.R(0, 1)]); E.it = [0, .55, 1.1].map((o, i) => ({ o, w: E.R(.08, .16) * E.W, f: [1, .8, 1.25][i] })); },
+        base(g, E) {
+          g.strokeStyle = ca(E.P[2], .14); g.lineWidth = .7; g.beginPath();
+          E.ex.cr.forEach(([x, y, r, a]) => { for (let j = 0; j < 3; j++) { const an = a * 3 + j * 1.047; g.moveTo(x - Math.cos(an) * r, y - Math.sin(an) * r); g.lineTo(x + Math.cos(an) * r, y + Math.sin(an) * r); } }); g.stroke();
+          const v = g.createRadialGradient(E.W / 2, E.H / 2, Math.min(E.W, E.H) * .3, E.W / 2, E.H / 2, Math.max(E.W, E.H) * .7); v.addColorStop(0, ca(E.P[1], 0)); v.addColorStop(1, ca(E.P[1], .14)); g.fillStyle = v; g.fillRect(0, 0, E.W, E.H);
+        },
+        frame(c, E, dt, t) {
+          const s = E.dir || 1; c.globalCompositeOperation = 'lighter';
+          E.it.forEach(m => {
+            const p = ((t * .00004 * m.f + m.o) % 1.7) - .35, cx = (s > 0 ? p : 1 - p) * E.W * 1.2;
+            c.save(); c.translate(cx, E.H / 2); c.rotate(-.5); const gr = c.createLinearGradient(-m.w / 2, 0, m.w / 2, 0), a = E.I * E.A;
+            gr.addColorStop(0, ca(E.P[0], 0)); gr.addColorStop(.4, ca(E.P[0], .1 * a)); gr.addColorStop(.5, ca(E.P[2], .2 * a)); gr.addColorStop(.6, ca(E.P[0], .1 * a)); gr.addColorStop(1, ca(E.P[0], 0));
+            c.fillStyle = gr; c.fillRect(-m.w / 2, -E.H * 1.5, m.w, E.H * 3); c.restore();
+          });
+        }
+      });
+      // ---- Flowing & abstract ----
+      rbAdd({
+        id: 'c-silk', name: 'Flowing silk ribbons', cat: 'flow', desc: 'Silky ribbons twisting slowly through the air.', pal: ['#c4b5fd', '#f9a8d4', '#ffffff'], dir: 'lr',
+        init(E) { for (let i = 0, n = E.n(4); i < n; i++) E.it.push({ y0: E.R(.2, .8) * E.H, amp: E.R(.07, .17) * E.H, f: E.R(.7, 1.5), ph: E.R(0, 6), w: E.R(12, 30), k: i % 2 }); },
+        frame(c, E, dt, t) {
+          const s = E.dir || 1;
+          E.it.forEach(m => {
+            const top = [], bot = [];
+            for (let x = -24; x <= E.W + 24; x += 24) { const u = x / E.W, yc = m.y0 + Math.sin(u * 6.283 * m.f - t * .0005 * s + m.ph) * m.amp, th = m.w * (.15 + .85 * Math.abs(Math.sin(u * 4.5 - t * .0004 * s + m.ph))); top.push(x, yc - th / 2); bot.push(x, yc + th / 2); }
+            const gr = c.createLinearGradient(0, 0, E.W, 0); gr.addColorStop(0, ca(E.P[m.k], .04 * E.A)); gr.addColorStop(.5, ca(E.P[m.k], .22 * E.I * E.A)); gr.addColorStop(1, ca(E.P[m.k], .04 * E.A));
+            c.beginPath(); c.moveTo(top[0], top[1]); for (let i = 2; i < top.length; i += 2) c.lineTo(top[i], top[i + 1]); for (let i = bot.length - 2; i >= 0; i -= 2) c.lineTo(bot[i], bot[i + 1]); c.closePath(); c.fillStyle = gr; c.fill();
+            c.beginPath(); c.moveTo(top[0], top[1]); for (let i = 2; i < top.length; i += 2) c.lineTo(top[i], top[i + 1]); c.lineWidth = 1; c.strokeStyle = ca(E.P[2], .3 * E.I * E.A); c.stroke();
+          });
+        }
+      });
+      rbAdd({
+        id: 'c-ink', name: 'Ink in water', cat: 'flow', desc: 'Clouds of ink curling and spreading slowly.', pal: ['#818cf8', '#c084fc', '#38bdf8'],
+        init(E) { E.ex.next = 0; for (let i = 0; i < 3; i++) this.spawn(E, E.R(2000, 9000)); },
+        spawn(E, age) { const p = []; for (let j = 0; j < 11; j++) p.push([E.R(0, 6.283), E.R(.4, 1.2), E.R(.6, 1.4), E.R(-1, 1)]); E.it.push({ x: E.R(.1, .9) * E.W, y: E.R(.25, .85) * E.H, age: age || 0, life: E.R(11000, 16000), p, k: E.it.length % 3 }); },
+        frame(c, E, dt) {
+          if ((E.ex.next -= dt) <= 0) { E.ex.next = 3200 / Math.max(.3, E.o.density); if (E.it.length < Math.max(2, E.n(5))) this.spawn(E, 0); }
+          E.it = E.it.filter(m => (m.age += dt) < m.life);
+          E.it.forEach(m => { const k = m.age / m.life, fade = Math.sin(Math.PI * k); m.p.forEach(([an, dr, sz, sp]) => { const a = an + m.age * .00008 * sp, d = m.age * .006 * dr, r = (8 + m.age * .005 * sz); glow(c, E, E.P[m.k], m.x + Math.cos(a) * d, m.y + Math.sin(a) * d * .7 - m.age * .002, r, r, fade * .2 * E.I); }); });
+        }
+      });
+      rbAdd({
+        id: 'c-watercolor', name: 'Watercolour bloom', cat: 'flow', desc: 'Soft washes of colour blooming and fading.', pal: ['#f9a8d4', '#a5b4fc', '#99f6e4'],
+        init(E) { for (let i = 0, n = E.n(5); i < n; i++) this.spawn(E, E.R(0, 14000)); },
+        spawn(E, age) { const nz = [], nz2 = []; for (let j = 0; j < 14; j++) { nz.push(E.R(.75, 1.2)); nz2.push(E.R(.7, 1.15)); } E.it.push({ x: E.R(.05, .95) * E.W, y: E.R(.1, .9) * E.H, R: E.R(.14, .28) * Math.min(E.W, E.H * 2), age: age || 0, life: E.R(14000, 22000), nz, nz2, k: E.it.length % 3 }); },
+        frame(c, E, dt) {
+          const want = E.n(5); E.it = E.it.filter(m => (m.age += dt) < m.life); while (E.it.length < want) this.spawn(E, 0);
+          E.it.forEach(m => {
+            const k = m.age / m.life, rad = m.R * (.35 + .65 * (1 - Math.pow(1 - k, 2))), a = Math.sin(Math.PI * k) * .16 * E.I * E.A;
+            [m.nz, m.nz2].forEach((nz, layer) => {
+              c.beginPath(); for (let j = 0; j <= 14; j++) { const an = j / 14 * 6.283, r = rad * nz[j % 14] * (layer ? .8 : 1), x = m.x + Math.cos(an) * r, y = m.y + Math.sin(an) * r * .8; j ? c.lineTo(x, y) : c.moveTo(x, y); }
+              c.closePath(); c.fillStyle = ca(E.P[m.k], a); c.fill(); c.lineWidth = 2; c.strokeStyle = ca(E.P[m.k], a * 1.3); c.stroke();
+            });
+          });
+        }
+      });
+      const RB_IDS = RB_LIST.map(d => d.id);
+
+      // register with the piano roll
+      let rbMotionWas = null;
+      RB_LIST.forEach(d => {
+        VIZ_ANIM[d.id] = (c, now) => { const E = rbGet('roll', d.id, RW, RH), dt = E.last ? Math.min(100, now - E.last) : 16; E.last = now; rbFrame(c, E, dt * E.sp); };
+        VIZ_STILL[d.id] = g => {
+          g.clearRect(0, 0, RW, RH); rbMotionWas = motionOK();
+          const E = rbGet('roll', d.id, RW, RH); rbBase(g, E);
+          if (!rbMotionWas) { const S2 = rbEnv(d, RW, RH, E.o, E.q, E.P); rbFrame(g, S2, 0); }
+        };
+      });
+      { const i = GFX_OPT.bg.findIndex(x => x[0] === 'none'); GFX_OPT.bg.splice(i < 0 ? GFX_OPT.bg.length : i, 0, ...RB_LIST.map(d => [d.id, d.name + ' (calm)'])); }
+      const rbRefresh = () => { VZ.g = null; if (typeof redraw === 'function') redraw(); startLoop(); };
+      // motion switched on / off (Settings, Windows, Calm mode): swap between the still picture and the animation
+      setInterval(() => { if (RBD[GFX.bg] && rbMotionWas !== null && rbMotionWas !== motionOK()) rbRefresh(); }, 1000);
+
+      /* ---------- the background studio: browse, preview, customise ---------- */
+      const RBU = { cat: 'all', q: '', pick: null, raf: 0, thumbs: 0 };
+      const rbClassic = () => GFX_OPT.bg.filter(([v]) => !RBD[v]);
+      function rbCard(id, name, desc, i) {
+        const cur = GFX.bg === id, fav = RBS.fav.includes(id), mine = !!RBD[id];
+        return '<button type="button" class="rbs-card" data-rb="' + esc(id) + '" aria-pressed="' + (RBU.pick === id) + '" style="--i:' + i + '">' +
+          (mine ? '<canvas width="192" height="108" aria-hidden="true"></canvas>' : '<span class="rbs-ph" aria-hidden="true">' + (id === 'none' ? '∅' : '🎹') + '</span>') +
+          (cur ? '<span class="rbs-cur">In use</span>' : '') + (fav ? '<span class="rbs-star" aria-label="Favourite">★</span>' : '') +
+          '<b>' + esc(name) + '</b><small>' + esc(mine ? RB_CATS.find(c => c[0] === RBD[id].cat)[1] : 'Classic') + '</small></button>';
+      }
+      function rbItems() {
+        const q = RBU.q.trim().toLowerCase();
+        let L = RB_LIST.map(d => [d.id, d.name, d.desc, d.cat]).concat(rbClassic().map(([v, l]) => [v, l, 'Classic background', 'classic']));
+        if (RBU.cat === 'fav') L = L.filter(x => RBS.fav.includes(x[0])); else if (RBU.cat !== 'all') L = L.filter(x => x[3] === RBU.cat);
+        if (q) L = L.filter(x => (x[1] + ' ' + x[2] + ' ' + x[3]).toLowerCase().includes(q));
+        return L;
+      }
+      function rbGrid() {
+        const box = $('#rbGrid'); if (!box) return; const L = rbItems();
+        box.innerHTML = L.length ? L.map((x, i) => rbCard(x[0], x[1], x[2], i)).join('') : '<p class="v71muted">Nothing matches. Try another word, or pick “All”.</p>';
+        const cvs = [...box.querySelectorAll('canvas')], tok = ++RBU.thumbs;
+        const next = () => {                                                 // thumbnails are still pictures, painted a few at a time
+          if (tok !== RBU.thumbs) return;
+          cvs.splice(0, 4).forEach(cv => { const id = cv.closest('[data-rb]').dataset.rb, d = RBD[id], g = cv.getContext('2d'), o = rbOpts(id); const E = rbEnv(d, 192, 108, o, .8, rbPal(d, o)); rbStill(g, E); });
+          if (cvs.length) setTimeout(next, 16);
+        };
+        next();
+      }
+      function rbSide() {
+        const id = RBU.pick, d = RBD[id], box = $('#rbSide'); if (!box) return;
+        if (!id) { box.innerHTML = '<p class="v71muted">Pick a background to preview and customise it.</p>'; return; }
+        const fav = RBS.fav.includes(id);
+        if (!d) {
+          const nm = (GFX_OPT.bg.find(x => x[0] === id) || [id, id])[1];
+          box.innerHTML = '<canvas id="rbPrev" width="480" height="240" aria-hidden="true"></canvas><h4>' + esc(nm) + '</h4><p class="v71muted">A classic background. It has no extra settings — use it and look at the piano roll.</p>' +
+            '<div class="v71row"><button type="button" class="btn primary" id="rbApply">' + (GFX.bg === id ? '✓ In use' : 'Use this background') + '</button><button type="button" class="btn" id="rbFav" aria-pressed="' + fav + '">' + (fav ? '★ Favourite' : '☆ Favourite') + '</button></div>';
+        } else {
+          const o = rbOpts(id), rng = (k, l, mn, mx, st) => '<label>' + l + ' <input type="range" data-rbo="' + k + '" min="' + mn + '" max="' + mx + '" step="' + st + '" value="' + o[k] + '"></label>';
+          box.innerHTML = '<canvas id="rbPrev" width="480" height="240" aria-label="Live preview of ' + esc(d.name) + '"></canvas><h4>' + esc(d.name) + '</h4><p class="v71muted">' + esc(d.desc) + '</p>' +
+            '<div class="set-grid">' + rng('speed', 'Speed', .25, 2, .05) + rng('intensity', 'Brightness', .2, 1.6, .05) + rng('opacity', 'Opacity', .1, 1, .05) + (d.dens === false ? '' : rng('density', 'Amount', .3, 2, .05)) +
+            '<label>Colours <select data-rbo="palette">' + [['default', 'Effect colours'], ['theme', 'Theme colours'], ...Object.entries(RB_PAL).map(([k, v]) => [k, v[0]])].map(([v, l]) => '<option value="' + v + '"' + (o.palette === v ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select></label>' +
+            (d.dir ? '<label>Direction <select data-rbo="dir">' + RB_DIR[d.dir].map(([v, l]) => '<option value="' + v + '"' + (String(o.dir) === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' : '') + '</div>' +
+            '<div class="v71row" style="margin-top:10px"><button type="button" class="btn primary" id="rbApply">' + (GFX.bg === id ? '✓ In use' : 'Use this background') + '</button><button type="button" class="btn" id="rbReset">Reset to default</button><button type="button" class="btn" id="rbFav" aria-pressed="' + fav + '">' + (fav ? '★ Favourite' : '☆ Favourite') + '</button></div>' +
+            (motionOK() ? '' : '<p class="v71muted" style="margin-top:8px">Animations are switched off right now (Motion, Calm mode or the Windows setting), so you see a still picture. ' + (osReduce() && !TUNE.overOS ? 'Settings → Motion &amp; themes → “Play animations even when Windows animations are switched off” brings the movement back.' : '') + '</p>');
+          box.querySelectorAll('[data-rbo]').forEach(el => el[el.tagName === 'SELECT' ? 'onchange' : 'oninput'] = () => {
+            const k = el.dataset.rbo; RBS.fx[id] = Object.assign({}, RBS.fx[id] || {}, { [k]: el.tagName === 'SELECT' ? el.value : +el.value }); saveRB(); if (GFX.bg === id) rbRefresh(); rbThumbOne(id);
+          });
+          $('#rbReset').onclick = () => { delete RBS.fx[id]; saveRB(); if (GFX.bg === id) rbRefresh(); rbSide(); rbThumbOne(id); toast('↺ ' + d.name + ': back to its default look.', 'ok'); };
+        }
+        $('#rbApply').onclick = () => { GFX.bg = id; GFX.preset = 'custom'; saveGfx(); applyGfx(); rbGrid(); rbSide(); toast('🎹 Roll background: ' + (d ? d.name : id), 'ok'); };
+        $('#rbFav').onclick = () => { const i = RBS.fav.indexOf(id); if (i < 0) RBS.fav.push(id); else RBS.fav.splice(i, 1); saveRB(); rbSide(); rbGrid(); };
+        rbPrevLoop();
+      }
+      function rbThumbOne(id) { const cv = $('#rbGrid [data-rb="' + id + '"] canvas'); if (!cv) return; const d = RBD[id], o = rbOpts(id), g = cv.getContext('2d'); g.clearRect(0, 0, 192, 108); rbStill(g, rbEnv(d, 192, 108, o, .8, rbPal(d, o))); }
+      function rbPrevLoop() {
+        cancelAnimationFrame(RBU.raf); const cv = $('#rbPrev'); if (!cv) return;
+        const dpr = Math.min(2, window.devicePixelRatio || 1), W = 480, H = 240; cv.width = W * dpr; cv.height = H * dpr; const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const id = RBU.pick, d = RBD[id];
+        if (!d) { g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(255,255,255,.5)'; g.font = '14px system-ui'; g.textAlign = 'center'; g.fillText('Preview this one on the piano roll', W / 2, H / 2); return; }
+        let base = null, last = 0, lastKey = '';
+        const tick = now => {
+          if (!cv.isConnected || $('#gm').hidden) return;                     // stops by itself when the window closes
+          RBU.raf = requestAnimationFrame(tick);
+          if (now - last < 32) return;                                         // 30 frames a second is plenty for calm motion
+          const E = rbGet('prev', id, W, H), dt = last ? Math.min(100, now - last) : 0; last = now;
+          if (E.key !== lastKey) { lastKey = E.key; base = document.createElement('canvas'); base.width = W * dpr; base.height = H * dpr; const bg = base.getContext('2d'); bg.setTransform(dpr, 0, 0, dpr, 0, 0); rbBase(bg, E); }
+          g.clearRect(0, 0, W, H); g.drawImage(base, 0, 0, W, H);
+          if (motionOK()) rbFrame(g, E, dt * E.sp); else { rbFrame(g, rbEnv(d, W, H, E.o, E.q, E.P), 0); cancelAnimationFrame(RBU.raf); }
+        };
+        RBU.raf = requestAnimationFrame(tick);
+      }
+      function openRollStudio(pick) {
+        RBU.pick = pick || (RBD[GFX.bg] ? GFX.bg : RB_LIST[0].id);
+        openModal('<div class="v71w rbs"><div class="th-head"><h2 style="font-size:20px">🎹 Roll backgrounds</h2><span class="sub">' + RB_LIST.length + ' calm animated backgrounds plus the classic ones · pick one to preview it live</span></div>' +
+          '<div class="rbs-top"><input type="search" id="rbQ" placeholder="Search backgrounds (rain, light, water…)" aria-label="Search backgrounds" value="' + esc(RBU.q) + '">' +
+          '<div class="v71row" id="rbCats" role="group" aria-label="Categories">' + [['all', 'All'], ['fav', '★ Favourites'], ...RB_CATS, ['classic', 'Classic']].map(([v, l]) => '<button type="button" class="v71chip" data-cat="' + v + '" aria-pressed="' + (RBU.cat === v) + '">' + esc(l) + '</button>').join('') + '</div></div>' +
+          '<div class="rbs-main"><div class="rbs-grid" id="rbGrid"></div><aside class="rbs-side" id="rbSide"></aside></div>' +
+          '<div class="actions"><button type="button" class="btn" id="rbBack">← Back to Settings</button><span style="flex:1"></span><button class="btn primary" data-act="close">Done</button></div></div>');
+        $('#rbQ').oninput = e => { RBU.q = e.target.value; rbGrid(); };
+        $('#rbCats').onclick = e => { const b = e.target.closest('[data-cat]'); if (!b) return; RBU.cat = b.dataset.cat; $('#rbCats').querySelectorAll('[data-cat]').forEach(x => x.setAttribute('aria-pressed', x === b)); rbGrid(); };
+        $('#rbGrid').onclick = e => { const b = e.target.closest('[data-rb]'); if (!b) return; RBU.pick = b.dataset.rb; $('#rbGrid').querySelectorAll('[data-rb]').forEach(x => x.setAttribute('aria-pressed', x === b)); rbSide(); };
+        $('#rbBack').onclick = () => openSettings('gfx');
+        rbGrid(); rbSide();
+      }
+      // Settings → Graphics: a button next to "Roll background"
+      {
+        const _gx71 = gfxExtra, _gw71 = gfxExtraWire;
+        gfxExtra = function (sel) { return '<label>Background studio <span class="row"><button type="button" class="btn small" id="gfRbStudio">Browse &amp; customise…</button></span></label>' + _gx71(sel); };
+        gfxExtraWire = function (set) { _gw71(set); const b = $('#gfRbStudio'); if (b) b.onclick = () => openRollStudio(); };
+      }
+
+      /* =====================================================================
+         MIDI KEYBOARD BRIDGE — play a game or a web piano with your MIDI keyboard
+         · listens to the SAME MIDI messages the logger already gets (no second connection); logging is untouched
+         · turns notes into computer-keyboard keys using a mapping profile
+         · in the desktop app it presses real keys, but only while the chosen target window is in front
+           (checked here AND in the app's Windows code); on the website it is a preview only
+         · Emergency Stop / Ctrl+Alt+End / losing focus / unplugging the keyboard releases every key
+         ===================================================================== */
+      const BR_APP = !!(window.pianoApp && window.pianoApp.keys);
+      const BR_OLDAPP = !!window.pianoApp && !BR_APP;                       // a desktop app older than 7.1 that downloaded this page: preview only
+      const BR_WHY = BR_OLDAPP ? 'This desktop app version cannot press keys yet. Install the Piano Logger 7.1 (or newer) Windows app to send real key presses; until then the bridge only shows a preview.'
+        : 'On the website the bridge is a <b>preview only</b>: it shows which keys your notes would press, but it cannot press keys in other programs or games — web pages are not allowed to. Sending real key presses needs the Piano Logger 7.1 (or newer) Windows app.';
+      const BR_US = {};
+      'abcdefghijklmnopqrstuvwxyz'.split('').forEach((ch, i) => { BR_US[ch] = [0x41 + i, 0]; BR_US[ch.toUpperCase()] = [0x41 + i, 1]; });
+      '0123456789'.split('').forEach((ch, i) => { BR_US[ch] = [0x30 + i, 0]; BR_US[')!@#$%^&*('[i]] = [0x30 + i, 1]; });
+      [[';', ':', 0xBA], ['=', '+', 0xBB], [',', '<', 0xBC], ['-', '_', 0xBD], ['.', '>', 0xBE], ['/', '?', 0xBF], ['`', '~', 0xC0], ['[', '{', 0xDB], ['\\', '|', 0xDC], [']', '}', 0xDD], ["'", '"', 0xDE]]
+        .forEach(([a, b, v]) => { BR_US[a] = [v, 0]; BR_US[b] = [v, 1]; });
+      const BR_NAMED = { space: [0x20, 'Space'], enter: [0x0D, 'Enter'], tab: [0x09, 'Tab'], backspace: [0x08, 'Backspace'], up: [0x26, 'Up'], down: [0x28, 'Down'], left: [0x25, 'Left'], right: [0x27, 'Right'], insert: [0x2D, 'Insert'], delete: [0x2E, 'Delete'], home: [0x24, 'Home'], pageup: [0x21, 'PageUp'], pagedown: [0x22, 'PageDown'], shift: [0x10, 'Shift'], ctrl: [0x11, 'Ctrl'], alt: [0x12, 'Alt'] };
+      for (let i = 1; i <= 12; i++) BR_NAMED['f' + i] = [0x6F + i, 'F' + i];
+      for (let i = 0; i <= 9; i++) BR_NAMED['num' + i] = [0x60 + i, 'Num' + i];
+      const BR_MOD = { shift: 0x10, ctrl: 0x11, alt: 0x12 };
+      // "q" · "Q" (= Shift+q) · "!" · "Shift+F1" · "Space" · "Num5" → { vk, mods, label }   (US keyboard layout)
+      function brParse(spec) {
+        const s = String(spec == null ? '' : spec).trim(); if (!s || s.length > 24) return null;
+        const m = /^((?:(?:shift|ctrl|alt)\+)*)(.+)$/i.exec(s); if (!m) return null;
+        const mods = m[1].toLowerCase().split('+').filter(Boolean).map(x => BR_MOD[x]); let key = m[2], vk = 0, label = '';
+        if (key.length === 1 && BR_US[key]) { vk = BR_US[key][0]; if (BR_US[key][1] && !mods.includes(0x10)) mods.unshift(0x10); label = key; }
+        else { const n = BR_NAMED[key.toLowerCase()]; if (!n) return null; vk = n[0]; label = n[1]; }
+        const mx = [...new Set(mods)];
+        const pre = m[1] ? m[1].split('+').filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1).toLowerCase()).join('+') + '+' : '';
+        return { vk, mods: mx.filter(x => x !== vk), label: pre + label };
+      }
+      const BR_CODE = { Semicolon: ';', Equal: '=', Comma: ',', Minus: '-', Period: '.', Slash: '/', Backquote: '`', BracketLeft: '[', Backslash: '\\', BracketRight: ']', Quote: "'" };
+      const BR_CODEN = { Space: 'Space', Enter: 'Enter', Tab: 'Tab', Backspace: 'Backspace', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right', Insert: 'Insert', Delete: 'Delete', Home: 'Home', PageUp: 'PageUp', PageDown: 'PageDown' };
+      function brFromEvent(e) {                                              // the key you pressed (learn mode) → a mapping like "Q" or "F3"
+        const c = e.code, pre = (e.ctrlKey ? 'Ctrl+' : '') + (e.altKey ? 'Alt+' : '');
+        let base = null;
+        // letters: the letter printed on the key (QWERTZ / AZERTY), else its US position (e.g. a Hindi layout is active)
+        if (/^Key[A-Z]$/.test(c)) base = typeof e.key === 'string' && /^[a-z]$/i.test(e.key) ? e.key.toLowerCase() : c.slice(3).toLowerCase(); else if (/^Digit\d$/.test(c)) base = c.slice(5); else if (BR_CODE[c]) base = BR_CODE[c];
+        else if (/^F([1-9]|1[0-2])$/.test(c)) return pre + (e.shiftKey ? 'Shift+' : '') + c;
+        else if (/^Numpad\d$/.test(c)) return pre + 'Num' + c.slice(6);
+        else if (BR_CODEN[c]) return pre + (e.shiftKey ? 'Shift+' : '') + BR_CODEN[c];
+        if (base == null) return null;
+        if (e.shiftKey) { const vk = BR_US[base][0], sh = Object.keys(BR_US).find(k => k.length === 1 && BR_US[k][0] === vk && BR_US[k][1]); if (sh) base = sh; }
+        return pre + base;
+      }
+      const nName = m => NS[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
+      const BR_VP = '1!2@34$5%6^78*9(0qQwWeErtTyYuiIoOpPasSdDfgGhHjJklLzZxcCvVbBnm';
+      const brMapVP = () => { const o = {}; [...BR_VP].forEach((ch, i) => o[36 + i] = ch); return o; };
+      // 7.2: the full 88-key Roblox / Virtual Piano layout. The 15 notes below C2 (A0–B1) and the 12 above C7 (C#7–C8) are the
+      // keys shown underlined on the piano; they are played with Ctrl held.
+      const brMapVP88 = () => { const o = brMapVP(); [...'1234567890qwert'].forEach((ch, i) => o[21 + i] = 'Ctrl+' + ch); [...'yuiopasdfghj'].forEach((ch, i) => o[97 + i] = 'Ctrl+' + ch); return o; };
+      const brMapPC = () => { const o = {}; [...'zsxdcvgbhnjm'].forEach((ch, i) => o[60 + i] = ch); [...'q2w3er5t6y7u'].forEach((ch, i) => o[72 + i] = ch); return o; };
+      const BR_OPT0 = () => ({ octave: 0, transpose: 0, lo: 21, hi: 108, ignore: [], vel: 1, ch: 0, sustain: 'off', sustainKey: 'Space', softKey: '', ccKeys: {}, split: { on: false, at: 60, lower: '', lowerOct: 0 }, retrigger: true });
+      const brId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      function brClean(p) {                                                  // used for saved data and imported files: keep only valid values
+        if (!p || typeof p !== 'object') return null;
+        const o = Object.assign(BR_OPT0(), p.opt && typeof p.opt === 'object' ? p.opt : {}), n = (v, a, b, d) => Number.isFinite(+v) ? clamp(Math.round(+v), a, b) : d;
+        const out = { id: typeof p.id === 'string' && p.id.length < 40 ? p.id : brId(), name: String(p.name || 'Profile').slice(0, 60), map: {}, opt: {} };
+        if (p.map && typeof p.map === 'object') Object.entries(p.map).forEach(([k, v]) => { const m = +k; if (Number.isInteger(m) && m >= 0 && m <= 127 && typeof v === 'string' && v.trim() && v.length <= 24) out.map[m] = v.trim(); });
+        out.opt = {
+          octave: n(o.octave, -3, 3, 0), transpose: n(o.transpose, -24, 24, 0), lo: n(o.lo, 0, 127, 21), hi: n(o.hi, 0, 127, 108),
+          ignore: (Array.isArray(o.ignore) ? o.ignore : []).map(Number).filter(m => Number.isInteger(m) && m >= 0 && m <= 127).slice(0, 128),
+          vel: n(o.vel, 1, 127, 1), ch: n(o.ch, 0, 16, 0), sustain: ['off', 'key', 'hold'].includes(o.sustain) ? o.sustain : 'off',
+          sustainKey: typeof o.sustainKey === 'string' ? o.sustainKey.slice(0, 24) : 'Space', softKey: typeof o.softKey === 'string' ? o.softKey.slice(0, 24) : '',
+          ccKeys: {}, split: { on: !!(o.split && o.split.on), at: n(o.split && o.split.at, 0, 127, 60), lower: o.split && typeof o.split.lower === 'string' ? o.split.lower : '', lowerOct: n(o.split && o.split.lowerOct, -3, 3, 0) },
+          retrigger: o.retrigger !== false
+        };
+        if (o.ccKeys && typeof o.ccKeys === 'object') Object.entries(o.ccKeys).forEach(([k, v]) => { const c = +k; if (Number.isInteger(c) && c >= 0 && c <= 119 && typeof v === 'string' && v.trim()) out.opt.ccKeys[c] = v.trim().slice(0, 24); });
+        return out;
+      }
+      function brDefaults() {
+        const vp = brClean({ id: 'vp61', name: 'Roblox / Virtual Piano (88 keys)', map: brMapVP88(), opt: { sustain: 'key', sustainKey: 'Space' } });   // sustain = the game's Space sustain
+        const pc = brClean({ id: 'pc24', name: 'PC keys (2 rows)', map: brMapPC() });
+        const cu = brClean({ id: 'custom', name: 'Custom', map: {} });
+        return { v: 1, active: 'vp61', profiles: [vp, pc, cu], target: { exe: 'RobloxPlayerBeta.exe', title: '' }, mode: 'preview' };
+      }
+      const BRS = (() => {
+        const s = LS.get('pll.bridge', null); if (!s || typeof s !== 'object' || !Array.isArray(s.profiles)) return brDefaults();
+        const P = s.profiles.map(brClean).filter(Boolean); if (!P.length) return brDefaults();
+        // 7.2: the 61-key Virtual Piano profile becomes 88 keys — only if its keys were never changed; otherwise an 88-key profile is added
+        const same = (a, b) => { const x = Object.keys(a), y = Object.keys(b); return x.length === y.length && x.every(k => a[k] === b[k]); };
+        const old = P.find(p => p.id === 'vp61');
+        if (old && same(old.map, brMapVP())) { old.map = brMapVP88(); if (old.name === 'Roblox / Virtual Piano (61 keys)') old.name = 'Roblox / Virtual Piano (88 keys)'; }
+        else if (!P.some(p => same(p.map, brMapVP88()))) P.push(brClean({ id: 'vp88', name: 'Roblox / Virtual Piano (88 keys)', map: brMapVP88(), opt: { sustain: 'key', sustainKey: 'Space' } }));
+        return { v: 1, active: P.some(p => p.id === s.active) ? s.active : P[0].id, profiles: P, target: { exe: String((s.target && s.target.exe) || '').slice(0, 120), title: String((s.target && s.target.title) || '').slice(0, 120) }, mode: s.mode === 'live' && BR_APP ? 'live' : 'preview' };
+      })();
+      const saveBR = () => LS.set('pll.bridge', BRS);
+      const brProf = id => BRS.profiles.find(p => p.id === (id || BRS.active)) || BRS.profiles[0];
+
+      // ---- the engine ----
+      const BR = {
+        armed: false, notes: new Map(), cnt: new Map(), deferred: new Set(), pedal: false, q: [], qt: [], qPending: false,
+        fgOk: false, fg: null, fgT: 0, lat: [], send: [], st: { in: 0, out: 0, refused: 0, filtered: 0, unmapped: 0 }, mon: [], typed: '', learn: null, lastErr: '', live: new Set()
+      };
+      const brLive = () => BR_APP && BRS.mode === 'live';
+      function brMon(row) { BR.mon.unshift(row); if (BR.mon.length > 120) BR.mon.length = 120; brUiSoon(); }
+      function brQueue(ev, ts) { BR.q.push(ev); BR.qt.push(ts); if (!BR.qPending) { BR.qPending = true; queueMicrotask(brFlush); } }
+      function brFlush() {
+        BR.qPending = false; const evs = BR.q.splice(0), ts = BR.qt.splice(0); if (!evs.length) return;
+        const t0 = Math.min(...ts.filter(Boolean).concat(performance.now())), downs = evs.some(e => e.down);
+        if (!brLive()) {                                                     // preview: nothing leaves the page
+          const ms = performance.now() - t0; brLat(ms); BR.st.out += evs.length;
+          evs.forEach(e => { if (e.down && e.lab) BR.typed = (BR.typed + e.lab + ' ').slice(-240); }); brUiSoon(); return;
+        }
+        window.pianoApp.keys.send(evs.map(e => ({ vk: e.vk, down: e.down })), BRS.target).then(r => {
+          const ms = performance.now() - t0;
+          if (r && r.sent) { BR.st.out += evs.length; brLat(ms, r.micros); evs.forEach(e => { if (e.down && e.lab) BR.typed = (BR.typed + e.lab + ' ').slice(-240); }); }
+          else {
+            BR.st.refused += evs.length; BR.lastErr = (r && r.reason) || 'refused';
+            if (downs) { brReleaseAll(''); brMon({ t: Date.now(), msg: '—', what: 'Not sent: ' + (BR.lastErr === 'piano-logger-focused' ? 'Piano Logger itself is in front' : BR.lastErr === 'target-not-focused' ? 'the target window is not in front' : BR.lastErr), res: 'skip' }); }   // forget what we thought was held
+          }
+          brUiSoon();
+        }).catch(err => { BR.lastErr = String(err && err.message || err); BR.st.refused += evs.length; brReleaseAll('error'); });
+      }
+      function brLat(ms, micros) { BR.lat.push(ms); if (BR.lat.length > 300) BR.lat.shift(); if (micros != null) { BR.send.push(micros / 1000); if (BR.send.length > 300) BR.send.shift(); } }
+      const pct = (a, p) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; };
+      // press / release one mapped key; several notes on the same key are counted so it is only released by the last one
+      function brDown(key, spec, ts, src) {
+        const k = brParse(spec); if (!k) return false;
+        const p = BR.cnt.get(k.vk) || 0;
+        k.mods.forEach(m => { if (!(BR.cnt.get(m) > 0)) brQueue({ vk: m, down: true }, ts); });
+        if (p > 0) { if (brProf().opt.retrigger) { brQueue({ vk: k.vk, down: false }, ts); brQueue({ vk: k.vk, down: true, lab: k.label }, ts); } }
+        else brQueue({ vk: k.vk, down: true, lab: k.label }, ts);
+        k.mods.forEach(m => { if (!(BR.cnt.get(m) > 0)) brQueue({ vk: m, down: false }, ts); });
+        BR.cnt.set(k.vk, p + 1); BR.notes.set(key, { vk: k.vk, label: k.label, src }); return k;
+      }
+      function brUp(key, ts) {
+        const n = BR.notes.get(key); if (!n) return null; BR.notes.delete(key); BR.deferred.delete(key);
+        const c = (BR.cnt.get(n.vk) || 1) - 1; if (c <= 0) { BR.cnt.delete(n.vk); brQueue({ vk: n.vk, down: false }, ts); } else BR.cnt.set(n.vk, c);
+        return n;
+      }
+      function brReleaseAll(why) {
+        const had = BR.notes.size;
+        BR.q.length = 0; BR.qt.length = 0; BR.notes.clear(); BR.cnt.clear(); BR.deferred.clear(); BR.live.clear();
+        if (BR_APP) window.pianoApp.keys.releaseAll().catch(() => { });
+        if (had && why) brMon({ t: Date.now(), msg: '—', what: 'Released all keys (' + why + ')', res: 'ok' });
+        brUiSoon(); return had;
+      }
+      function brArm(on) {
+        if (!on) brReleaseAll(BR.armed ? 'stopped' : '');
+        BR.armed = !!on; BR.fgOk = false; clearInterval(BR.fgT);
+        if (on && brLive()) { brPoll(); BR.fgT = setInterval(brPoll, 300); }
+        brChip(); brUiSoon();
+      }
+      function brStop(from) { const n = BR.notes.size; brArm(false); brReleaseAll(''); toast('🛑 MIDI Bridge stopped' + (from === 'hotkey' ? ' (Ctrl+Alt+End)' : '') + ' — every key released' + (n ? ' (' + n + ')' : '') + '.', 'ok'); }
+      function brPoll() {                                                    // is the target window in front? if it just lost focus, let go of every key
+        if (!BR.armed || !brLive()) return;
+        window.pianoApp.keys.foreground(BRS.target).then(f => {
+          BR.fg = f; const was = BR.fgOk; BR.fgOk = !!(f && f.matches);
+          if (was && !BR.fgOk && BR.notes.size) brReleaseAll('target lost focus');
+          if (was !== BR.fgOk) { brChip(); brUiSoon(); }
+        }).catch(() => { });
+      }
+      function brTarget(d, p) { return d + (p === brProf() ? p.opt.octave : 0) * 12 + p.opt.transpose; }
+      // the tap: called for every MIDI message the logger accepted (same device filter)
+      function brMidi(d, ts, input) {
+        const st = d[0], type = st & 0xF0, ch = (st & 15) + 1; if (type !== 0x90 && type !== 0x80 && type !== 0xB0) return;
+        const P = brProf(), o = P.opt, key = ch + '|' + d[1];
+        if (type === 0x90 && d[2] > 0) {
+          BR.st.in++; BR.live.add(d[1]);
+          if (BR.learn && BR.learn.stage === 'midi') { const out = d[1] + o.octave * 12 + o.transpose; BR.learn.note = clamp(out, 0, 127); BR.learn.stage = 'pc'; BRU.sel = BR.learn.note; brUiSoon(); return; }
+          if (!BR.armed) return brUiSoon();
+          const why = o.ch && ch !== o.ch ? 'channel ' + ch : d[2] < o.vel ? 'too soft (' + d[2] + ')' : d[1] < o.lo || d[1] > o.hi ? 'outside the range' : o.ignore.includes(d[1]) ? 'ignored note' : '';
+          const hex = [...d].map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+          if (why) { BR.st.filtered++; brMon({ t: Date.now(), msg: hex, what: nName(d[1]) + ' — skipped: ' + why, res: 'skip' }); return; }
+          let prof = P, out;
+          if (o.split.on && d[1] < o.split.at) { const lp = BRS.profiles.find(x => x.id === o.split.lower); if (lp) { prof = lp; out = d[1] + o.split.lowerOct * 12 + o.transpose; } }
+          if (out == null) out = d[1] + o.octave * 12 + o.transpose;
+          if (BR.notes.has(key)) brUp(key, ts);                              // the same note again without a release: start it fresh
+          const spec = prof.map[out];
+          if (!spec) { BR.st.unmapped++; brMon({ t: Date.now(), msg: hex, what: nName(d[1]) + (out !== d[1] ? ' → ' + nName(out) : '') + ' — no key mapped', res: 'skip' }); return; }
+          // web browsers: Ctrl + a letter closes tabs, reloads, prints… so Ctrl mappings are only sent to other programs (games)
+          if (/(^|\+)ctrl\+/i.test(spec) && brLive() && /^(chrome|msedge|firefox|opera|brave|vivaldi|iexplore)\.exe$/i.test(BRS.target.exe || (BR.fg && BR.fg.exe) || '')) { BR.st.filtered++; brMon({ t: Date.now(), msg: hex, what: nName(d[1]) + ' → ' + spec + ' — skipped: Ctrl keys are never sent to a web browser', res: 'skip' }); return; }
+          const k = brDown(key, spec, ts, input && input.id);
+          brMon({ t: Date.now(), msg: hex, what: nName(d[1]) + (out !== d[1] ? ' → ' + nName(out) : '') + ' → ' + (k ? k.label + ' ↓' : 'invalid key “' + spec + '”'), res: k ? (brLive() ? 'sent' : 'preview') : 'bad' });
+        } else if (type === 0x80 || type === 0x90) {
+          BR.live.delete(d[1]);
+          if (!BR.notes.has(key)) return brUiSoon();
+          if (o.sustain === 'hold' && BR.pedal) { BR.deferred.add(key); return; }
+          brUp(key, ts); brUiSoon();
+        } else if (type === 0xB0) {
+          if (d[1] === 64 && BR.pedal !== (d[2] >= 64)) { BR.pedal = d[2] >= 64; brUiSoon(); }   // shown on the Overview even while the bridge is off
+          if (!BR.armed) return;
+          const on = d[2] >= 64, c = d[1];
+          if (c === 64) {
+            BR.pedal = on;
+            if (o.sustain === 'key') { if (on) brDown('cc64', o.sustainKey, ts); else brUp('cc64', ts); }
+            if (o.sustain === 'hold' && !on) [...BR.deferred].forEach(k2 => brUp(k2, ts));
+          } else if (c === 67 && o.softKey) { if (on) brDown('cc67', o.softKey, ts); else brUp('cc67', ts); }
+          else if (o.ccKeys[c]) { if (on) { if (!BR.notes.has('cc' + c)) brDown('cc' + c, o.ccKeys[c], ts); } else brUp('cc' + c, ts); }
+          else if (c === 120 || c === 123) [...BR.notes.keys()].filter(k2 => !k2.startsWith('cc')).forEach(k2 => brUp(k2, ts));
+        }
+      }
+      {
+        const _onMidi71 = onMidi;
+        onMidi = function (e, input) {
+          _onMidi71(e, input);                                               // the logger first, exactly as before
+          try {
+            if (outPort && input.name === outPort.name) return;
+            if (selectedInput !== 'all' && selectedInput !== input.id) return;
+            const d = e.data; if (!d || d.length < 3 || d[0] >= 0xF0) return;
+            let ts = e.timeStamp; if (!(ts > 0) || Math.abs(ts - performance.now()) > 2000) ts = performance.now();
+            brMidi(d, ts, input);
+          } catch (err) { console.error('[piano-logger] bridge', err); }
+        };
+        // a keyboard unplugged: release whatever it was holding
+        const _ri71 = refreshInputs;
+        refreshInputs = function () {
+          _ri71();
+          try { if (!midiAccess || !BR.notes.size) return; const gone = [...BR.notes].filter(([, n]) => n.src && (!midiAccess.inputs.get(n.src) || midiAccess.inputs.get(n.src).state !== 'connected')); if (gone.length) brReleaseAll('MIDI keyboard disconnected'); } catch (e) { }
+        };
+      }
+      window.addEventListener('pianoapp-bridge-stop', e => { brStop((e.detail && e.detail.from) || 'hotkey'); });
+      window.addEventListener('pagehide', () => { if (BR.notes.size) brReleaseAll(''); });
+
+      // a small floating chip while the bridge is on: always one click from stopping it
+      const brChipEl = document.createElement('div'); brChipEl.id = 'v71chip'; brChipEl.hidden = true; brChipEl.setAttribute('role', 'status');
+      brChipEl.innerHTML = '<i aria-hidden="true"></i><span></span><button type="button" class="btn small primary" data-c="go" hidden>Go to game</button><button type="button" class="btn small" data-c="open" title="Open the MIDI Bridge settings">Bridge</button><button type="button" class="btn small v71stop" data-c="stop">■ Stop</button>';
+      document.body.appendChild(brChipEl);
+      brChipEl.onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; if (b.dataset.c === 'stop') brStop(); else if (b.dataset.c === 'go') brGoTarget(); else openBridge(); };
+      function brState() {
+        if (TRAY.inTray) return ['off', 'Off — Piano Logger is in the system tray'];
+        if (!BR.armed) return ['off', 'Off'];
+        if (!brLive()) return ['prev', 'Preview — no keys are sent'];
+        return BR.fgOk ? ['live', 'Sending keys to ' + (BR.fg && BR.fg.exe || 'the target')] : ['wait', 'Waiting for ' + (BRS.target.exe || BRS.target.title || 'the target window') + ' to be in front'];
+      }
+      function brChip() {
+        const [s, t] = brState(); brChipEl.hidden = !BR.armed; brChipEl.dataset.s = s; brChipEl.querySelector('span').textContent = 'MIDI Bridge · ' + t;
+        const go = brChipEl.querySelector('[data-c=go]'); go.hidden = !(brLive() && BR_FOCUS && (BRS.target.exe || BRS.target.title)); go.textContent = 'Go to ' + brTargetName();
+      }
+      // 7.2.1: bring the game (target window) to the front — the chip's button, and Start in Live mode
+      const BR_FOCUS = !!(BR_APP && window.pianoApp.keys.focusTarget);
+      const brTargetName = () => /roblox/i.test(BRS.target.exe) ? 'Roblox' : (BRS.target.exe || BRS.target.title || 'game').replace(/\.exe$/i, '');
+      async function brGoTarget(quiet) {
+        if (!BR_FOCUS) return false;
+        const f = await window.pianoApp.keys.focusTarget(BRS.target).catch(() => null);
+        if (f && f.matches) return true;
+        if (!quiet) toast(brTargetName() + ' is not running (or has no open window). Start it first, then press “Go to ' + brTargetName() + '” again.', 'bad');
+        return false;
+      }
+
+      // ---- the window ----
+      const BRU = { tab: 'over', sel: 60, q: '', del: '', raf: 0 };
+      let brUiT = 0;
+      function brUiSoon() { if (brUiT) return; brUiT = setTimeout(() => { brUiT = 0; brPaintLive(); }, 120); }
+      const brOpen = () => !!$('#brBox') && !$('#gm').hidden;
+      function brDupes(P) { const by = {}; Object.entries(P.map).forEach(([m, s]) => { const k = brParse(s); const id = k ? k.label : '?' + s; (by[id] = by[id] || []).push(+m); }); return Object.values(by).filter(a => a.length > 1).flat(); }
+      /* ---------- 7.2.1: keep the Roblox profile right ----------
+         · a Roblox / Virtual Piano profile that differs from the standard layout in a few notes is flagged, with the exact notes
+           and one button to restore them (a few changed keys made C4 / C#4 / D4 play wrong or nothing);
+         · "Hold notes until released" keeps keys down in a game for as long as the keyboard's sustain is on — for Roblox the
+           sustain should press Space (the game's SpaceSustain); one button switches it;
+         · every mapping change can be undone once. */
+      const brIsRoblox = P => P.id === 'vp61' || P.id === 'vp88' || /roblox|virtual piano/i.test(P.name);
+      function brStdDiff(P) { const std = brMapVP88(), out = []; for (let m = 21; m <= 108; m++) if ((P.map[m] || '') !== std[m]) out.push([m, P.map[m] || '', std[m]]); return out; }
+      function brHealth(P) {
+        const out = [], o = P.opt;
+        if (brIsRoblox(P)) {
+          const d = brStdDiff(P);
+          if (d.length && d.length <= 40) out.push('<b>' + d.length + ' note' + (d.length > 1 ? 's differ' : ' differs') + ' from the standard Roblox piano:</b> ' + d.slice(0, 8).map(([m, a, b]) => nName(m) + ' = ' + (a ? esc(a) : 'no key') + ' (should be ' + esc(b) + ')').join(', ') + (d.length > 8 ? '…' : '') + '. These notes play the wrong key or nothing in Roblox. <button type="button" class="btn small primary" data-fix="std">Restore the standard Roblox keys</button>');
+          if (o.sustain === 'hold') out.push('<b>Sustain is set to “Hold notes until released”.</b> In Roblox this keeps every key pressed for as long as your keyboard’s sustain is on. For the Roblox piano use the game’s Space sustain instead. <button type="button" class="btn small primary" data-fix="sus">Use Roblox sustain (Space)</button>');
+        }
+        if (o.octave || o.transpose) out.push('<b>Notes are moved</b> by ' + (o.octave ? 'octave shift ' + (o.octave > 0 ? '+' : '') + o.octave : '') + (o.octave && o.transpose ? ' and ' : '') + (o.transpose ? 'transpose ' + (o.transpose > 0 ? '+' : '') + o.transpose : '') + ', so the game plays different notes from the ones you press. <button type="button" class="btn small" data-fix="oct">Play exactly what I press</button>');
+        return out.length ? '<div class="br-health">' + out.map(x => '<p>⚠ ' + x + '</p>').join('') + '</div>' : '';
+      }
+      function brUndoSave(P, what) { BR.undo = { pid: P.id, map: Object.assign({}, P.map), what }; }
+      function brWireFix(box) {
+        box.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => {
+          const P = brProf(), f = b.dataset.fix; brReleaseAll(BR.armed ? 'settings changed' : '');
+          if (f === 'std') { brUndoSave(P, 'restore the Roblox keys'); const n = brStdDiff(P).length; Object.assign(P.map, brMapVP88()); toast('✓ Restored ' + n + ' note' + (n > 1 ? 's' : '') + ' to the standard Roblox piano.', 'ok'); }
+          else if (f === 'sus') { P.opt.sustain = 'key'; P.opt.sustainKey = 'Space'; toast('✓ Sustain now holds Space. In Roblox, switch on the piano’s “SpaceSustain” button.', 'ok'); }
+          else if (f === 'oct') { P.opt.octave = 0; P.opt.transpose = 0; toast('✓ No octave shift or transpose: the game plays exactly what you press.', 'ok'); }
+          saveBR(); brPaint();
+        });
+        const u = box.querySelector('#brUndo'); if (u) u.onclick = () => { const P = brProf(); if (!BR.undo || BR.undo.pid !== P.id) return; P.map = BR.undo.map; BR.undo = null; saveBR(); brPaint(); toast('↶ Undone.', 'ok'); };
+      }
+      window.addEventListener('blur', () => { if (BR.learn) { brLearnStop(); if (brOpen()) brPaint(); } });   // learn mode never stays on when you leave the window
+      function brKeys(P) {
+        const dup = new Set(brDupes(P)), q = BRU.q.trim().toLowerCase();
+        return '<div class="brkb" id="brKb" role="group" aria-label="Piano keys (click one to edit its key)">' + Array.from({ length: LAST - FIRST + 1 }, (_, i) => FIRST + i).map(m => {
+          const K = KEY[m], s = P.map[m], ok = !s || brParse(s), bk = isBlack(m);
+          const cls = (bk ? 'bk' : 'wk') + (m === BRU.sel ? ' sel' : '') + (BR.live.has(m - (P.opt.octave * 12 + P.opt.transpose)) ? ' on' : '') + (!ok ? ' bad' : dup.has(m) ? ' dup' : '') + (q && ((s || '').toLowerCase() === q || nName(m).toLowerCase() === q) ? ' hit' : '') + (s ? '' : ' off');
+          return '<button type="button" class="' + cls + '" data-m="' + m + '" style="left:' + (K.x * 100).toFixed(3) + '%;width:' + (K.w * 100).toFixed(3) + '%" title="' + nName(m) + (s ? ' → ' + esc(s) : ' (no key)') + '">' + (s ? esc(ok ? ok.label.replace('Ctrl+', '⌃').replace('Alt+', '⌥').replace('Shift+', '⇧') : s) : '') + (!bk && m % 12 === 0 ? '<small>' + nName(m) + '</small>' : '') + '</button>';
+        }).join('') + '</div>';
+      }
+      function openBridge(tab) {
+        if (tab) BRU.tab = tab; navClose();
+        openModal('<div class="v71w" id="brBox"><div class="th-head"><h2 style="font-size:20px">🎹 MIDI Keyboard Bridge</h2><span class="sub">' + (BR_APP ? 'Play games and web pianos with your MIDI keyboard · logging keeps working as usual' : 'Preview only: see which computer keys your notes would press · no keys are sent to other programs') + '</span></div>' +
+          '<div class="v71tabs" role="tablist">' + [['over', 'Overview'], ['map', 'Mapping studio'], ['prof', 'Profiles'], ['ctl', 'Musical controls'], ['mon', 'Monitor'], ['tgt', 'Target window']].map(([v, l]) => '<button type="button" role="tab" data-brt="' + v + '" aria-selected="' + (BRU.tab === v) + '">' + l + '</button>').join('') + '</div>' +
+          '<div id="brPane"></div><div class="actions"><button type="button" class="btn v71stop" id="brEStop">■ Emergency stop</button><span style="flex:1"></span><button class="btn primary" data-act="close">Done</button></div></div>');
+        $('#brBox .v71tabs').onclick = e => { const b = e.target.closest('[data-brt]'); if (!b) return; BRU.tab = b.dataset.brt; brLearnStop(); $('#brBox .v71tabs').querySelectorAll('[data-brt]').forEach(x => x.setAttribute('aria-selected', x === b)); brPaint(); };
+        $('#brEStop').onclick = () => brStop();
+        brPaint();
+      }
+      function brPaint() {
+        const box = $('#brPane'); if (!box) return; const P = brProf(), o = P.opt;
+        const profSel = id => '<select id="' + id + '">' + BRS.profiles.map(p => '<option value="' + esc(p.id) + '"' + (p.id === P.id ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') + '</select>';
+        if (BRU.tab === 'over') {
+          box.innerHTML = brHealth(P) + '<div class="v71grid2"><div class="v71card"><div class="v71stat" id="brStat"><i></i><span></span></div>' +
+            '<p class="v71muted" style="margin:8px 0 12px">' + (BR_APP ? 'Choose the profile and target window, press <b>Start</b>, then click into your game or web piano. Keys are only pressed while that window is in front. <b>Ctrl+Alt+End</b> anywhere stops everything.' : BR_WHY) + '</p>' +
+            '<div class="v71row"><button type="button" class="btn primary" id="brArm"></button>' + (BR_FOCUS && (BRS.target.exe || BRS.target.title) ? '<button type="button" class="btn" id="brGo" title="Bring the game window to the front">Go to ' + esc(brTargetName()) + '</button>' : '') +
+            '<span class="seg" role="group" aria-label="Mode"><button type="button" class="v71chip" data-mode="preview" aria-pressed="' + (BRS.mode !== 'live') + '">Preview (no keys sent)</button><button type="button" class="v71chip" data-mode="live" aria-pressed="' + (BRS.mode === 'live') + '"' + (BR_APP ? '' : ' disabled title="Needs the Piano Logger 7.1 (or newer) Windows app"') + '>Live (press keys)</button></span></div>' +
+            '<div class="set-grid" style="margin-top:12px"><label>Profile ' + profSel('brProf') + '</label>' + (BR_APP ? '<label>Target <span><b>' + esc(BRS.target.exe || 'Any window') + '</b>' + (BRS.target.title ? ' · “' + esc(BRS.target.title) + '”' : '') + ' <button type="button" class="btn small" data-go="tgt">Change</button></span></label>' : '') + '</div></div>' +
+            '<div class="v71card"><h4>Keys pressed' + (brLive() ? '' : ' (preview)') + '</h4><div class="v71out" id="brTyped" aria-live="off"></div>' +
+            '<p class="v71muted" id="brPed" style="margin:8px 0 0"></p><div class="v71nums" style="margin-top:10px"><div><b id="brNIn">0</b><small>notes in</small></div><div><b id="brNOut">0</b><small>key events</small></div><div><b id="brNHeld">0</b><small>keys held</small></div><div><b id="brNLat">—</b><small>latency (median)</small></div></div>' +
+            '<div class="v71row" style="margin-top:10px"><button type="button" class="btn small" id="brClrT">Clear</button><button type="button" class="btn small" data-go="mon">Open the monitor</button></div></div></div>';
+          box.querySelector('[data-mode="live"]').parentElement.onclick = e => { const b = e.target.closest('[data-mode]'); if (!b || b.disabled) return; if (BR.armed) brArm(false); BRS.mode = b.dataset.mode; saveBR(); brPaint(); brChip(); };
+          // Start in Live mode also brings the game to the front, so you can play straight away
+          $('#brArm').onclick = () => { const on = !BR.armed; brArm(on); if (on && BR.armed && brLive()) brGoTarget(); };
+          if ($('#brGo')) $('#brGo').onclick = () => brGoTarget();
+          brWireFix(box);
+          $('#brProf').onchange = e => { brReleaseAll(BR.armed ? 'profile changed' : ''); BRS.active = e.target.value; saveBR(); brPaint(); };
+          $('#brClrT').onclick = () => { BR.typed = ''; brPaintLive(); };
+        } else if (BRU.tab === 'map') {
+          const m = BRU.sel, s = P.map[m] || '', k = s ? brParse(s) : null, dup = brDupes(P), bad = Object.entries(P.map).filter(([, v]) => !brParse(v)).map(([n]) => +n);
+          box.innerHTML = brHealth(P) + '<div class="v71row"><label class="v71row">Profile ' + profSel('brProf2') + '</label><input type="search" id="brQ" placeholder="Find a key or note (e.g. q or C4)" aria-label="Find a key or note" value="' + esc(BRU.q) + '" style="flex:1;min-width:180px">' +
+            '<button type="button" class="btn small" id="brLearnM"' + (BR.learn && BR.learn.mode === 'midi' ? ' aria-pressed="true"' : '') + '>' + (BR.learn && BR.learn.mode === 'midi' ? '■ Stop learning' : '🎹 Learn: play a note, then press a key') + '</button></div>' +
+            brKeys(P) +
+            '<div class="v71grid2"><div class="v71card"><h4>' + nName(m) + ' <small class="v71muted">(MIDI ' + m + ')</small></h4>' +
+            '<div class="v71row"><input type="text" id="brSpec" value="' + esc(s) + '" placeholder="no key" aria-label="Key for ' + nName(m) + '" style="width:130px" spellcheck="false"><button type="button" class="btn small' + (BR.learn && BR.learn.mode === 'one' ? ' v71learn' : '') + '" id="brLearn1">' + (BR.learn && BR.learn.mode === 'one' ? 'Press a key… (Esc cancels)' : '⌨ Learn from the computer keyboard') + '</button><button type="button" class="btn small" id="brClr1">Clear</button>' +
+            '<button type="button" class="btn small" id="brPrev1" aria-label="Previous note">◀</button><button type="button" class="btn small" id="brNext1" aria-label="Next note">▶</button></div>' +
+            '<p class="v71muted" id="brSpecMsg">' + (s ? (k ? 'Presses <b>' + esc(k.label) + '</b>' + (k.mods.length ? ' (with ' + k.mods.map(v => v === 0x10 ? 'Shift' : v === 0x11 ? 'Ctrl' : 'Alt').join('+') + ' held for a moment)' : '') : '⚠ “' + esc(s) + '” is not a key Piano Logger knows. Use a letter, digit, symbol, Space, F1–F12, Num0–9 or arrows.') : 'No key: this note is ignored.') +
+            (BR.learn && BR.learn.mode === 'midi' ? '<br><b>Learn mode:</b> ' + (BR.learn.stage === 'midi' ? 'play a note on your MIDI keyboard…' : 'now press a computer key for ' + nName(BR.learn.note) + ' (Esc stops)') : '') + '</p>' +
+            '<p class="v71muted">Mappings are for the note <i>after</i> octave shift and transpose. Upper-case letters and symbols like ! @ $ press Shift for a moment, as Virtual Piano expects.</p></div>' +
+            '<div class="v71card"><h4>Check</h4><p class="v71muted">' + Object.keys(P.map).length + ' notes mapped' + (dup.length ? ' · <span style="color:#f59e0b">' + dup.length + ' notes share a key</span>: ' + dup.slice(0, 12).map(nName).join(', ') + (dup.length > 12 ? '…' : '') : ' · no shared keys') +
+            (bad.length ? ' · <span style="color:#ef4444">' + bad.length + ' invalid</span>: ' + bad.map(nName).join(', ') : '') + '</p>' +
+            (BR.undo && BR.undo.pid === P.id ? '<div class="v71row" style="margin-bottom:8px"><button type="button" class="btn small" id="brUndo">↶ Undo: ' + esc(BR.undo.what) + '</button></div>' : '') +
+            '<div class="v71row"><button type="button" class="btn small" data-fill="vp88">Fill: Virtual Piano (88 keys)</button><button type="button" class="btn small" data-fill="vp">Fill: Virtual Piano (61 keys)</button><button type="button" class="btn small" data-fill="pc">Fill: PC 2 rows</button><button type="button" class="btn small" data-fill="clear">' + (BRU.del === 'clearmap' ? 'Click again to clear all' : 'Clear all') + '</button></div></div></div>';
+          $('#brProf2').onchange = e => { brReleaseAll(BR.armed ? 'profile changed' : ''); BRS.active = e.target.value; saveBR(); brPaint(); };
+          $('#brQ').oninput = e => { BRU.q = e.target.value; const kb = $('#brKb'); if (kb) kb.outerHTML = brKeys(P); brWireKb(); };
+          brWireKb();
+          const setSpec = v => { v = String(v || '').trim(); if ((P.map[BRU.sel] || '') === v) return; brUndoSave(P, nName(BRU.sel) + (v ? ' → ' + v : ' cleared')); if (v) P.map[BRU.sel] = v; else delete P.map[BRU.sel]; saveBR(); };
+          brWireFix(box);
+          $('#brSpec').onchange = e => { setSpec(e.target.value); brPaint(); };
+          $('#brClr1').onclick = () => { setSpec(''); brPaint(); };
+          $('#brPrev1').onclick = () => { BRU.sel = Math.max(0, BRU.sel - 1); brPaint(); };
+          $('#brNext1').onclick = () => { BRU.sel = Math.min(127, BRU.sel + 1); brPaint(); };
+          $('#brLearn1').onclick = () => { if (BR.learn && BR.learn.mode === 'one') brLearnStop(); else brLearnStart('one'); brPaint(); };
+          $('#brLearnM').onclick = () => { if (BR.learn && BR.learn.mode === 'midi') brLearnStop(); else brLearnStart('midi'); brPaint(); };
+          box.querySelectorAll('[data-fill]').forEach(b => b.onclick = () => {
+            const f = b.dataset.fill;
+            if (f === 'clear' && BRU.del !== 'clearmap') { BRU.del = 'clearmap'; brPaint(); return; }
+            brUndoSave(P, b.textContent.trim().replace(/^Click again to /, ''));
+            P.map = f === 'clear' ? {} : f === 'vp88' ? brMapVP88() : f === 'vp' ? brMapVP() : brMapPC();
+            BRU.del = ''; saveBR(); brPaint(); toast('Mapping updated: ' + Object.keys(P.map).length + ' notes', 'ok');
+          });
+        } else if (BRU.tab === 'prof') {
+          box.innerHTML = '<p class="v71muted">The <b>active</b> profile is the one the bridge uses. Each profile has its own key mapping and musical controls.</p>' +
+            BRS.profiles.map(p => '<div class="v71prof"><input type="radio" name="brAct" value="' + esc(p.id) + '"' + (p.id === BRS.active ? ' checked' : '') + ' aria-label="Use ' + esc(p.name) + '"><input type="text" data-ren="' + esc(p.id) + '" value="' + esc(p.name) + '" aria-label="Profile name" maxlength="60"><span class="v71row"><small class="v71muted">' + Object.keys(p.map).length + ' keys</small>' +
+              '<button type="button" class="btn small" data-dup="' + esc(p.id) + '">Duplicate</button><button type="button" class="btn small" data-exp="' + esc(p.id) + '">Export</button><button type="button" class="btn small" data-del="' + esc(p.id) + '"' + (BRS.profiles.length < 2 ? ' disabled' : '') + '>' + (BRU.del === p.id ? 'Click again to delete' : 'Delete') + '</button></span></div>').join('') +
+            '<div class="v71row" style="margin-top:12px"><button type="button" class="btn small" id="brNew">+ New empty profile</button><button type="button" class="btn small" id="brNewVP">+ New from Virtual Piano (88 keys)</button><button type="button" class="btn small" id="brImp">Import…</button><button type="button" class="btn small" id="brExpAll">Export all</button><input type="file" id="brImpF" accept=".json,application/json" hidden></div>' +
+            '<p class="v71muted" style="margin-top:8px">Importing adds profiles; it never replaces the ones you have (a name that already exists gets “(imported)”).</p>';
+          box.querySelectorAll('[name=brAct]').forEach(r => r.onchange = () => { brReleaseAll(BR.armed ? 'profile changed' : ''); BRS.active = r.value; saveBR(); });
+          box.querySelectorAll('[data-ren]').forEach(i => i.onchange = () => { const p = brProf(i.dataset.ren); p.name = i.value.trim().slice(0, 60) || p.name; saveBR(); brPaint(); });
+          box.querySelectorAll('[data-dup]').forEach(b => b.onclick = () => { const p = brProf(b.dataset.dup), c = brClean(JSON.parse(JSON.stringify(p))); c.id = brId(); c.name = (p.name + ' (copy)').slice(0, 60); BRS.profiles.push(c); saveBR(); brPaint(); });
+          box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+            const id = b.dataset.del; if (BRS.profiles.length < 2) return;
+            if (BRU.del !== id) { BRU.del = id; brPaint(); return; }
+            BRU.del = ''; if (id === BRS.active) brReleaseAll(BR.armed ? 'profile deleted' : '');
+            BRS.profiles = BRS.profiles.filter(p => p.id !== id); if (!BRS.profiles.some(p => p.id === BRS.active)) BRS.active = BRS.profiles[0].id;
+            BRS.profiles.forEach(p => { if (p.opt.split.lower === id) p.opt.split.lower = ''; }); saveBR(); brPaint();
+          });
+          const dl = (name, list) => { const blob = new Blob([JSON.stringify({ format: 'piano-logger-bridge', version: 1, app: APP_VERSION, exported: new Date().toISOString(), profiles: list }, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+          box.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => { const p = brProf(b.dataset.exp); dl('piano-logger-bridge-' + p.name.replace(/[^\w-]+/g, '-').toLowerCase() + '.json', [p]); });
+          $('#brExpAll').onclick = () => dl('piano-logger-bridge-profiles.json', BRS.profiles);
+          $('#brNew').onclick = () => { BRS.profiles.push(brClean({ id: brId(), name: 'New profile', map: {} })); saveBR(); brPaint(); };
+          $('#brNewVP').onclick = () => { BRS.profiles.push(brClean({ id: brId(), name: 'Virtual Piano copy', map: brMapVP88() })); saveBR(); brPaint(); };
+          $('#brImp').onclick = () => $('#brImpF').click();
+          $('#brImpF').onchange = async e => {
+            const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+            try {
+              if (f.size > 2e6) throw new Error('file is too big');
+              const j = JSON.parse(await f.text()), list = Array.isArray(j) ? j : j && j.format === 'piano-logger-bridge' && Array.isArray(j.profiles) ? j.profiles : j && j.map ? [j] : null;
+              if (!list) throw new Error('this is not a Piano Logger bridge file');
+              if (j.version > 1) throw new Error('made by a newer Piano Logger (version ' + j.version + ')');
+              let n = 0; list.slice(0, 50).forEach(p => { const c = brClean(p); if (!c) return; if (BRS.profiles.some(x => x.id === c.id)) c.id = brId(); if (BRS.profiles.some(x => x.name === c.name)) c.name = (c.name + ' (imported)').slice(0, 60); if (c.opt.split.lower && !BRS.profiles.some(x => x.id === c.opt.split.lower) && !list.some(x => x && x.id === c.opt.split.lower)) c.opt.split.lower = ''; BRS.profiles.push(c); n++; });
+              if (!n) throw new Error('no valid profiles inside');
+              saveBR(); brPaint(); toast('Imported ' + n + ' profile' + (n > 1 ? 's' : '') + '.', 'ok');
+            } catch (err) { toast('Could not import: ' + (err.message || err), 'bad'); }
+          };
+        } else if (BRU.tab === 'ctl') {
+          const opt = (v, l, cur) => '<option value="' + v + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + l + '</option>';
+          const notes = (cur) => Array.from({ length: 128 }, (_, m) => opt(m, nName(m) + ' (' + m + ')', cur)).join('');
+          box.innerHTML = '<p class="v71muted">For profile <b>' + esc(P.name) + '</b>. These change only what the bridge sends; what you hear and what is logged stay the same.</p><div class="set-grid br-ctl">' +
+            '<label>Octave shift <select data-o="octave">' + [-3, -2, -1, 0, 1, 2, 3].map(v => opt(v, (v > 0 ? '+' : '') + v, o.octave)).join('') + '</select></label>' +
+            '<label>Transpose (semitones) <select data-o="transpose">' + Array.from({ length: 49 }, (_, i) => i - 24).map(v => opt(v, (v > 0 ? '+' : '') + v, o.transpose)).join('') + '</select></label>' +
+            '<label>Lowest note used <select data-o="lo">' + notes(o.lo) + '</select></label><label>Highest note used <select data-o="hi">' + notes(o.hi) + '</select></label>' +
+            '<label>Ignore these notes <input type="text" data-o="ignore" value="' + esc(o.ignore.map(nName).join(', ')) + '" placeholder="e.g. C2, F#3" spellcheck="false"></label>' +
+            '<label title="How hard a key must be pressed (1–127) before the bridge reacts. 1 = every note.">Minimum velocity (softer notes are skipped) <span class="row"><input type="range" data-o="vel" min="1" max="127" value="' + o.vel + '"><b id="brVelV">' + o.vel + '</b></span></label>' +
+            '<label>MIDI channel <select data-o="ch">' + opt(0, 'All channels', o.ch) + Array.from({ length: 16 }, (_, i) => opt(i + 1, 'Channel ' + (i + 1), o.ch)).join('') + '</select></label>' +
+            '<label>Sustain pedal <select data-o="sustain">' + opt('off', 'Off (pedal does nothing)', o.sustain) + opt('key', 'Press the sustain key', o.sustain) + opt('hold', 'Hold notes until released', o.sustain) + '</select></label>' +
+            '<label>Sustain key <input type="text" data-o="sustainKey" value="' + esc(o.sustainKey) + '" spellcheck="false" style="width:110px"></label>' +
+            '<label>Soft pedal key (CC67) <input type="text" data-o="softKey" value="' + esc(o.softKey) + '" placeholder="none" spellcheck="false" style="width:110px"></label>' +
+            '<label>Other controllers <input type="text" data-o="ccKeys" value="' + esc(Object.entries(o.ccKeys).map(([c, k]) => c + '=' + k).join(', ')) + '" placeholder="e.g. 66=Shift, 1=Space" spellcheck="false"></label>' +
+            '<label>Same key twice: release and press again <input type="checkbox" data-o="retrigger"' + (o.retrigger ? ' checked' : '') + '></label>' +
+            '<label>Split keyboard <input type="checkbox" data-o="split.on"' + (o.split.on ? ' checked' : '') + '></label>' +
+            '<label>Split point (lower part below) <select data-o="split.at">' + notes(o.split.at) + '</select></label>' +
+            '<label>Lower part uses profile <select data-o="split.lower">' + opt('', '— none —', o.split.lower) + BRS.profiles.filter(p => p.id !== P.id).map(p => opt(esc(p.id), esc(p.name), o.split.lower)).join('') + '</select></label>' +
+            '<label>Lower part octave <select data-o="split.lowerOct">' + [-3, -2, -1, 0, 1, 2, 3].map(v => opt(v, (v > 0 ? '+' : '') + v, o.split.lowerOct)).join('') + '</select></label>' +
+            '</div><p class="v71muted" style="margin-top:10px"><b>Sustain pedal</b> (only if one is plugged into your keyboard): <i>Press the sustain key</i> holds the sustain key (for example Space — many Roblox pianos use Space for sustain) while your foot is down. <i>Hold notes until released</i> keeps the played keys pressed until you lift your foot. <b>Minimum velocity</b>: notes played more softly than this are skipped (1 = every note).</p><p class="v71muted" id="brCtlMsg"></p><div class="v71row"><button type="button" class="btn small" id="brCtlReset">Reset these controls</button></div>';
+          box.querySelectorAll('[data-o]').forEach(el => el[el.type === 'range' ? 'oninput' : 'onchange'] = () => {
+            const k = el.dataset.o; let v = el.type === 'checkbox' ? el.checked : el.value, msg = '';
+            if (k === 'ignore') { const bad = []; v = v.split(/[\s,;]+/).filter(Boolean).map(x => { const m = brNoteOf(x); if (m == null) bad.push(x); return m; }).filter(m => m != null); if (bad.length) msg = 'Not understood: ' + bad.join(', '); }
+            else if (k === 'ccKeys') { const r = {}; String(v).split(/[,;]+/).map(x => x.trim()).filter(Boolean).forEach(x => { const [c, ks] = x.split('='); const n = +c; if (Number.isInteger(n) && n >= 0 && n <= 119 && ks && brParse(ks.trim())) r[n] = ks.trim(); else msg = 'Not understood: ' + x; }); v = r; }
+            else if (k === 'sustainKey' || k === 'softKey') { if (v.trim() && !brParse(v)) msg = '“' + v + '” is not a key Piano Logger knows.'; v = v.trim(); }
+            else if (!['sustain', 'split.lower'].includes(k) && el.type !== 'checkbox') v = +v;
+            brReleaseAll(BR.armed ? 'controls changed' : '');
+            const O = P.opt;                                   // the profile's current settings (each change replaces the object below)
+            if (k.startsWith('split.')) O.split[k.slice(6)] = v; else O[k] = v;
+            if (k === 'vel') $('#brVelV').textContent = v;
+            const c = brClean(P); P.opt = c.opt; saveBR(); $('#brCtlMsg').textContent = msg;
+          });
+          $('#brCtlReset').onclick = () => { brReleaseAll(BR.armed ? 'controls changed' : ''); P.opt = BR_OPT0(); saveBR(); brPaint(); };
+        } else if (BRU.tab === 'mon') {
+          box.innerHTML = '<div class="v71grid2"><div class="v71card"><h4>Live events</h4><div class="v71mon"><table class="v71tbl"><thead><tr><th>Time</th><th>MIDI</th><th>What happened</th><th></th></tr></thead><tbody id="brMonB"></tbody></table></div></div>' +
+            '<div class="v71card"><h4>Diagnostics</h4><table class="v71tbl" id="brDiag"></table><div class="v71row" style="margin-top:10px"><button type="button" class="btn small" id="brMonClr">Clear</button><button type="button" class="btn small" id="brTest">Send a test note (C4)</button></div>' +
+            '<p class="v71muted" style="margin-top:8px">Latency is measured from the moment your keyboard sent the note to the moment ' + (BR_APP ? 'Windows accepted the key press' : 'the preview handled it') + '.</p></div></div>';
+          $('#brMonClr').onclick = () => { BR.mon.length = 0; BR.lat.length = 0; BR.send.length = 0; Object.keys(BR.st).forEach(k => BR.st[k] = 0); brPaintLive(); };
+          $('#brTest').onclick = () => { const t = performance.now(); brMidi([0x90, 60, 100], t, null); setTimeout(() => brMidi([0x80, 60, 0], performance.now(), null), 150); if (!BR.armed) toast('Press Start on the Overview first — the test note goes through the same path as a real one.', ''); };
+        } else if (BRU.tab === 'tgt') {
+          if (!BR_APP) { box.innerHTML = '<div class="v71card"><h4>Needs the Piano Logger 7.1 (or newer) Windows app</h4><p class="v71muted">' + BR_WHY + ' In that app you choose a target window here (for example Roblox), and keys are pressed only while it is in front.</p></div>'; }
+          else {
+            box.innerHTML = '<div class="v71grid2"><div class="v71card"><h4>Send keys only to</h4><div class="set-grid"><label>Program (.exe) <input type="text" id="brExe" value="' + esc(BRS.target.exe) + '" placeholder="any program" spellcheck="false"></label><label>Window title contains <input type="text" id="brTitle" value="' + esc(BRS.target.title) + '" placeholder="anything" spellcheck="false"></label></div>' +
+              '<div class="v71row" style="margin-top:10px">' + [['RobloxPlayerBeta.exe', '', 'Roblox'], ['chrome.exe', '', 'Chrome'], ['msedge.exe', '', 'Edge'], ['firefox.exe', '', 'Firefox'], ['', '', 'Any window']].map(([x, t, l]) => '<button type="button" class="btn small" data-pre="' + esc(x) + '" data-pt="' + esc(t) + '">' + l + '</button>').join('') + '</div>' +
+              '<p class="v71muted" style="margin-top:8px">Piano Logger itself is never a target. With “Any window”, keys go to whatever window is in front — be careful.</p></div>' +
+              '<div class="v71card"><h4>Pick a window</h4><p class="v71muted">Press the button, then click the window you want within 5 seconds.</p><div class="v71row"><button type="button" class="btn small" id="brPick">Pick a window</button><span id="brPickMsg" class="v71muted"></span></div>' +
+              '<h4 style="margin-top:14px">In front right now</h4><p class="v71muted" id="brFgNow">…</p></div></div>';
+            const save = () => { BRS.target = { exe: $('#brExe').value.trim().slice(0, 120), title: $('#brTitle').value.trim().slice(0, 120) }; saveBR(); brReleaseAll(BR.armed ? 'target changed' : ''); BR.fgOk = false; brChip(); };
+            $('#brExe').onchange = save; $('#brTitle').onchange = save;
+            box.querySelectorAll('[data-pre]').forEach(b => b.onclick = () => { $('#brExe').value = b.dataset.pre; $('#brTitle').value = b.dataset.pt; save(); });
+            $('#brPick').onclick = () => {
+              let n = 5; const msg = $('#brPickMsg'), step = () => {
+                if (!$('#brPickMsg')) return;
+                if (n > 0) { msg.textContent = 'Click the window now… ' + n; n--; setTimeout(step, 1000); return; }
+                window.pianoApp.keys.foreground({}).then(f => {
+                  if (!$('#brPickMsg')) return;
+                  if (!f || f.isSelf || f.is_self || !f.exe) { msg.textContent = 'That was Piano Logger (or nothing). Try again.'; return; }
+                  $('#brExe').value = f.exe; $('#brTitle').value = ''; save(); msg.textContent = 'Chosen: ' + f.exe + (f.title ? ' — “' + f.title + '”' : '');
+                });
+              }; step();
+            };
+            const fgNow = () => { const el = $('#brFgNow'); if (!el) return; window.pianoApp.keys.foreground(BRS.target).then(f => { if (!$('#brFgNow')) return; el.textContent = f && f.exe ? f.exe + (f.title ? ' — “' + f.title.slice(0, 80) + '”' : '') + (f.matches ? ' ✓ matches the target' : (f.is_self ? ' (Piano Logger)' : ' — not the target')) : 'nothing'; setTimeout(fgNow, 700); }).catch(() => { }); };
+            fgNow();
+          }
+        }
+        box.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { BRU.tab = b.dataset.go; openBridge(); });
+        brPaintLive();
+      }
+      function brWireKb() {
+        const kb = $('#brKb'); if (!kb) return;
+        kb.onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; BRU.sel = +b.dataset.m; if (BR.learn && BR.learn.mode === 'midi') { BR.learn.note = BRU.sel; BR.learn.stage = 'pc'; } brPaint(); };
+      }
+      function brNoteOf(s) {                                                  // "C4", "F#3", "Db2" or "60" → MIDI number
+        s = String(s).trim(); if (/^\d{1,3}$/.test(s)) { const n = +s; return n <= 127 ? n : null; }
+        const m = /^([A-Ga-g])([#♯b♭]?)(-?\d)$/.exec(s); if (!m) return null;
+        const n = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 }[m[1].toLowerCase()] + (m[2] === '#' || m[2] === '♯' ? 1 : m[2] ? -1 : 0) + (+m[3] + 1) * 12;
+        return n >= 0 && n <= 127 ? n : null;
+      }
+      // learn mode: the next computer key you press becomes the mapping (it does not play the on-screen piano meanwhile)
+      function brLearnStart(mode) { brLearnStop(); BR.learn = { mode, stage: mode === 'midi' ? 'midi' : 'pc', note: BRU.sel }; window.addEventListener('keydown', brLearnKey, true); }
+      function brLearnStop() { if (!BR.learn) return; BR.learn = null; window.removeEventListener('keydown', brLearnKey, true); }
+      function brLearnKey(e) {
+        if (!BR.learn || !brOpen()) { brLearnStop(); return; }
+        if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
+        const tag = e.target && e.target.tagName; if ((tag === 'INPUT' && e.target.type !== 'checkbox' && e.target.id !== 'brSpec') || tag === 'SELECT') return;
+        e.preventDefault(); e.stopImmediatePropagation();
+        if (e.code === 'Escape') { brLearnStop(); brPaint(); return; }
+        if (BR.learn.stage !== 'pc') return;
+        const spec = brFromEvent(e); if (!spec) { toast('That key cannot be used. Try a letter, digit, symbol, Space, F1–F12 or the number pad.', 'bad'); return; }
+        const P = brProf(); brUndoSave(P, nName(BR.learn.note) + ' → ' + spec); P.map[BR.learn.note] = spec; saveBR();
+        const was = BR.learn.note;
+        if (BR.learn.mode === 'midi') { BR.learn.stage = 'midi'; } else { brLearnStop(); BRU.sel = Math.min(127, was + 1); }
+        brPaint(); toast(nName(was) + ' → ' + spec, 'ok');
+      }
+      function brPaintLive() {
+        brChip(); if (!brOpen()) return;
+        const [s, t] = brState(), st = $('#brStat');
+        if (st) { st.dataset.s = s; st.querySelector('span').textContent = t; }
+        const arm = $('#brArm'); if (arm) arm.textContent = BR.armed ? '■ Stop' : (brLive() ? '▶ Start sending keys' : '▶ Start preview');
+        const ty = $('#brTyped'); if (ty) { ty.textContent = BR.typed || (BR.armed ? 'Play something…' : 'Press Start, then play.'); ty.scrollTop = ty.scrollHeight; }
+        const med = pct(BR.lat, .5), set = (id, v) => { const el = $('#' + id); if (el) el.textContent = v; };
+        const ped = $('#brPed'); if (ped) { const so = brProf().opt.sustain; ped.textContent = BR.pedal ? 'Sustain on your keyboard: ON — ' + (so === 'key' ? brProf().opt.sustainKey + ' is held down in the game' : so === 'hold' ? 'every key stays pressed until sustain is off' : 'ignored (Musical controls → Sustain pedal is Off)') : 'Sustain on your keyboard: off'; }
+        set('brNIn', fmtInt(BR.st.in)); set('brNOut', fmtInt(BR.st.out)); set('brNHeld', BR.notes.size); set('brNLat', med == null ? '—' : med.toFixed(1) + ' ms');
+        const kb = $('#brKb'); if (kb) { const P = brProf(), sh = P.opt.octave * 12 + P.opt.transpose; kb.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', BR.live.has(+b.dataset.m - sh))); }
+        const mb = $('#brMonB');
+        if (mb) mb.innerHTML = BR.mon.slice(0, 80).map(r => '<tr><td>' + new Date(r.t).toLocaleTimeString() + '</td><td>' + esc(r.msg) + '</td><td>' + esc(r.what) + '</td><td class="' + (r.res === 'sent' || r.res === 'ok' ? 'ok' : r.res === 'bad' ? 'no' : '') + '">' + esc(r.res) + '</td></tr>').join('') || '<tr><td colspan="4" class="v71muted">Nothing yet — press Start on the Overview and play.</td></tr>';
+        const dg = $('#brDiag');
+        if (dg) {
+          const f = v => v == null ? '—' : v.toFixed(2) + ' ms';
+          const rows = [['Where', BR_APP ? 'Desktop app (real key presses possible)' : 'Website (preview only)'], ['State', t], ['Mode', brLive() ? 'Live' : 'Preview'], ['Notes in', fmtInt(BR.st.in)], ['Key events ' + (brLive() ? 'sent' : 'previewed'), fmtInt(BR.st.out)],
+            ['Refused (target not in front)', fmtInt(BR.st.refused)], ['Skipped by filters', fmtInt(BR.st.filtered)], ['Notes with no key', fmtInt(BR.st.unmapped)], ['Keys held now', BR.notes.size],
+            ['Latency median / 95 %', f(pct(BR.lat, .5)) + ' / ' + f(pct(BR.lat, .95)) + ' (' + BR.lat.length + ' samples)']];
+          if (BR_APP) rows.push(['Windows SendInput (median)', f(pct(BR.send, .5))], ['Emergency hotkey Ctrl+Alt+End', BR.hk == null ? '…' : BR.hk ? 'ready' : 'not available (another program uses it)'], ['Last problem', BR.lastErr || 'none']);
+          dg.innerHTML = rows.map(([a, b]) => '<tr><th>' + esc(a) + '</th><td>' + esc(String(b)) + '</td></tr>').join('');
+          if (BR_APP && BR.hk == null) window.pianoApp.keys.status().then(s => { BR.hk = !!(s && s.hotkey); brUiSoon(); }).catch(() => { BR.hk = false; });
+        }
+      }
+      // navigation, quick search, What's new
+      ICO.bridge = '<rect x="2" y="13" width="20" height="8" rx="1.5"/><path d="M6 13v4M10 13v4M14 13v4M18 13v4"/><path d="M5 3h4v4H5zM15 3h4v4h-4zM9 5h6M12 5v8"/>';
+      {
+        NAV.push(['bridge', 'MIDI Bridge', 'bridge', () => openBridge()]);
+        const ref = nav.querySelector('.nv-i[data-nv="devices"]');
+        if (ref) { const b = document.createElement('button'); b.type = 'button'; b.className = 'nv-i'; b.dataset.nv = 'bridge'; b.title = 'MIDI Bridge'; b.innerHTML = icon('bridge') + '<span>MIDI Bridge</span>'; ref.after(b); }
+        const _cmd71 = commands;
+        commands = function () { const C = _cmd71(); C.push([BR_APP ? 'MIDI Keyboard Bridge (play games with your keyboard)' : 'MIDI Keyboard Bridge (preview which keys your notes press)', 'MIDI', () => openBridge()], ['Bridge: emergency stop (release every key)', 'MIDI', () => brStop()], ['Roll background studio', 'Graphics', () => openRollStudio()]); return C; };
+      }
+      /* ---------- 7.2: closing the window can keep Piano Logger running in the system tray ----------
+         In the tray the page keeps logging MIDI exactly as usual, but nothing is drawn and the MIDI Bridge never presses keys:
+         it is switched off when the window hides (the app refuses key presses then as well). Windows app 7.2 or newer only. */
+      const TRAY_OK = !!(window.pianoApp && typeof window.pianoApp.setCloseToTray === 'function');
+      const TRAY = { on: false, inTray: false };
+      if (TRAY_OK) window.pianoApp.info().then(i => { TRAY.on = !!(i && i.closeToTray); trayPaint(); }).catch(() => { });
+      async function traySet(on) {
+        TRAY.on = !!(await window.pianoApp.setCloseToTray(!!on)); trayPaint();
+        toast(TRAY.on ? '🗕 Closing the window now keeps Piano Logger in the system tray (still logging, no key presses).' : '✕ Closing the window now quits Piano Logger.', 'ok');
+      }
+      const trayRowHtml = () => '<label title="Choose what the close button (and Alt+F4) does">When I close the window <select id="trayMode"><option value="quit"' + (TRAY.on ? '' : ' selected') + '>Quit Piano Logger</option><option value="tray"' + (TRAY.on ? ' selected' : '') + '>Keep running in the system tray</option></select></label>';
+      const trayNote = 'In the system tray Piano Logger keeps logging what you play and updating your statistics, using very little memory and no graphics. The MIDI Bridge does not press keys while it is in the tray — keep the window open (it may be minimised) to play Roblox or web pianos. Click the tray icon to bring the window back; right-click it to quit.';
+      function trayWire(root) { const s = root && root.querySelector('#trayMode'); if (s) s.onchange = () => traySet(s.value === 'tray'); }
+      function trayPaint() { document.querySelectorAll('#trayMode').forEach(s => { s.value = TRAY.on ? 'tray' : 'quit'; }); }
+      if (TRAY_OK) {
+        const _os72 = openSettings;
+        openSettings = function () {
+          _os72.apply(this, arguments);
+          const g = document.querySelector('#gbox .set-pane[data-p="app"] .set-grid'); if (!g || g.querySelector('#trayMode')) return;
+          g.insertAdjacentHTML('afterbegin', trayRowHtml()); g.insertAdjacentHTML('afterend', '<p class="sub tray-note">' + esc(trayNote) + '</p>'); trayWire(g);
+        };
+        const _pap72 = paintAppPanel;
+        paintAppPanel = async function () {
+          await _pap72.apply(this, arguments);
+          const st = document.querySelector('#apStart'), g = st && st.closest('.set-grid'); if (!g || g.querySelector('#trayMode')) return;
+          g.insertAdjacentHTML('beforeend', trayRowHtml()); g.insertAdjacentHTML('afterend', '<p class="sub tray-note">' + esc(trayNote) + '</p>'); trayWire(g);
+        };
+      }
+      { const _busy72 = VIZ.busy; VIZ.busy = now => !TRAY.inTray && _busy72(now); }   // nothing is drawn while in the tray
+      // the app tells the page when its window goes to the tray and comes back
+      window.addEventListener('pianoapp-visibility', e => {
+        const t = !!(e.detail && e.detail.inTray); TRAY.inTray = t; HTML.classList.toggle('pl-tray', t);
+        if (t) {
+          const was = BR.armed; brArm(false); brReleaseAll('');
+          brMon({ t: Date.now(), msg: '—', what: 'Piano Logger went to the system tray — the bridge was switched off' + (was ? ' (it was on)' : ''), res: 'ok' });
+        } else { if (typeof startLoop === 'function') startLoop(); resizeRoll(); }
+      });
+      {
+        const _arm72 = brArm;
+        brArm = function (on) {
+          if (on && TRAY.inTray) { toast('The MIDI Bridge cannot run while Piano Logger is in the system tray. Open the window first.', 'bad'); return; }
+          return _arm72.apply(this, arguments);
+        };
+      }
+
+      /* ---------- 7.2.2: glass drop-down menus ----------
+         The list of a <select> is drawn by Windows (dark, square) and cannot be styled. Clicking a drop-down (or Space / Enter /
+         Alt+↓ / F4 on it) now opens a glass menu drawn by the page instead. The real <select> keeps the value: choosing an item
+         sets it and fires the usual input / change events, so every setting works exactly as before.
+         Phones and tablets (touch) keep their own pickers; arrow keys on a closed drop-down still change it directly. */
+      {
+        const st = document.createElement('style');
+        st.textContent = `
+.gsel{position:fixed;z-index:2147483000;min-width:140px;max-width:min(420px,92vw);max-height:min(360px,60vh);overflow:auto;padding:6px;border-radius:14px;
+  background:color-mix(in srgb,var(--bg,#14162a) 72%,transparent);-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%);
+  border:1px solid color-mix(in srgb,var(--txt,#fff) 16%,transparent);box-shadow:0 18px 50px -12px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12);
+  color:var(--txt,#eef0fb);font:500 13.5px/1.25 var(--font,system-ui);outline:none;scrollbar-width:thin;transform-origin:top center}
+.gsel.up{transform-origin:bottom center}
+.gsel.anim{animation:gselIn .14s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes gselIn{from{opacity:0;transform:scale(.96) translateY(-4px)}}
+.gsel .go{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 26px;border-radius:9px;cursor:default;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gsel .go[aria-selected=true]::before{content:"";position:absolute;left:10px;top:50%;width:8px;height:4px;border:solid currentColor;border-width:0 0 2px 2px;transform:translateY(-70%) rotate(-45deg)}
+.gsel .go.act{background:linear-gradient(135deg,var(--c1,#22d3ee),var(--c2,#e879f9));color:#fff}
+.gsel .go[aria-disabled=true]{opacity:.4}
+.gsel .gg{padding:8px 10px 4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut,#9b9dbb)}
+html.hc .gsel{background:var(--bg,#000);-webkit-backdrop-filter:none;backdrop-filter:none;border:2px solid var(--txt,#fff)}
+html.noblur .gsel{-webkit-backdrop-filter:none;backdrop-filter:none;background:color-mix(in srgb,var(--bg,#14162a) 96%,transparent)}
+`;
+        document.head.appendChild(st);
+        let menu = null, sel = null, items = [], act = -1, typed = '', typedT = 0;
+        const gone = new MutationObserver(() => { if (menu && sel && !sel.isConnected) close(false); });   // only watching while a menu is open
+        const usable = s => s && s.tagName === 'SELECT' && !s.multiple && !(s.size > 1) && !s.disabled && !s.closest('[data-native-select]');
+        function close(refocus) {
+          if (!menu) return; gone.disconnect(); menu.remove(); menu = null; window.removeEventListener('resize', onResize); document.removeEventListener('scroll', onScroll, true);
+          const s = sel; sel = null; items = []; if (refocus && s && s.isConnected) s.focus({ preventScroll: true });
+        }
+        const onResize = () => close(false);
+        const onScroll = e => { if (menu && !menu.contains(e.target)) close(false); };
+        function setAct(i, scroll) {
+          if (!items.length) return; i = Math.max(0, Math.min(items.length - 1, i));
+          if (items[i].opt.disabled) { const dir = i >= act ? 1 : -1; let j = i; while (items[j] && items[j].opt.disabled) j += dir; if (!items[j]) return; i = j; }
+          if (items[act]) items[act].el.classList.remove('act'); act = i; items[act].el.classList.add('act');
+          menu.setAttribute('aria-activedescendant', items[act].el.id);
+          if (scroll) { const el = items[act].el, top = el.offsetTop, bot = top + el.offsetHeight; if (top < menu.scrollTop + 6) menu.scrollTop = top - 6; else if (bot > menu.scrollTop + menu.clientHeight - 6) menu.scrollTop = bot - menu.clientHeight + 6; }   // only the menu scrolls, never the page
+        }
+        function choose(i) {
+          const it = items[i]; if (!it || it.opt.disabled) return; const s = sel;
+          close(true);
+          if (s.selectedIndex !== it.opt.index) { s.selectedIndex = it.opt.index; s.dispatchEvent(new Event('input', { bubbles: true })); s.dispatchEvent(new Event('change', { bubbles: true })); }
+        }
+        function open(s) {
+          close(false); sel = s; items = []; act = -1;
+          menu = document.createElement('div'); menu.className = 'gsel' + (motionOK() ? ' anim' : ''); menu.setAttribute('role', 'listbox'); menu.tabIndex = -1;
+          const lab = s.getAttribute('aria-label') || (s.closest('label') && s.closest('label').textContent.trim().split('\n')[0]) || ''; if (lab) menu.setAttribute('aria-label', lab.slice(0, 80));
+          let n = 0;
+          [...s.children].forEach(ch => {
+            const add = o => { if (o.hidden) return; const d = document.createElement('div'); d.className = 'go'; d.id = 'gso' + (n++); d.setAttribute('role', 'option'); d.textContent = o.textContent; d.title = o.textContent.length > 38 ? o.textContent : ''; d.setAttribute('aria-selected', o.selected); if (o.disabled) d.setAttribute('aria-disabled', 'true'); const k = items.length; d.onmousemove = () => { if (act !== k) setAct(k); }; d.onclick = () => choose(k); items.push({ el: d, opt: o }); menu.appendChild(d); };
+            if (ch.tagName === 'OPTGROUP') { const g = document.createElement('div'); g.className = 'gg'; g.textContent = ch.label; menu.appendChild(g); [...ch.children].forEach(add); } else if (ch.tagName === 'OPTION') add(ch);
+          });
+          document.body.appendChild(menu);
+          const r = s.getBoundingClientRect(), H = menu.offsetHeight, below = innerHeight - r.bottom - 8, above = r.top - 8;
+          menu.style.minWidth = Math.max(140, r.width) + 'px';
+          const w = menu.offsetWidth; menu.style.left = Math.max(6, Math.min(r.left, innerWidth - w - 6)) + 'px';
+          if (H > below && above > below) { menu.classList.add('up'); menu.style.top = Math.max(6, r.top - 4 - Math.min(H, above)) + 'px'; menu.style.maxHeight = Math.min(360, above) + 'px'; }
+          else { menu.style.top = (r.bottom + 4) + 'px'; menu.style.maxHeight = Math.min(360, Math.max(120, below)) + 'px'; }
+          setAct(Math.max(0, items.findIndex(x => x.opt.selected)), true);
+          window.addEventListener('resize', onResize); document.addEventListener('scroll', onScroll, true);
+          gone.observe(document.body, { childList: true, subtree: true });
+        }
+        document.addEventListener('pointerdown', e => {
+          if (menu && !menu.contains(e.target)) { const same = e.target === sel; close(false); if (same) { e.preventDefault(); return; } }
+          const s = e.target.closest && e.target.closest('select');
+          if (!usable(s) || e.pointerType === 'touch' || e.button !== 0) return;
+          e.preventDefault(); s.focus({ preventScroll: true }); open(s);
+        }, true);
+        document.addEventListener('mousedown', e => { if (e.target.closest && usable(e.target.closest('select')) && e.button === 0 && !e.sourceCapabilities?.firesTouchEvents) e.preventDefault(); }, true);
+        document.addEventListener('keydown', e => {
+          if (menu) {
+            const k = e.key;
+            if (k === 'ArrowDown') setAct(act + 1, true); else if (k === 'ArrowUp') setAct(act - 1, true);
+            else if (k === 'Home') setAct(0, true); else if (k === 'End') setAct(items.length - 1, true);
+            else if (k === 'PageDown') setAct(act + 8, true); else if (k === 'PageUp') setAct(act - 8, true);
+            else if (k === 'Enter' || k === ' ') choose(act);
+            else if (k === 'Escape' || k === 'Tab') { close(k === 'Escape'); if (k === 'Tab') return; }
+            else if (k.length === 1) { const now = Date.now(); typed = (now - typedT < 700 ? typed : '') + k.toLowerCase(); typedT = now; const i = items.findIndex(x => x.el.textContent.trim().toLowerCase().startsWith(typed)); if (i >= 0) setAct(i, true); }
+            else return;
+            e.preventDefault(); e.stopImmediatePropagation(); return;
+          }
+          const s = e.target; if (!usable(s)) return;
+          if (e.key === ' ' || e.key === 'Enter' || e.key === 'F4' || (e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp'))) { e.preventDefault(); e.stopImmediatePropagation(); open(s); }
+        }, true);
+        window.addEventListener('blur', () => close(false));
+      }
+
+      // debugging / automated checks only (no access to your logged data)
+      window.__pl71 = Object.freeze({
+        rb: { ids: () => RB_IDS.slice(), opts: rbOpts, still(id, W, H) { const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const d = RBD[id], o = rbOpts(id); rbStill(cv.getContext('2d'), rbEnv(d, W, H, o, 1, rbPal(d, o))); return cv; }, frame(id, W, H, steps) { const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), d = RBD[id], o = rbOpts(id), E = rbEnv(d, W, H, o, 1, rbPal(d, o)); rbBase(g, E); for (let i = 0; i < steps; i++) { g.clearRect(0, 0, W, H); rbBase(g, E); rbFrame(g, E, 33); } return cv; }, open: openRollStudio },
+        br: { parse: brParse, fromEvent: brFromEvent, noteOf: brNoteOf, midi: brMidi, arm: brArm, stop: brStop, releaseAll: brReleaseAll, state: () => ({ armed: BR.armed, held: [...BR.cnt.entries()], notes: [...BR.notes.keys()], deferred: [...BR.deferred], st: Object.assign({}, BR.st), typed: BR.typed, live: brLive(), fgOk: BR.fgOk, lat: BR.lat.slice() }), settings: () => JSON.parse(JSON.stringify(BRS)), clean: brClean, open: openBridge, flush: brFlush }
+      });
 
     })();
   </script>

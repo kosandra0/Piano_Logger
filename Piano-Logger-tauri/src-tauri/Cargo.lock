@@ -2475,7 +2475,7 @@ dependencies = [
 
 [[package]]
 name = "piano-logger"
-version = "7.0.2"
+version = "7.2.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -2486,6 +2486,8 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-window-state",
  "trash",
+ "webview2-com",
+ "windows",
  "windows-registry",
 ]
 

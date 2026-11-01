@@ -45,6 +45,10 @@ and the app itself to `src-tauri/target/release/piano-logger.exe`. `npm run dev`
 - **Start with Windows**: a value named `com.kosandra0.pianologger.desktop` in the current user's Run key only (never machine-wide), separate from the Electron app's entry.
 - **Window**: no Windows frame; the page draws a glass title bar with close, minimize and maximize/restore controls (bridge.js `window`). Drag it to move, double-click to maximize; Tauri keeps every edge resizable.
 - **Background**: sound, the visualizer and logging keep running while the window is minimised (background throttling off).
+- **MIDI Keyboard Bridge** (7.1, `src-tauri/src/bridge.rs`, bridge.js `keys`): the page decides which keys go down and up;
+  the app presses them with `SendInput` (scan codes) only when the target window (program name and/or title) is in front and
+  is not Piano Logger. It remembers every key it holds and releases them all on Emergency stop, the global **Ctrl+Alt+End**
+  hotkey, closing the window and exit. No game memory, injection or anti-cheat tricks — ordinary key presses only.
 - **Where things are kept**
   - data and settings: `%APPDATA%\com.kosandra0.pianologger` (SoundFonts in `SoundFonts\`)
   - the browser storage with your key-press log: `%LOCALAPPDATA%\com.kosandra0.pianologger\EBWebView`

@@ -18,6 +18,7 @@ use tauri::{
     webview::NewWindowResponse,
     AppHandle, Manager, State, Url, WebviewUrl, WebviewWindowBuilder,
 };
+mod bridge;
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
@@ -31,6 +32,8 @@ const KEEP_BACKUPS: usize = 30;
 struct Settings {
     #[serde(default)]
     on_top: bool,
+    #[serde(default)]
+    close_to_tray: bool, // 7.2: closing the window keeps Piano Logger running in the system tray (logging only)
 }
 
 struct Paths {
@@ -233,6 +236,7 @@ struct Info {
     sf_dir: String,
     on_top: bool,
     startup: bool,
+    close_to_tray: bool,
     site: &'static str,
     last_crash: Option<()>,
 }
@@ -252,6 +256,7 @@ fn app_info(app: AppHandle, st: State<AppState>) -> Info {
         sf_dir: st.p.sf.display().to_string(),
         on_top: st.settings.lock().map(|s| s.on_top).unwrap_or(false),
         startup: startup::is_enabled(),
+        close_to_tray: st.settings.lock().map(|s| s.close_to_tray).unwrap_or(false),
         site: SITE,
         last_crash: None,
     }
@@ -399,6 +404,34 @@ fn win_ontop(on: bool, app: AppHandle, st: State<AppState>) -> Res<bool> {
     save_settings(&st);
     Ok(on)
 }
+/* ---------- MIDI Keyboard Bridge (see bridge.rs): real key presses into the chosen target window ---------- */
+#[tauri::command]
+fn bridge_send(events: Vec<bridge::KeyEv>, target: bridge::Target, b: State<bridge::Bridge>) -> bridge::SendResult {
+    b.send(&events, &target)
+}
+#[tauri::command]
+fn bridge_release_all(b: State<bridge::Bridge>) -> usize {
+    b.release_all()
+}
+#[tauri::command]
+fn bridge_foreground(target: bridge::Target, b: State<bridge::Bridge>) -> bridge::Fg {
+    b.foreground(&target)
+}
+#[tauri::command]
+fn bridge_focus_target(target: bridge::Target, b: State<bridge::Bridge>) -> bridge::Fg {
+    b.focus_target(&target)
+}
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BridgeStatus {
+    held: usize,
+    hotkey: bool,
+}
+#[tauri::command]
+fn bridge_status(b: State<bridge::Bridge>) -> BridgeStatus {
+    BridgeStatus { held: b.held.lock().unwrap().len(), hotkey: *b.hotkey_ok.lock().unwrap() }
+}
+
 // the page's own title bar (the window has no Windows frame): close, minimize, maximize / restore, drag
 #[derive(Serialize)]
 struct WinState {
@@ -420,8 +453,104 @@ fn win_toggle_max(window: tauri::WebviewWindow) -> Res<bool> {
     window.is_maximized().map_err(err)
 }
 #[tauri::command]
-fn win_close(window: tauri::WebviewWindow) -> Res<()> {
+fn win_close(window: tauri::WebviewWindow, b: State<bridge::Bridge>, st: State<AppState>) -> Res<()> {
+    b.release_all();
+    if st.settings.lock().unwrap().close_to_tray {
+        return to_tray(window.app_handle());
+    }
     window.close().map_err(err)
+}
+
+/* ---------- 7.2: keep running in the system tray ----------
+   Closing the window (title bar, Alt+F4) can hide it instead of quitting. While hidden:
+   · the page keeps running, so MIDI is still logged and statistics stay up to date;
+   · WebView2 is told it is invisible and to use less memory, so nothing is drawn (no GPU work, little CPU);
+   · the MIDI Keyboard Bridge never presses keys (refused here, and the page switches the bridge off).
+   A tray icon brings the window back (click, or "Open Piano Logger") or quits; starting Piano Logger again also brings it back. */
+const TRAY_ID: &str = "piano-logger-tray";
+#[cfg(windows)]
+fn webview_awake(w: &tauri::WebviewWindow, on: bool) {
+    let _ = w.with_webview(move |pw| unsafe {
+        use webview2_com::Microsoft::Web::WebView2::Win32::{ICoreWebView2_19, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL};
+        use windows::core::Interface;
+        let c = pw.controller();
+        let _ = c.SetIsVisible(on);
+        if let Ok(core) = c.CoreWebView2() {
+            if let Ok(c19) = core.cast::<ICoreWebView2_19>() {
+                let _ = c19.SetMemoryUsageTargetLevel(if on { COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL } else { COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW });
+            }
+        }
+    });
+}
+#[cfg(not(windows))]
+fn webview_awake(_w: &tauri::WebviewWindow, _on: bool) {}
+
+fn tell_page(w: &tauri::WebviewWindow, hidden: bool) {
+    let _ = w.eval(format!("window.dispatchEvent(new CustomEvent('pianoapp-visibility', {{ detail: {{ inTray: {hidden} }} }}))"));
+}
+fn to_tray(app: &AppHandle) -> Res<()> {
+    use std::sync::atomic::Ordering;
+    let b = app.state::<bridge::Bridge>();
+    b.in_tray.store(true, Ordering::SeqCst);
+    b.release_all();
+    if app.tray_by_id(TRAY_ID).is_none() {
+        use tauri::menu::{Menu, MenuItem};
+        use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+        let open = MenuItem::with_id(app, "open", "Open Piano Logger", true, None::<&str>).map_err(err)?;
+        let quit = MenuItem::with_id(app, "quit", "Quit Piano Logger", true, None::<&str>).map_err(err)?;
+        let menu = Menu::with_items(app, &[&open, &quit]).map_err(err)?;
+        let mut tb = TrayIconBuilder::with_id(TRAY_ID)
+            .tooltip("Piano Logger — still logging in the background")
+            .menu(&menu)
+            .show_menu_on_left_click(false)
+            .on_menu_event(|app, e| match e.id.as_ref() {
+                "open" => from_tray(app),
+                "quit" => quit_app(app),
+                _ => {}
+            })
+            .on_tray_icon_event(|tray, e| {
+                if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = e {
+                    from_tray(tray.app_handle());
+                }
+            });
+        if let Some(icon) = app.default_window_icon() {
+            tb = tb.icon(icon.clone());
+        }
+        tb.build(app).map_err(err)?;
+    }
+    if let Some(w) = app.get_webview_window("main") {
+        tell_page(&w, true);
+        w.hide().map_err(err)?;
+        webview_awake(&w, false);
+    }
+    Ok(())
+}
+fn from_tray(app: &AppHandle) {
+    use std::sync::atomic::Ordering;
+    if let Some(w) = app.get_webview_window("main") {
+        webview_awake(&w, true);
+        let _ = w.show();
+        let _ = w.unminimize();
+        let _ = w.set_focus();
+        tell_page(&w, false);
+    }
+    app.state::<bridge::Bridge>().in_tray.store(false, Ordering::SeqCst);
+    let _ = app.remove_tray_by_id(TRAY_ID);
+}
+fn quit_app(app: &AppHandle) {
+    app.state::<bridge::Bridge>().release_all();
+    let _ = app.remove_tray_by_id(TRAY_ID);
+    app.exit(0);
+}
+#[tauri::command]
+fn app_close_to_tray(on: bool, st: State<AppState>) -> bool {
+    st.settings.lock().unwrap().close_to_tray = on;
+    save_settings(&st);
+    on
+}
+#[tauri::command]
+fn app_quit(app: AppHandle) {
+    quit_app(&app);
 }
 #[tauri::command]
 fn win_drag(window: tauri::WebviewWindow) -> Res<()> {
@@ -501,13 +630,7 @@ fn page_response(st: &AppState, path: &str) -> http::Response<Vec<u8>> {
 pub fn run() {
     tauri::Builder::default()
         // only one Piano Logger window at a time: a second start brings the first one forward
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(w) = app.get_webview_window("main") {
-                let _ = w.unminimize();
-                let _ = w.show();
-                let _ = w.set_focus();
-            }
-        }))
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| from_tray(app)))
         // remember size, position and maximized state, but not the frame: 7.0.0 / 7.0.1 saved "has a frame", which would
         // otherwise bring the Windows frame back over the 7.0.2 glass title bar
         .plugin(
@@ -524,8 +647,20 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             app_info, sf_list, sf_add, sf_read, sf_remove, sf_open, bk_save, bk_begin, bk_write, bk_end, bk_abort, bk_list, bk_open,
             win_ontop, app_startup, upd_store, app_restart, open_data_dir, repair_storage,
-            win_state, win_minimize, win_toggle_max, win_close, win_drag
+            win_state, win_minimize, win_toggle_max, win_close, win_drag, app_close_to_tray, app_quit,
+            bridge_send, bridge_release_all, bridge_foreground, bridge_focus_target, bridge_status
         ])
+        // Alt+F4 / closing from the taskbar follows the same choice as the title bar's close button
+        .on_window_event(|w, ev| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = ev {
+                let app = w.app_handle();
+                app.state::<bridge::Bridge>().release_all();
+                if app.state::<AppState>().settings.lock().unwrap().close_to_tray {
+                    api.prevent_close();
+                    let _ = to_tray(app);
+                }
+            }
+        })
         .setup(|app| {
             let h = app.handle().clone();
             let data = app.path().app_data_dir()?;
@@ -553,6 +688,16 @@ pub fn run() {
             let on_top = settings.on_top;
             let served = pick_page(&h, &p.page);
             app.manage(AppState { p, settings: Mutex::new(settings), served: Mutex::new(served), bk: Mutex::new(HashMap::new()) });
+            app.manage(bridge::Bridge::default());
+            // Ctrl + Alt + End anywhere: release every bridge key at once and disarm the bridge in the page
+            let hk = h.clone();
+            let ok = bridge::start_emergency_hotkey(move || {
+                let n = hk.state::<bridge::Bridge>().release_all();
+                if let Some(w) = hk.get_webview_window("main") {
+                    let _ = w.eval(format!("window.dispatchEvent(new CustomEvent('pianoapp-bridge-stop', {{ detail: {{ released: {n}, from: 'hotkey' }} }}))"));
+                }
+            });
+            *app.state::<bridge::Bridge>().hotkey_ok.lock().unwrap() = ok;
 
             // custom protocols are served as http://<scheme>.localhost on Windows
             let url: Url = if cfg!(windows) { format!("http://{SCHEME}.localhost/") } else { format!("{SCHEME}://localhost/") }.parse()?;
@@ -637,6 +782,14 @@ pub fn run() {
                 .build()?;
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Piano Logger");
+        .build(tauri::generate_context!())
+        .expect("error while running Piano Logger")
+        .run(|app, event| {
+            // never leave a key held down by the bridge when Piano Logger closes
+            if let tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. } = event {
+                if let Some(b) = app.try_state::<bridge::Bridge>() {
+                    b.release_all();
+                }
+            }
+        });
 }

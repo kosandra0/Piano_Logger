@@ -48,11 +48,22 @@
     }),
     setOnTop: function (on) { return inv('win_ontop', { on: !!on }); },
     setStartup: function (on) { return inv('app_startup', { on: !!on }); },
+    // 7.2: closing the window keeps Piano Logger running in the system tray (logging only, no key presses)
+    setCloseToTray: function (on) { return inv('app_close_to_tray', { on: !!on }); },
+    quit: function () { return inv('app_quit'); },
     checkUpdate: checkUpdate,
     restart: function () { return inv('app_restart'); },
     openDataFolder: function () { return inv('open_data_dir'); },
     repairStorage: function () { return inv('repair_storage'); },
     onUpdate: function (cb) { if (typeof cb === 'function') listeners.push(cb); },
+    // 7.1: MIDI Keyboard Bridge — real key presses, only into the chosen target window (checked again in Rust)
+    keys: Object.freeze({
+      send: function (events, target) { return inv('bridge_send', { events: events, target: target || {} }); },
+      releaseAll: function () { return inv('bridge_release_all'); },
+      foreground: function (target) { return inv('bridge_foreground', { target: target || {} }); },
+      focusTarget: function (target) { return inv('bridge_focus_target', { target: target || {} }); },
+      status: function () { return inv('bridge_status'); }
+    }),
     // 7.0.2: the window has no Windows frame; the page's title bar uses these
     window: Object.freeze({
       state: function () { return inv('win_state'); },

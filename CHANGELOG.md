@@ -3,6 +3,85 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 7.2.2 — 2026-11-01 · Glass drop-down menus
+
+### UI & UX
+- Every drop-down menu opens as a **frosted-glass menu** in the theme's colours (macOS style) instead of the dark, square list Windows draws. Mouse and keyboard (Space / Enter / Alt+↓ / F4 to open, arrows, Home / End, Page Up / Down, type to jump, Enter to choose, Esc to close); long lists scroll inside the window and open upwards when there is no room below. The real drop-down keeps the value, so every setting works as before. Phones and tablets keep their own pickers. High-contrast and "no blur" modes get a solid menu.
+- The website's **Download for Windows** window now leads with the MIDI Keyboard Bridge (play Roblox and other games with your MIDI keyboard) and the system-tray option.
+
+### Bug fixes
+- MIDI Bridge → Musical controls: changing two settings one after the other (e.g. octave shift, then transpose) kept only the first change.
+
+### Tested by hand (Piano Logger's owner, ST50 + Roblox, 7.2.1)
+- Correct notes on every key and after the ST50's octave buttons; the 88-key layout incl. the underlined Ctrl keys; sustain via Space; Go to Roblox; Ctrl+Alt+End; system tray (logging continues, no keys sent, about 0 % CPU); latency median 9.2 ms / 95 % 52 ms.
+
+## 7.2.1 — 2026-11-01 · MIDI Bridge fixes from real ST50 + Roblox testing
+
+### Bug fixes
+- **Wrong or missing notes in Roblox.** The tester's Roblox profile had three keys changed by accident in the Mapping studio (C4 = `s`, C#4 = `f`, D4 = no key), so C#4 played E5 and D4 played nothing. A Roblox / Virtual Piano profile that differs from the standard Roblox piano now shows exactly which notes differ, with **Restore the standard Roblox keys** (only those notes change; other settings stay).
+- **Keys held forever with the keyboard's sustain on.** With *Hold notes until released*, every key stayed pressed in the game until sustain was switched off. The Roblox profile now uses **Press the sustain key: Space** (the game's *SpaceSustain*); a profile still set to hold notes offers **Use Roblox sustain (Space)**.
+- **"Open" on the bridge chip did not go to Roblox** — it opened Piano Logger's own bridge settings. The chip now has **Go to Roblox** (brings the game window to the front; says so if Roblox is not running) and a separate **Bridge** button. Pressing **Start** in Live mode also switches to the game.
+
+### UI & UX
+- Overview: shows whether your keyboard's sustain is on and what it does in the game.
+- A warning when octave shift or transpose is on, with **Play exactly what I press**.
+- Mapping studio: every change (typed key, learn, fill, restore) can be undone once; learn mode stops by itself when you leave the window, so stray key presses cannot change keys.
+
+### Desktop app 7.2.1
+- New command `bridge_focus_target` (`pianoApp.keys.focusTarget`): finds a visible window of the target program and brings it to the front (never Piano Logger itself; does nothing for an "any window" target).
+
+## 7.2 — 2026-11-01 · System tray, 88-key Roblox piano, tidier bridge controls
+
+### New features
+- **Keep running in the system tray** (Windows app 7.2): choose what the close button does — *Quit Piano Logger* (default) or *Keep running in the system tray*. Settings → Appearance & layout, or App features → Window. Alt+F4 and closing from the taskbar follow the same choice.
+  - In the tray Piano Logger keeps logging what you play and updating your statistics. Nothing is drawn (WebView2 is told it is hidden and to use less memory). Measured on this PC: about **0.07 CPU-seconds per second and 84 MB** in the tray, against 0.51 and 566 MB with the window open and an animated background.
+  - Click the tray icon (or start Piano Logger again) to bring the window back; right-click it for *Open* / *Quit*.
+  - The **MIDI Bridge never presses keys while Piano Logger is in the tray**: it switches off when the window hides, cannot be started there, and the app refuses key presses then as well. Keep the window open (it may be minimised) to play Roblox or web pianos.
+- **88-key Roblox / Virtual Piano profile** (A0–C8). The 15 notes below C2 (`1 2 3 4 5 6 7 8 9 0 q w e r t`) and the 12 above C7 (`y u i o p a s d f g h j`) — the underlined keys on the Roblox piano — are sent with **Ctrl** held. An unchanged 61-key profile is upgraded automatically; a profile you changed is left exactly as it was and an 88-key profile is added next to it. New *Fill: Virtual Piano (88 keys)* button.
+- Safety: **Ctrl mappings are never sent to web browsers** (Chrome, Edge, Firefox, Opera, Brave, Vivaldi) because Ctrl+W, Ctrl+R, Ctrl+P… would close, reload or print the page; those notes are skipped there and listed in the Monitor.
+
+### UI & UX
+- MIDI Bridge → Musical controls: text fields and drop-downs no longer run outside their boxes (checked automatically at 1440×900 and 1000×760). Clearer names: “Minimum velocity (softer notes are skipped)”, sustain pedal “Off / Press the sustain key / Hold notes until released”, with a short explanation.
+- Monitor → Diagnostics: long values wrap inside the table.
+- Mapping studio: Ctrl / Shift keys are shown as ⌃ / ⇧ so they fit on the piano keys.
+
+### Compatibility
+- The tray option needs the 7.2 Windows app; the website and older apps do not show it. New app commands: `app_close_to_tray`, `app_quit`; `app_info` reports `closeToTray`. Uses Tauri's tray support and the `webview2-com` crate Tauri already uses.
+
+## 7.1 — 2026-11-01 · MIDI Keyboard Bridge, 26 calm roll backgrounds, smoother playing
+
+### New features
+- **MIDI Keyboard Bridge** (navigation → MIDI Bridge): play Roblox Virtual Piano, web pianos and other games with your MIDI keyboard. Notes become computer-keyboard keys using a mapping profile. It uses the MIDI connection Piano Logger already has (no second connection), and logging keeps working exactly as before.
+  - Windows app: real key presses (Windows `SendInput`, scan codes) go only to the window you choose — for example `RobloxPlayerBeta.exe` — and only while it is in front; never into Piano Logger itself. This is checked in the page and again in the app's Windows code. The website shows a preview of the keys instead.
+  - Profiles: Roblox / Virtual Piano (61 keys, C2–C7), PC keys (2 rows) and Custom. Create, rename, duplicate, delete (two clicks), import (adds, never replaces) and export (versioned JSON).
+  - Mapping studio with all 88 keys: click a key and type or press the computer key, or play a note and then press a key (learn mode). Search, shared-key and invalid-key warnings, quick fill.
+  - Musical controls per profile: octave shift ±3, transpose ±24, note range, ignored notes, softest velocity, MIDI channel, split keyboard (lower part with another profile and octave), sustain pedal (hold a key, or keep keys down while pressed), soft pedal key and other controllers, retrigger.
+  - Safety: notes on the same key are counted so no key gets stuck; every key is released when the target loses focus, the MIDI keyboard is unplugged, you press **Emergency stop** (also on a floating chip while the bridge runs), press **Ctrl+Alt+End** anywhere in Windows, or close the app. The bridge always starts switched off.
+  - Monitor: every note, key, filter decision and refusal, plus the measured delay from the keyboard's MIDI timestamp to Windows accepting the key.
+- **26 calm, animated piano-roll backgrounds**: misty morning haze, slow cloud drift, gentle rainfall, raindrops on glass, feather-light snowfall, cherry blossom drift, autumn leaves, dandelion seeds, sunlit dust motes, moonlit lake ripples, underwater caustics, bioluminescent plankton, deep-sea currents, soft coral light rays, slow gradient tides, flowing silk ribbons, ink in water, watercolour bloom, dreamy bokeh, floating light orbs, floating paper lanterns, moving cloud shadows, distant mountain mist, desert twilight haze, frosted glass reflections, gentle meadow breeze. All earlier backgrounds are still there.
+- **Background studio** (Settings → Graphics → Browse & customise): categories, search, favourites, thumbnails, one live preview, and per-background speed, brightness, opacity, amount, colours (8 palettes, theme colours or the effect's own) and direction where it makes sense, with Reset to default. The backgrounds follow the quality preset, Lite mode, reduced motion and Motion Off (a still picture is shown).
+
+### Performance
+Measured in Chrome on this PC (GeForce GT 710), Aurora Glass theme, glow notes, animated roll background, 3-note chords every 150 ms for 8 s:
+- Aurora background: **8.6–11.9 fps before → 16.9–20.2 fps after**; Synthwave grid: 10.4 → 17.4–20.7 fps.
+- The music staff was redrawn for every note even when hidden; now once per frame and only when visible.
+- The overview header forced a page layout for every note; now it updates ~8× a second and the note "pop" no longer forces layout.
+- Rolling counters change once per frame (a chord rolls once), the navigation's live bars use transforms instead of heights, and small charts reuse their canvas instead of re-allocating it.
+- While you play (and 2.5 s after) the decorative background animations pause and, below Ultra quality, the glass panels skip their background blur; dense note runs skip a costly glow shadow.
+
+### Data safety
+- Nothing in this update changes logged presses, statistics, badges, profiles or backups, and no database is changed. Bridge and background settings are stored separately (`pll.bridge`, `pll.rollfx`) and are included in full backups.
+
+### Known limitations
+- The website, the Electron app and Windows apps older than 7.1 show the bridge as a **preview only** (they say so); real key presses need the 7.1 (or newer) Windows app.
+- Keyboard layout: mappings are stored as US English characters. The app sends each key's Windows key code (letters A–Z follow the letter printed on the key, so they work on every Latin layout), but digits and symbols use US positions:
+  - **UK**: `@` (Shift+2) types `"`.
+  - **German (QWERTZ)**: `@` → `"`, `^` → `&`, `*` → `(`, `(` → `)`, and the punctuation keys `; [ ] ' / - = \` differ.
+  - **French (AZERTY)**: the top row types `& é " ' ( - è _ ç à` without Shift, so the Virtual Piano digits `1–0` and the symbols `! @ $ % ^ * (` all type something else (17 of the 61 Virtual Piano keys).
+  - With a non-Latin layout active in the target window (e.g. Hindi/Devanagari), text fields receive that script; games that read key codes are not affected.
+  Keep an English (US) layout active in the game window. Not tested on a real non-US layout (this PC has US, English (India) and Hindi installed, which all place these keys like US).
+- Learn mode records letters by the letter printed on the key (so QWERTZ/AZERTY letters are learned correctly) and other keys by their US position.
+
 ## 7.0.4 — 2026-10-31 · Animations even with Windows animations off
 
 ### New features
@@ -123,6 +202,10 @@ Desktop app versions are listed separately at the end.
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
+| 7.2.2 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Page 7.2.2 (glass drop-down menus). No change to the app itself. |
+| 7.2.1 | 2026-11-01 | Tauri 2.12.5 (WebView2) | "Go to Roblox": `bridge_focus_target` brings the target program's window to the front. Page 7.2.1. |
+| 7.2.0 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Optional close-to-tray: the window hides, a tray icon (Open / Quit) appears, WebView2 is set invisible with a low memory target, and the bridge refuses key presses (`app-in-tray`). Alt+F4 / taskbar close follow the setting; a second start brings the window back. Page 7.2. |
+| 7.1.0 | 2026-11-01 | Tauri 2.12.5 (WebView2) | MIDI Keyboard Bridge back end (`src-tauri/src/bridge.rs`): real key presses with `SendInput` (scan codes) only while the chosen target window is in front and never into Piano Logger; tracks every key it holds and releases them all on Emergency stop, the global **Ctrl+Alt+End** hotkey, window close and app exit. New commands bridge_send / bridge_release_all / bridge_foreground / bridge_status (`pianoApp.keys`). Uses the `windows` crate version Tauri already uses, so no new dependency. Page 7.1. |
 | 7.0.2 | 2026-10-31 | Tauri 2.12.5 (WebView2) | Frameless, transparent window with rounded corners and the page's glass title bar (close, minimize, maximize/restore, drag, double-click); new window commands win_state / win_minimize / win_toggle_max / win_close / win_drag. Page 7.0.2. |
 | 7.0.1 | 2026-10-31 | Tauri 2.12.5 (WebView2) | Fixed: "Start with Windows" used the same Windows start-up entry name as the Electron app, so with both apps installed one replaced the other. The new app now uses its own name (an entry 7.0.0 left behind for itself is cleaned up). Page unchanged (7.0). |
 | 7.0.0 | 2026-10-31 | Tauri 2.12.5 (WebView2) | New desktop target in `Piano-Logger-tauri/`. Same page and the same `window.pianoApp` features as the Electron app (SoundFonts, backups, always on top, start with Windows, updates of the page from the website). MIDI is allowed without a pop-up. The page is served with a Content-Security-Policy (no frames or plugins); remote websites open in the browser. 64-bit only. |
