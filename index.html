@@ -17352,7 +17352,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.3.2';
+      const APP_VERSION = '7.3.3';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -22897,7 +22897,7 @@ html:has(#gm:not([hidden]) #vsBox) #vsChip{display:none}
 @media (prefers-reduced-motion:reduce){html:not(.mo-force) #plDock>.pl-island,html:not(.mo-force) #plDock>.pl-island::before,html:not(.mo-force) #plDock .pl-island .pli-ring{animation:none}}
 html.pl-tray #plDock{display:none}
 html #toasts{bottom:calc(16px + var(--pl-dock,0px));transition:bottom .25s ease}
-@media (prefers-reduced-motion:reduce){html:not(.motion-over) .vs-mode,html:not(.motion-over) .vs-inst{transition:none}}
+@media (prefers-reduced-motion:reduce){html:not(.mo-force) .vs-mode,html:not(.mo-force) .vs-inst{transition:none}}
 `;
         document.head.appendChild(st);
       }
@@ -22948,6 +22948,140 @@ html #toasts{bottom:calc(16px + var(--pl-dock,0px));transition:bottom .25s ease}
           ]],
           ['UI & UX', ['The floating Voice Studio and MIDI Bridge bars are now “islands”: a dark glass capsule with a glowing border in your theme’s colours, an icon badge (click it to make the island small), a title above the status, a live microphone meter, and round buttons. They stack neatly in the corner, and notifications move up so they never cover them']],
           ['Bug fixes', ['Desktop app: “Drag to move this section” never worked — the window refused every drag. It works now (needs the Windows app 7.3.2)']]
+        ]
+      });
+      /* =====================================================================
+         7.3.3 — SMOOTH MOTION: islands shrink and grow with an animation; sections slide into place while you drag them
+         (owner's hands-on notes G2 + G3). Only animation is added: what is saved and what the buttons do stay the same.
+         Everything follows the motion settings (Calm mode, animations off, Windows animations off) through motionOK().
+         ===================================================================== */
+      {
+        const st = document.createElement('style'); st.id = 'v733css';
+        st.textContent = `
+[data-sec].dragging{opacity:.42;outline:2px dashed color-mix(in srgb,var(--c1) 75%,transparent);outline-offset:-2px;transition:opacity .2s ease}
+html.sec-dnd [data-sec].drop-before,html.sec-dnd [data-sec].drop-after{box-shadow:none}
+html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-mv) .app,html:is(.sec-dnd,.sec-mv) .app>[data-sec]{overflow-anchor:none}
+[data-sec].sec-landed{animation:secLanded 1.1s ease-out}
+@keyframes secLanded{0%{outline:2px solid var(--c1);outline-offset:0}100%{outline:2px solid transparent;outline-offset:8px}}
+#plDock .pl-island .pli-flash{position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(120% 140% at 12% 50%,color-mix(in srgb,var(--c1) 70%,transparent),transparent 70%);opacity:0;width:auto;height:auto;flex:none;box-shadow:none;display:block}
+`;
+        document.head.appendChild(st);
+      }
+      // ---- sections: FLIP animation (remember where every section was, move it, then slide it from the old place to the new one)
+      const secY = s => { const r = s.getBoundingClientRect(); let ty = 0; try { ty = new DOMMatrixReadOnly(getComputedStyle(s).transform).m42; } catch (e) { } return { top: r.top - ty, h: r.height }; };
+      const secFirst = () => { const m = new Map(); secs().forEach(s => { if (!s.hidden) m.set(s, s.getBoundingClientRect().top); }); return m; };
+      function secFlip(first, moved) {
+        if (!motionOK() || !Element.prototype.animate) return;
+        first.forEach((_, s) => s.getAnimations().forEach(a => { if (a.id === 'secflip') a.cancel(); }));
+        first.forEach((top, s) => {
+          if (s.hidden || !s.isConnected) return;
+          const dy = top - s.getBoundingClientRect().top; if (Math.abs(dy) < 1) return;
+          const a = s.animate(s === moved ? [{ transform: 'translateY(' + dy + 'px) scale(.985)' }, { transform: 'none' }] : [{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }],
+            { duration: s === moved ? 380 : 440, easing: 'cubic-bezier(.22,1,.36,1)' });
+          a.id = 'secflip';
+        });
+      }
+      function secLanded(s) {
+        if (!s || !motionOK()) return;
+        s.classList.remove('sec-landed'); void s.offsetWidth; s.classList.add('sec-landed');
+        setTimeout(() => s.classList.remove('sec-landed'), 1200);
+      }
+      // keyboard arrows on the ⠿ handle and the ↑ ↓ buttons in Appearance & layout use moveSec: give it the same slide
+      const _moveSec733 = moveSec;
+      // (while sections move, Chrome's scroll anchoring is switched off: it would scroll the page by a whole section — the page jumped)
+      let mvT = 0;
+      moveSec = function (id, dir) {
+        HTML.classList.add('sec-mv'); clearTimeout(mvT); mvT = setTimeout(() => HTML.classList.remove('sec-mv'), 600);
+        const f = secFirst(); _moveSec733(id, dir); secFlip(f, secs().find(s => s.dataset.sec === id));
+      };
+      // mouse dragging: the sections make room while you drag (live), instead of only a line and a jump at the end.
+      // These listeners run before the older ones (capture) and take over only while a section is being dragged.
+      {
+        const app = $('.app'); let SD = null;
+        const order = () => secs().map(s => s.dataset.sec);
+        document.addEventListener('dragstart', e => {
+          const h = e.target && e.target.closest && e.target.closest('.sec-btn.drag'); if (!h) return;
+          const s = h.closest('.app > [data-sec]'); if (!s) return;
+          SD = { s, start: order(), until: 0 }; HTML.classList.add('sec-dnd');
+        }, true);
+        // decide where the dragged section belongs from a point on the screen (the section under the pointer, judged by its resting place)
+        function place(x, y) {
+          if (!SD) return; const now = performance.now();
+          if (now < SD.until) { if (!SD.tm) SD.tm = setTimeout(() => { if (SD) { SD.tm = 0; place(SD.x, SD.y); } }, SD.until - now + 5); return; }
+          const el = document.elementFromPoint(x, y), t = el && el.closest && el.closest('.app > [data-sec]'); if (!t || t === SD.s || t.hidden) return;
+          const r = secY(t), after = y > r.top + r.h / 2;
+          if (after ? t.nextElementSibling === SD.s : t.previousElementSibling === SD.s) return;
+          const f = secFirst(); if (after) t.after(SD.s); else t.before(SD.s);
+          secFlip(f, null); SD.until = now + 140;
+          clearTimeout(SD.tm); SD.tm = setTimeout(() => { if (SD) { SD.tm = 0; place(SD.x, SD.y); } }, 145);   // look again once things have moved: the pointer may now be over another section
+        }
+        // while a section is dragged the whole window accepts it (letting go anywhere keeps the order you see)
+        document.addEventListener('dragover', e => {
+          if (!SD) return; e.preventDefault(); e.stopPropagation(); try { e.dataTransfer.dropEffect = 'move'; } catch (err) { }
+          SD.x = e.clientX; SD.y = e.clientY; place(e.clientX, e.clientY);
+        }, true);
+        document.addEventListener('dragenter', e => { if (SD) e.preventDefault(); }, true);
+        document.addEventListener('drop', e => { if (!SD) return; e.preventDefault(); e.stopPropagation(); }, true);
+        document.addEventListener('dragend', e => {
+          if (!SD) return; const s = SD.s, start = SD.start; clearTimeout(SD.tm); SD = null; HTML.classList.remove('sec-dnd');
+          secs().forEach(x => x.classList.remove('drop-before', 'drop-after'));
+          let cancelled = false; try { cancelled = !!e.dataTransfer && e.dataTransfer.dropEffect === 'none'; } catch (err) { }
+          if (cancelled) {   // Esc or dropped outside the window: everything slides back
+            if (order().join() !== start.join()) { const f = secFirst(), by = Object.fromEntries(secs().map(x => [x.dataset.sec, x])); start.forEach(id => by[id] && app.appendChild(by[id])); secFlip(f, null); }
+            return;
+          }
+          if (order().join() !== start.join()) { LAY.order = order(); saveLay(); setTimeout(resizeRoll, 30); }
+          secLanded(s);
+        }, true);
+      }
+      // ---- islands: click the round icon → the details fade away and the island closes up; click again → it opens with a glow
+      {
+        const busy = new WeakSet();
+        const parts = el => [...el.querySelectorAll(':scope > .pli-txt, :scope > .pli-eq, :scope > .pli-b')].filter(x => !x.hidden);
+        function pliMini(el) {
+          if (!motionOK() || !el.animate) { el.classList.toggle('mini'); return; }
+          if (busy.has(el)) return; busy.add(el);
+          const W0 = el.getBoundingClientRect().width, badge = el.querySelector('.pli-badge');
+          const done = () => { el.style.width = ''; el.style.overflow = ''; busy.delete(el); };
+          if (!el.classList.contains('mini')) {
+            const ps = parts(el);
+            const fades = ps.map((p, i) => p.animate([{ opacity: 1, transform: 'none', filter: 'blur(0)' }, { opacity: 0, transform: 'translateX(-10px) scale(.9)', filter: 'blur(4px)' }],
+              { duration: 300, delay: (ps.length - 1 - i) * 40, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' }));
+            Promise.all(fades.map(a => a.finished)).then(() => {
+              el.classList.add('mini'); fades.forEach(a => a.cancel());
+              const W1 = el.getBoundingClientRect().width; el.style.overflow = 'hidden';
+              if (badge) badge.animate([{ transform: 'scale(1)' }, { transform: 'scale(.86)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'ease-in-out' });
+              el.animate([{ width: W0 + 'px' }, { width: W1 + 'px' }], { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' }).finished.then(done, done);
+            }, () => { fades.forEach(a => a.cancel()); el.classList.add('mini'); done(); });
+          } else {
+            el.classList.remove('mini'); const W1 = el.getBoundingClientRect().width, ps = parts(el);
+            el.style.overflow = 'hidden';
+            const fl = document.createElement('i'); fl.className = 'pli-flash'; fl.setAttribute('aria-hidden', 'true'); el.appendChild(fl);
+            fl.animate([{ opacity: 0 }, { opacity: .75, offset: .3 }, { opacity: 0 }], { duration: 900, easing: 'ease-out' }).finished.then(() => fl.remove(), () => fl.remove());
+            if (badge) {
+              const c = getComputedStyle(badge).getPropertyValue('--c1').trim() || '#22d3ee', base = getComputedStyle(badge).boxShadow;
+              badge.animate([{ boxShadow: base, transform: 'scale(1)' }, { boxShadow: '0 0 0 4px ' + c + ', 0 0 30px 8px ' + c, transform: 'scale(1.12)', offset: .35 }, { boxShadow: base, transform: 'scale(1)' }], { duration: 760, easing: 'ease-out' });
+            }
+            ps.forEach((p, i) => p.animate([{ opacity: 0, transform: 'translateX(-10px) scale(.92)', filter: 'blur(4px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }],
+              { duration: 340, delay: 170 + i * 50, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' }));
+            el.animate([{ width: W0 + 'px' }, { width: W1 + 'px' }], { duration: 460, easing: 'cubic-bezier(.22,1,.36,1)' }).finished.then(done, done);
+          }
+        }
+        // runs before the islands' own click handlers (capture) and does the same toggle, now animated
+        plDock.addEventListener('click', e => {
+          const b = e.target.closest && e.target.closest('.pli-badge'); if (!b) return;
+          const el = b.closest('.pl-island'); if (!el) return;
+          e.stopPropagation(); pliMini(el);
+        }, true);
+      }
+      VERSIONS.unshift({
+        v: '7.3.3', date: '2026-11-02', title: 'Smooth motion: islands and sections',
+        groups: [
+          ['UI & UX', [
+            'Floating islands: clicking the round icon now closes the island up smoothly — the details fade away and it shrinks — and clicking again opens it with a soft glow',
+            'Moving a section with the ⠿ handle: the other sections now slide up or down to make room while you drag, and the section you drop glows for a moment where it lands. Esc (or dropping outside the window) slides everything back. The ↑ ↓ arrow keys on the handle and the arrows in Appearance & layout slide too',
+            'All of this follows your motion settings: with Calm mode, animations off or Windows animations off, things move instantly as before'
+          ]]
         ]
       });
       window.__pl73 = Object.freeze({

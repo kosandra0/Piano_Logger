@@ -6,7 +6,7 @@ A single-file, browser-based piano MIDI visualizer and lifetime key logger. Plug
 
 **Windows app:** [Download Piano-Logger-Setup.exe](https://github.com/kosandra0/Piano_Logger/releases/latest/download/Piano-Logger-Setup.exe) (Windows 10 & 11, 64-bit)
 
-**Current version:** 7.3.2 — 🎙 **Voice Studio**: sing, hum or speak into a microphone and hear your own voice with effects, or turn your voice into one of 10 instruments (and, optionally, play it on your MIDI keyboard). Voice → instrument now keeps up with fast singing and speaking; floating "island" controls; a recording player. See [CHANGELOG.md](CHANGELOG.md) for everything that changed.
+**Current version:** 7.3.3 — 🎙 **Voice Studio**: sing, hum or speak into a microphone and hear your own voice with effects, or turn your voice into one of 10 instruments (and, optionally, play it on your MIDI keyboard). Voice → instrument keeps up with fast singing and speaking; floating "island" controls that shrink and grow smoothly; sections slide into place when you move them; a recording player. See [CHANGELOG.md](CHANGELOG.md) for everything that changed.
 
 **Jump to:** [Features](#-features) · [System requirements](#-system-requirements) · [Privacy](#-privacy) · [How to use](#-how-to-use) · [Voice Studio](#-voice-studio) · [Windows app](#-windows-app)
 

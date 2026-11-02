@@ -3,6 +3,23 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 7.3.3 — 2026-11-02 · Smooth motion: islands and sections
+
+### UI & UX (owner's notes on G2 and G3 in `TESTING-7.3-voice.md`)
+- **Floating islands shrink and grow with an animation.** Clicking the round icon: the title, status, meter and buttons fade away (soft blur) one after another, then the capsule closes up to the icon + ■ Stop. Clicking again: the capsule opens, a soft glow passes over it and the icon glows, and the details fade back in one after another. A fast double click cannot leave it half-open.
+- **Sections slide while you drag them.** Dragging a section by its ⠿ handle now moves it live: the other sections slide up or down to make room (instead of only a line, then a jump when you let go). The section you drop glows for a moment where it lands. Esc, or letting go outside the window, slides everything back. The ↑ ↓ keys on the handle and the ↑ ↓ buttons in *Appearance & layout* slide too.
+- All of this follows the motion settings: with Calm mode, animations off, or Windows animations off (unless "Play animations even when Windows animations are off" is on), islands and sections change instantly as before.
+
+### Bug fixes
+- While sections were moved, Chrome's scroll anchoring scrolled the page by a whole section, so the page jumped and the section under the mouse changed (found by the new test). Scroll anchoring is now off while a section moves.
+- Voice Studio's mode and instrument cards ignored "Play animations even when Windows animations are off" (wrong class name in the 7.3 style rule).
+
+### Desktop app 7.3.3
+- No change to the app's code. Page 7.3.3 bundled.
+
+### Tested by hand (Piano Logger's owner, installed app 7.3.3)
+- Island shrink/grow animation (Voice Studio and MIDI Bridge), sections sliding while dragging, drop glow, Esc to cancel: all passed. Owner: "so far everything perfect".
+
 ## 7.3.2 — 2026-11-02 · Voice → instrument keeps up with you · floating islands · section dragging fixed
 
 ### Voice Studio — speed (owner's hands-on report C4 / Fix 3: "lag… does not match my speed")
@@ -260,7 +277,8 @@ Measured in Chrome on this PC (GeForce GT 710), Aurora Glass theme, glow notes, 
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
-| 7.3.2 | 2026-11-02 | Tauri 2.12.5 (WebView2) | HTML5 drag and drop in the page works (`disable_drag_drop_handler`). Page 7.3.2. Built locally, not published. |
+| 7.3.3 | 2026-11-02 | Tauri 2.12.5 (WebView2) | No code change. Page 7.3.3 (animated islands, sliding sections). Built locally, Published 2026-11-02 as `app-v7.3.3`. |
+| 7.3.2 | 2026-11-02 | Tauri 2.12.5 (WebView2) | HTML5 drag and drop in the page works (`disable_drag_drop_handler`). Page 7.3.2. Published 2026-11-02 as `app-v7.3.2`. |
 | 7.3.1 | 2026-11-02 | Tauri 2.12.5 (WebView2) | Page 7.3.1 (recording player, Stop fix). No change to the app's code. Built locally, not published. |
 | 7.3.0 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Voice Studio support: `PermissionKind::Microphone` allowed for the app's own page (other sites still get WebView2's prompt); CSP `script-src` adds `blob:` for the AudioWorklet. Page 7.3. Built locally, not published. |
 | 7.2.2 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Page 7.2.2 (glass drop-down menus). No change to the app itself. |
