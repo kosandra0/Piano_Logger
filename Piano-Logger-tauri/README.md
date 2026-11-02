@@ -15,10 +15,11 @@ the same API the Electron app's `preload.js` provides, so the page code is ident
 | `package.json` | version, and the `dev` / `build` scripts (Tauri CLI 2.12) |
 | `scripts/copy-page.mjs` | copies the newest page (`../index.html` or `../piano-logger.html`) to `web/index.html` before every build |
 | `web/` | the page inside the app (generated; do not edit) |
-| `src-tauri/tauri.conf.json` | name, version 7.0.2, identifier, installer settings |
+| `src-tauri/tauri.conf.json` | name, version 7.3.2, identifier, installer settings |
 | `src-tauri/capabilities/default.json` | no plugin permissions are given to the page (least privilege) |
-| `src-tauri/src/lib.rs` | the app: window, page serving and updates, SoundFonts, backups, always on top, start with Windows, MIDI permission |
+| `src-tauri/src/lib.rs` | the app: window, page serving and updates, SoundFonts, backups, always on top, start with Windows, MIDI + microphone permission, system tray |
 | `src-tauri/src/bridge.js` | `window.pianoApp` for the page |
+| `src-tauri/src/bridge.rs` | MIDI Keyboard Bridge: key presses with `SendInput`, target-window check, Ctrl+Alt+End hotkey, `bridge_focus_target` (Go to Roblox) |
 | `.github/workflows/build-windows-tauri.yml` | builds the installer on GitHub and publishes it as `Piano-Logger-Setup.exe` |
 
 ## Build it on your PC
@@ -30,7 +31,7 @@ npm install
 npm run build        # web page copied in, release build, NSIS installer
 ```
 
-The installer is written to `src-tauri/target/release/bundle/nsis/Piano Logger_7.0.2_x64-setup.exe`,
+The installer is written to `src-tauri/target/release/bundle/nsis/Piano Logger_7.3.2_x64-setup.exe`,
 and the app itself to `src-tauri/target/release/piano-logger.exe`. `npm run dev` starts a debug build.
 
 ## How it behaves
@@ -39,11 +40,17 @@ and the app itself to `src-tauri/target/release/piano-logger.exe`. `npm run dev`
   (https://kosandra0.github.io/Piano_Logger/) and keeps a newer page for the next start, exactly like the Electron app.
   It is not an installer updater: a new app version still needs a new installer.
 - **MIDI**: the app allows Web MIDI (and downloads, the backup-folder picker, clipboard and notifications) for its own page
-  without pop-ups. Camera, microphone and location are not allowed automatically.
+  without pop-ups. Since 7.3.0 the **microphone** is also allowed for the app's own page (Voice Studio only opens it after Start);
+  camera and location are not allowed automatically. The CSP allows `blob:` scripts so Voice Studio's AudioWorklet module can load.
 - **Security**: the page is served with a Content-Security-Policy (no frames, plugins or unknown script origins);
   websites open in your normal browser; the page's commands only reach the app's own folders and check every file name.
 - **Start with Windows**: a value named `com.kosandra0.pianologger.desktop` in the current user's Run key only (never machine-wide), separate from the Electron app's entry.
 - **Window**: no Windows frame; the page draws a glass title bar with close, minimize and maximize/restore controls (bridge.js `window`). Drag it to move, double-click to maximize; Tauri keeps every edge resizable.
+- **Drag and drop**: since 7.3.2 Tauri's own file-drop handler is turned off (`disable_drag_drop_handler`), so the page's
+  HTML5 drag and drop works on Windows (moving sections by their ⠿ handle). The app never used Tauri drop events.
+- **System tray** (7.2): if "close to tray" is on, closing the window hides it and keeps logging in the tray (no graphics,
+  WebView2 told to use less memory via `webview2-com`); the MIDI Bridge does not press keys there. Click the tray icon or start
+  Piano Logger again to bring the window back.
 - **Background**: sound, the visualizer and logging keep running while the window is minimised (background throttling off).
 - **MIDI Keyboard Bridge** (7.1, `src-tauri/src/bridge.rs`, bridge.js `keys`): the page decides which keys go down and up;
   the app presses them with `SendInput` (scan codes) only when the target window (program name and/or title) is in front and

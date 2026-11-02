@@ -605,8 +605,10 @@ fn repair_storage(app: AppHandle, st: State<AppState>) -> Res<()> {
 // What the page may load. It is one file with inline scripts and styles; it fetches piano samples, fonts and its own
 // newer version from these sites only. 'unsafe-eval' is for the page's add-ons feature (new Function on a file the user picks).
 // No frames, plugins, forms or <base>: remote websites cannot be embedded in the app window.
+// 7.3: blob: scripts for Voice Studio's audio-thread module (an AudioWorklet the page builds from its own inline code;
+// worklets follow script-src). This adds nothing the page could not already do with 'unsafe-inline'/'unsafe-eval'.
 const CSP: &str = "default-src 'self'; \
-script-src 'self' 'unsafe-inline' 'unsafe-eval'; \
+script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; \
 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
 font-src 'self' data: https://fonts.gstatic.com; \
 img-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; \
@@ -726,19 +728,26 @@ pub fn run() {
                 .background_color(tauri::window::Color(0, 0, 0, 0))
                 .always_on_top(on_top)
                 .initialization_script(BRIDGE)
+                // 7.3.2: let the page use normal (HTML5) drag and drop. Tauri replaces WebView2's drag-and-drop handler with its
+                // own (for file-drop events this app never used), which on Windows makes every drag inside the page end with a
+                // "not allowed" cursor — e.g. "Drag to move this section" never worked in the app, only on the website.
+                .disable_drag_drop_handler()
                 // keep sound, the visualizer and logging running while the window is minimised or hidden
                 .background_throttling(tauri::utils::config::BackgroundThrottlingPolicy::Disabled)
                 .additional_browser_args(&args)
                 // MIDI keyboards (and the few things the page uses: downloads, a backup folder, clipboard, notifications)
                 // are allowed for the app's own page without a pop-up, like the Electron app did. Anything else
-                // (camera, microphone, location…) gets WebView2's normal prompt.
+                // (camera, location…) gets WebView2's normal prompt.
+                // 7.3: the microphone too, for Voice Studio — only for the app's own page. Allowing it does not open it:
+                // the page asks for the microphone only when you press Start in Voice Studio, and Windows still shows
+                // its own "microphone in use" indicator and applies its privacy settings.
                 .on_permission_request(move |wv, kind| {
                     use tauri::webview::{PermissionKind as K, PermissionResponse as P};
                     #[cfg(debug_assertions)]
                     eprintln!("[piano-logger] permission requested: {kind:?}");
                     let ours = wv.url().map(|u| u.host_str() == Some(perm_host.as_str())).unwrap_or(false);
                     match kind {
-                        K::Midi | K::Notifications | K::ClipboardRead | K::AutomaticDownloads | K::FileSystemAccess | K::Autoplay if ours => P::Allow,
+                        K::Midi | K::Notifications | K::ClipboardRead | K::AutomaticDownloads | K::FileSystemAccess | K::Autoplay | K::Microphone if ours => P::Allow,
                         _ => P::Default,
                     }
                 })

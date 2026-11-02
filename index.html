@@ -17352,7 +17352,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.2.2';
+      const APP_VERSION = '7.3.2';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -21665,6 +21665,1297 @@ html.noblur .gsel{-webkit-backdrop-filter:none;backdrop-filter:none;background:c
         }, true);
         window.addEventListener('blur', () => close(false));
       }
+
+      /* =====================================================================
+         7.3 — VOICE STUDIO: your microphone → (A) your own voice, or (B) a musical instrument
+         · a separate audio engine with its OWN AudioContext. It does not touch the logging database, the MIDI input
+           pipeline, the note engine, the built-in sounds or the MIDI out plug (one optional exception, off by default:
+           "Also play on a MIDI keyboard", which sends notes to a MIDI output port you choose)
+         · the microphone is opened only when you press Start, and closed by Stop / Emergency stop / the tray / closing
+         · pitch analysis runs on the audio thread (AudioWorklet), not on the page
+         · recordings live in their own database 'PianoLoggerVoiceStudio' — never in the piano log
+         · nothing is uploaded anywhere
+         ===================================================================== */
+      // ---- pitch detection (YIN, de Cheveigné & Kawahara 2002). Also copied into the audio-thread worklet below. ----
+      function vsYin(x, n, fs, minF, maxF, thr, d) {
+        const W = n >> 1, tMax = Math.min(W - 1, Math.floor(fs / minF)), tMin = Math.max(2, Math.floor(fs / maxF));
+        d[0] = 1; let run = 0;
+        for (let t = 1; t <= tMax; t++) {
+          let s = 0; for (let j = 0; j < W; j++) { const v = x[j] - x[j + t]; s += v * v; }
+          run += s; d[t] = run > 0 ? s * t / run : 1;
+        }
+        let tau = -1;
+        for (let t = tMin; t <= tMax; t++) { if (d[t] < thr) { while (t + 1 <= tMax && d[t + 1] < d[t]) t++; tau = t; break; } }
+        if (tau < 0) { let b = 1e9; for (let t = tMin; t <= tMax; t++) if (d[t] < b) { b = d[t]; tau = t; } }
+        if (tau < 1) return [0, 0];
+        // 7.3.2: octave check — if the dip at twice this period is much deeper, this was half a period (a frame that catches a
+        // note's first moments with a strong 2nd harmonic); take the real period
+        if (2 * tau <= tMax && d[tau] > 0.05) { let t2 = 2 * tau; if (t2 + 1 <= tMax && d[t2 + 1] < d[t2]) t2++; if (d[t2 - 1] < d[t2]) t2--; if (d[t2] < d[tau] * 0.5) tau = t2; }
+        let tf = tau;
+        if (tau > 1 && tau < tMax) { const a = d[tau - 1], b = d[tau], g = d[tau + 1], den = a + g - 2 * b; if (den > 0) { const sh = (a - g) / (2 * den); if (sh > -1 && sh < 1) tf = tau + sh; } }
+        return [fs / tf, 1 - Math.min(1, d[tau])];
+      }
+      // frame statistics shared by the worklet and the fallback: removes DC, returns [dBFS, zero-crossing rate, peak dBFS]
+      function vsStats(f, n) {
+        let m = 0; for (let i = 0; i < n; i++) m += f[i]; m /= n;
+        let e = 0, z = 0, pk = 0;
+        for (let i = 0; i < n; i++) { const v = f[i] - m; f[i] = v; e += v * v; const a = v < 0 ? -v : v; if (a > pk) pk = a; if (i && (v >= 0) !== (f[i - 1] >= 0)) z++; }
+        const r = Math.sqrt(e / n);
+        return [r > 1e-9 ? 20 * Math.log10(r) : -120, z / n, pk > 1e-9 ? 20 * Math.log10(pk) : -120];
+      }
+      const VS_WORKLET = vsYin.toString() + '\n' + vsStats.toString() + `
+class PLVoice extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.dec = Math.max(1, Math.round(sampleRate / 16000)); this.fs = sampleRate / this.dec;
+    this.N = 1024; this.ring = new Float32Array(this.N); this.w = 0; this.fill = 0; this.frame = new Float32Array(this.N); this.d = new Float32Array(this.N);
+    this.hop = 256; this.A = 1024; this.since = 0; this.l1 = 0; this.l2 = 0; this.acc = 0; this.ac = 0;
+    this.k = 1 - Math.exp(-2 * Math.PI * Math.min(5000, this.fs * 0.4) / sampleRate);
+    this.gOn = false; this.gThr = Math.pow(10, -50 / 20); this.env = 0; this.g = 1; this.open = true; this.hold = 0;
+    this.relK = Math.exp(-1 / (sampleRate * 0.03)); this.attG = 1 - Math.exp(-1 / (sampleRate * 0.002)); this.relG = 1 - Math.exp(-1 / (sampleRate * 0.08)); this.holdN = Math.round(sampleRate * 0.12);
+    this.minF = 65; this.maxF = 1100; this.live = true; this.gone = false;
+    this.port.onmessage = e => { const m = e.data || {}; if ('gate' in m) this.gOn = !!m.gate; if ('gateDb' in m) this.gThr = Math.pow(10, m.gateDb / 20); if ('minF' in m) this.minF = m.minF; if ('maxF' in m) this.maxF = m.maxF; if ('analyse' in m) this.live = !!m.analyse; if ('win' in m) this.A = Math.max(256, Math.min(this.N, m.win | 0)); if ('hop' in m) this.hop = Math.max(64, Math.min(512, m.hop | 0)); if (m.bye) this.gone = true; };
+  }
+  process(inputs, outputs) {
+    if (this.gone) return false;
+    const inp = inputs[0], out = outputs[0] && outputs[0][0], x = inp && inp[0];
+    if (!x) { if (out) out.fill(0); return true; }
+    const x2 = inp.length > 1 ? inp[1] : null;
+    for (let i = 0; i < x.length; i++) {
+      const s = x2 ? (x[i] + x2[i]) * 0.5 : x[i];
+      const a = s < 0 ? -s : s; this.env = a > this.env ? a : this.env * this.relK;
+      if (this.env > this.gThr) { this.open = true; this.hold = this.holdN; } else if (this.hold > 0) this.hold--; else if (this.env < this.gThr * 0.6) this.open = false;
+      const tg = !this.gOn || this.open ? 1 : 0.03; this.g += (tg - this.g) * (tg > this.g ? this.attG : this.relG);
+      if (out) out[i] = s * this.g;
+      this.l1 += (s - this.l1) * this.k; this.l2 += (this.l1 - this.l2) * this.k; this.acc += this.l2;
+      if (++this.ac >= this.dec) {
+        this.ring[this.w] = this.acc / this.dec; this.w = (this.w + 1) % this.N; this.acc = 0; this.ac = 0;
+        if (this.fill < this.N) this.fill++;
+        if (++this.since >= this.hop) { this.since = 0; if (this.live && this.fill >= this.A) this.analyse(); }
+      }
+    }
+    return true;
+  }
+  analyse() {
+    const A = this.A, N = this.N, f = this.frame, s0 = (this.w - A + N) % N;   // the newest A samples (7.3.2: A and the hop are set by the Response choice)
+    for (let i = 0; i < A; i++) f[i] = this.ring[(s0 + i) % N];
+    const st = vsStats(f, A); let fr = 0, c = 0;
+    if (st[0] > -78) { const r = vsYin(f, A, this.fs, this.minF, this.maxF, 0.15, this.d); fr = r[0]; c = r[1]; }
+    this.port.postMessage({ f: fr, c: c, db: st[0], zcr: st[1], pk: st[2], t: currentTime });
+  }
+}
+registerProcessor('pl-voice', PLVoice);`;
+
+      // ---- the 10 instruments: a synthesiser recipe each, plus the General MIDI sound used for samples / a MIDI keyboard ----
+      const vsH = (n, f) => Array.from({ length: n }, (_, i) => f(i + 1));
+      const VS_INST = [
+        { id: 'grand', name: 'Grand Piano', ico: '🎹', gm: 'acoustic_grand_piano', prog: 0, perc: 1, h: [1, .55, .32, .22, .14, .1, .07, .05, .035, .025], osc: [{ w: 'wave', g: .7 }, { w: 'wave', d: 4, g: .45 }], bright: 7, cut: 900, q: .6, dec: 3.2, a: 4, r: 350, lvl: 1 },
+        { id: 'epiano', name: 'Electric Piano', ico: '🎛️', gm: 'electric_piano_1', prog: 4, perc: 1, h: [1, .1, .3, .04, .12, 0, .05], osc: [{ w: 'wave', g: .75 }, { w: 'sine', d: 7, g: .35 }], bright: 5, cut: 600, q: .7, dec: 2.4, a: 5, r: 300, trem: [5, .12], lvl: 1.05 },
+        { id: 'violin', name: 'Violin', ico: '🎻', gm: 'violin', prog: 40, h: vsH(16, n => (n >= 3 && n <= 6 ? 1.4 : 1) / n), bright: 9, cut: 400, q: 1.1, vib: [5.6, 16], breath: .012, a: 90, r: 260, lvl: .95 },
+        { id: 'cello', name: 'Cello', ico: '🎻', gm: 'cello', prog: 42, h: vsH(14, n => (n <= 3 ? 1.2 : 1) / Math.pow(n, 1.1)), bright: 6, cut: 300, q: 1, vib: [5, 13], breath: .01, a: 120, r: 320, lvl: 1.05 },
+        { id: 'flute', name: 'Flute', ico: '🌬️', gm: 'flute', prog: 73, h: [1, .28, .1, .05, .02], bright: 8, cut: 500, q: .7, vib: [5, 9], breath: .05, a: 70, r: 180, lvl: 1.1 },
+        { id: 'clarinet', name: 'Clarinet', ico: '🎷', gm: 'clarinet', prog: 71, h: [1, .03, .65, .02, .42, .02, .26, .02, .13, .02, .06], bright: 7, cut: 400, q: .8, vib: [5, 4], breath: .015, a: 50, r: 150, lvl: 1 },
+        { id: 'trumpet', name: 'Trumpet', ico: '🎺', gm: 'trumpet', prog: 56, h: vsH(14, n => 1 / Math.pow(n, .62)), bright: 5, cut: 500, q: 1.3, blare: 1, vib: [5.5, 8], breath: .008, a: 45, r: 160, lvl: .8 },
+        { id: 'lead', name: 'Synth Lead', ico: '⚡', gm: 'lead_2_sawtooth', prog: 81, osc: [{ w: 'sawtooth', d: -7, g: .5 }, { w: 'square', d: 7, g: .32 }], bright: 10, cut: 300, q: 3, vib: [6, 6], a: 10, r: 120, lvl: .75 },
+        { id: 'pad', name: 'Synth Pad', ico: '🌌', gm: 'pad_2_warm', prog: 89, osc: [{ w: 'sawtooth', d: -12, g: .33 }, { w: 'sawtooth', g: .33 }, { w: 'sawtooth', d: 12, g: .33 }], bright: 3, cut: 600, q: .9, vib: [4.5, 4], a: 450, r: 1200, lvl: .8 },
+        { id: 'organ', name: 'Organ', ico: '⛪', gm: 'drawbar_organ', prog: 16, h: [1, 1, .7, .55, 0, .45, 0, .35, 0, 0, 0, .2], bright: 14, cut: 0, q: .5, trem: [6.4, .14], a: 15, r: 80, lvl: .8 }
+      ];
+      const VS_I = Object.fromEntries(VS_INST.map(i => [i.id, i]));
+
+      // ---- saved settings (localStorage 'pll.voice'; nothing else) ----
+      // 7.3.2: how quickly voice → instrument reacts. win/hop = analysis window/step at 16 kHz (640 = 40 ms, 128 = 8 ms);
+      // onsetF = matching frames before a new note sounds; hang = ms of no voice before the note stops [singing, speaking];
+      // stable/smooth = the slider values the preset puts in place; retrig = a new syllable strikes the note again
+      const VS_RESP = {
+        fast: { win: 640, hop: 128, onsetF: 3, hang: [40, 35], stable: 30, smooth: 15, retrig: true },
+        balanced: { win: 1024, hop: 256, onsetF: 2, hang: [70, 60], stable: 50, smooth: 35, retrig: true },
+        steady: { win: 1024, hop: 256, onsetF: 3, hang: [110, 90], stable: 90, smooth: 55, retrig: false }
+      };
+      const vsResp = () => VS_RESP[VSS.resp] || VS_RESP.fast;
+      const VS_LAT = [['interactive', 'Smallest (lowest delay)'], ['0.01', '10 ms'], ['0.02', '20 ms'], ['0.04', '40 ms'], ['balanced', 'Balanced'], ['playback', 'Largest (most stable)']];
+      const VS_DEF = () => ({
+        v: 1, mode: 'pass', inId: 'default', outId: 'default', lat: 'interactive', inGain: 1, outVol: 0.5, ec: false, nr: 'gate', gateDb: -52,
+        fx: { pass: { rev: 0.12, size: 0.4, echo: 0, echoMs: 260, echoFb: 0.3, bypass: false }, inst: { rev: 0.25, size: 0.6, echo: 0, echoMs: 320, echoFb: 0.3, bypass: false } },
+        inst: 'violin', engine: 'synth', ip: {}, style: 'sing', sensSing: 70, sensSpeak: 40, smooth: 15, stable: 30, conf: 80, noiseDb: -48, resp: 'fast',
+        sustain: 50, octave: 0, transpose: 0, snap: 'note', dyn: true, monLvl: 0, monDelay: 0,
+        midi: { on: false, port: '', ch: 1, prog: true }, route: {}, recSrc: 'out', strict: true
+      });
+      const VSS = (() => {
+        const d = VS_DEF(), s = LS.get('pll.voice', null);
+        if (!s || typeof s !== 'object') return d;
+        const n = (v, a, b, def) => Number.isFinite(+v) ? clamp(+v, a, b) : def, o = Object.assign(d, {});
+        o.mode = s.mode === 'inst' ? 'inst' : 'pass';
+        ['inId', 'outId'].forEach(k => { if (typeof s[k] === 'string' && s[k].length < 300) o[k] = s[k]; });
+        if (VS_LAT.some(x => x[0] === s.lat)) o.lat = s.lat;
+        o.inGain = n(s.inGain, 0, 4, 1); o.outVol = n(s.outVol, 0, 1, .5); o.ec = !!s.ec; o.nr = ['off', 'gate', 'strong'].includes(s.nr) ? s.nr : 'gate'; o.gateDb = n(s.gateDb, -80, -20, -52);
+        ['pass', 'inst'].forEach(m => { const f = s.fx && s.fx[m]; if (f) Object.assign(o.fx[m], { rev: n(f.rev, 0, 1, o.fx[m].rev), size: n(f.size, 0, 1, o.fx[m].size), echo: n(f.echo, 0, 1, 0), echoMs: n(f.echoMs, 20, 1500, o.fx[m].echoMs), echoFb: n(f.echoFb, 0, .85, .3), bypass: !!f.bypass }); });
+        if (VS_I[s.inst]) o.inst = s.inst; o.engine = s.engine === 'sample' ? 'sample' : 'synth';
+        if (s.ip && typeof s.ip === 'object') VS_INST.forEach(i => { const p = s.ip[i.id]; if (p && typeof p === 'object') o.ip[i.id] = { vol: n(p.vol, 0, 1.5, 1), a: n(p.a, 1, 2000, i.a), r: n(p.r, 20, 4000, i.r) }; });
+        o.style = s.style === 'speak' ? 'speak' : 'sing';
+        o.sensSing = n(s.sensSing, 0, 100, 70); o.sensSpeak = n(s.sensSpeak, 0, 100, 40); o.smooth = n(s.smooth, 0, 100, 40); o.stable = n(s.stable, 0, 400, 60); o.conf = n(s.conf, 50, 98, 80); o.noiseDb = n(s.noiseDb, -80, -10, -48);
+        o.sustain = n(s.sustain, 0, 100, 50); o.octave = Math.round(n(s.octave, -3, 3, 0)); o.transpose = Math.round(n(s.transpose, -12, 12, 0)); o.snap = s.snap === 'cont' ? 'cont' : 'note'; o.dyn = s.dyn !== false;
+        o.monLvl = n(s.monLvl, 0, 1, 0); o.monDelay = n(s.monDelay, 0, 500, 0);
+        if (s.midi && typeof s.midi === 'object') o.midi = { on: !!s.midi.on, port: typeof s.midi.port === 'string' ? s.midi.port.slice(0, 200) : '', ch: Math.round(n(s.midi.ch, 1, 16, 1)), prog: s.midi.prog !== false };
+        if (s.route && typeof s.route === 'object') Object.entries(s.route).slice(0, 50).forEach(([k, v]) => { if (['st50', 'pc'].includes(v)) o.route[k] = v; });
+        o.recSrc = s.recSrc === 'mic' ? 'mic' : 'out'; o.strict = s.strict !== false;
+        // 7.3.2: Response. Settings saved by 7.3 / 7.3.1 have none: they get Fast, and the two sliders move to Fast's values
+        // only if they were still at the old defaults (a value someone set by hand is kept)
+        if (VS_RESP[s.resp]) o.resp = s.resp;
+        else { o.resp = 'fast'; if (+s.stable === 60) o.stable = VS_RESP.fast.stable; if (+s.smooth === 40) o.smooth = VS_RESP.fast.smooth; }
+        return o;
+      })();
+      let vsSaveT = 0;
+      VS_INST.forEach(i => { if (!VSS.ip[i.id]) VSS.ip[i.id] = { vol: 1, a: i.a, r: i.r }; });
+      const vsSave = () => { clearTimeout(vsSaveT); vsSaveT = setTimeout(() => LS.set('pll.voice', VSS), 250); };
+      const vsIP = id => { const I = VS_I[id]; return VSS.ip[id] || (VSS.ip[id] = { vol: 1, a: I.a, r: I.r }); };
+      const vsHz = m => 440 * Math.pow(2, (m - 69) / 12);
+      const vsDb = g => g > 1e-5 ? (20 * Math.log10(g)).toFixed(1) : '−∞';
+
+      // ---- engine state ----
+      const VS = { ctx: null, N: null, stream: null, running: false, starting: false, preview: false, wl: false, err: '', micMute: false, outMute: false, fb: null,
+        voices: [], cur: null, note: null, cont: null, tr: { hist: [], sm: 0, voiced: false, last: 0, cand: null, candT: 0, onT: 0 }, last: null, trail: [], banks: new Map(), clipIn: 0, clipOut: 0, howl: { bin: -1, n: 0 }, hot: 0, inClipN: 0,
+        gen: 0, rec: null, play: null, devs: { ins: [], outs: [], labels: false, at: 0 }, safety: 0, fbTimer: 0, prevT: 0, midiOn: new Set(), progSent: false, pend: null, recT: 0 };
+      const VS_APP = !!window.pianoApp, VS_ST = /\bst[\s-]?50\b|elektro\s?fm|surtaal/i;
+      let VS_APPVER = '';
+      if (VS_APP && window.pianoApp.info) window.pianoApp.info().then(i => { VS_APPVER = String((i && (i.appVersion || i.app_version)) || ''); }).catch(() => { });
+      const vsOldApp = () => VS_APP && (window.pianoApp.runtime !== 'tauri' || (VS_APPVER && vsVerLt(VS_APPVER, '7.3.0')));
+      const vsVerLt = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0); } return false; };
+
+      // ---- devices ----
+      async function vsDevices() {
+        const md = navigator.mediaDevices;
+        if (!md || !md.enumerateDevices) { VS.devs = { ins: [], outs: [], labels: false, at: Date.now(), none: true }; return VS.devs; }
+        try {
+          const all = await md.enumerateDevices();
+          VS.devs = { ins: all.filter(d => d.kind === 'audioinput'), outs: all.filter(d => d.kind === 'audiooutput'), labels: all.some(d => d.kind.startsWith('audio') && d.label), at: Date.now() };
+        } catch (e) { VS.devs = { ins: [], outs: [], labels: false, at: Date.now(), none: true }; }
+        return VS.devs;
+      }
+      const vsCanSink = () => typeof (window.AudioContext && AudioContext.prototype.setSinkId) === 'function';
+      const vsOutDev = () => VS.devs.outs.find(d => d.deviceId === VSS.outId);
+      const vsOutName = () => VSS.outId === 'default' ? 'Windows default output' + (VS.devs.outs[0] && VS.devs.outs[0].label ? ' (' + VS.devs.outs[0].label.replace(/^Default - /, '') + ')' : '') : (vsOutDev() ? vsOutDev().label || 'Selected output' : 'Selected output (not found)');
+      const vsInName = () => VSS.inId === 'default' ? 'Windows default microphone' : ((VS.devs.ins.find(d => d.deviceId === VSS.inId) || {}).label || 'Selected microphone');
+      const vsMidiOuts = () => typeof midiAccess !== 'undefined' && midiAccess ? [...midiAccess.outputs.values()].filter(o => o.state === 'connected') : [];
+      const vsMidiIns = () => typeof midiAccess !== 'undefined' && midiAccess ? [...midiAccess.inputs.values()] : [];
+      // where does the chosen output go?  → [state, short text, long explanation]
+      function vsRoute() {
+        const d = vsOutDev(), lab = VSS.outId === 'default' ? ((VS.devs.outs[0] || {}).label || '') : (d ? d.label : '');
+        if (VSS.outId !== 'default' && VS.devs.at && !d && VS.devs.outs.length) return ['bad', 'Output not found', 'The output you chose is not connected right now. Plug it in, or choose another output under Devices & routing.'];
+        if (lab && VS_ST.test(lab)) return ['ok', 'ST50 USB audio', 'This output is an audio device on the ST50 itself, so the sound plays through the keyboard’s speakers.'];
+        const r = VSS.route[VSS.outId];
+        if (r === 'st50') return ['ok', 'To the ST50 by cable (confirmed by you)', 'You confirmed that “' + vsOutName() + '” is connected with a cable to the ST50’s audio input. Piano Logger cannot check a cable electronically; if you hear nothing from the ST50, check the cable and the keyboard’s volume.'];
+        if (r === 'pc') return ['pc', 'This PC’s output (not the ST50)', 'You chose to use “' + vsOutName() + '” without the ST50. The sound plays wherever that output goes (PC speakers or headphones).'];
+        return ['wait', 'ST50 not reached yet', 'The ST50 is connected to the PC by USB as a MIDI keyboard only — USB MIDI carries notes, not sound, so the keyboard cannot play PC audio over that cable. To hear the PC through the ST50’s speakers, connect this output (e.g. the PC’s green headphone/line-out jack) to the ST50’s audio input (AUX IN / line in, if your model has one) with a 3.5 mm stereo cable, then confirm below.'];
+      }
+
+      // ---- the audio graph ----
+      function vsIR(ctx, size) {
+        const sec = 0.4 + size * 3.2, len = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(2, len, ctx.sampleRate);
+        for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); let lp = 0; for (let i = 0; i < len; i++) { const t = i / len; lp += ((Math.random() * 2 - 1) - lp) * (0.9 - t * 0.6); d[i] = lp * Math.pow(1 - t, 2.2 + (1 - size) * 2) * (i < 64 ? i / 64 : 1); } }
+        return b;
+      }
+      function vsBuildOut(ctx) {
+        const N = {}, g = v => { const x = ctx.createGain(); x.gain.value = v; return x; };
+        N.inst = g(1); N.instFade = g(1); N.inst.connect(N.instFade);
+        N.fx = g(1); N.instFade.connect(N.fx); N.prev = g(1); N.prev.connect(N.fx);
+        N.dry = g(1); N.fx.connect(N.dry);
+        N.echo = ctx.createDelay(2); N.echoFb = g(0); N.echoLp = ctx.createBiquadFilter(); N.echoLp.type = 'lowpass'; N.echoLp.frequency.value = 4200; N.echoWet = g(0);
+        N.echo.connect(N.echoLp); N.echoLp.connect(N.echoFb); N.echoFb.connect(N.echo); N.echoLp.connect(N.echoWet);
+        N.rev = ctx.createConvolver(); N.revWet = g(0); N.rev.connect(N.revWet); N.revSize = -1;
+        N.master = g(0); N.dry.connect(N.master); N.echoWet.connect(N.master); N.revWet.connect(N.master);
+        N.outAn = ctx.createAnalyser(); N.outAn.fftSize = 1024; N.master.connect(N.outAn);           // before the limiter: clipping detector
+        N.lim = ctx.createDynamicsCompressor(); N.lim.threshold.value = -6; N.lim.knee.value = 0; N.lim.ratio.value = 20; N.lim.attack.value = 0.001; N.lim.release.value = 0.12;
+        N.master.connect(N.lim);
+        N.outMute = g(VS.outMute ? 0 : 1); N.lim.connect(N.outMute);
+        N.safe = g(0.9); N.outMute.connect(N.safe);                                                      // fixed safety ceiling
+        N.meter = ctx.createAnalyser(); N.meter.fftSize = 1024; N.safe.connect(N.meter);
+        N.safe.connect(ctx.destination);
+        const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), nd = nb.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1; N.noise = nb;
+        N.waves = {};
+        return N;
+      }
+      function vsBuildIn(ctx, N, stream, wl) {
+        const g = v => { const x = ctx.createGain(); x.gain.value = v; return x; };
+        N.src = ctx.createMediaStreamSource(stream);
+        N.inGain = g(VSS.inGain); N.src.connect(N.inGain);
+        N.inAn = ctx.createAnalyser(); N.inAn.fftSize = wl ? 2048 : 4096; N.inAn.smoothingTimeConstant = 0; N.inGain.connect(N.inAn);
+        if (wl) { N.proc = new AudioWorkletNode(ctx, 'pl-voice', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] }); N.proc.port.onmessage = e => vsFrame(e.data); }
+        else N.proc = g(1);
+        N.inGain.connect(N.proc);
+        N.micMute = g(VS.micMute ? 0 : 1); N.proc.connect(N.micMute);
+        N.passSend = g(0); N.micMute.connect(N.passSend); N.passSend.connect(N.fx);
+        N.monSend = g(0); N.monDelay = ctx.createDelay(1); N.micMute.connect(N.monSend); N.monSend.connect(N.monDelay); N.monDelay.connect(N.fx);
+        N.rec = ctx.createMediaStreamDestination();
+      }
+      const vsT = () => VS.ctx ? VS.ctx.currentTime : 0;
+      const vsSet = (p, v, tc = 0.03) => { if (!p) return; try { p.setTargetAtTime(v, vsT(), tc); } catch (e) { p.value = v; } };
+      function vsApply() {
+        const N = VS.N; if (!N || !VS.ctx) return;
+        const F = VSS.fx[VSS.mode], live = VS.running && !VS.preview, inst = VSS.mode === 'inst' || VS.preview;
+        vsSet(N.master.gain, VSS.outVol);
+        vsSet(N.outMute.gain, VS.outMute ? 0 : 1, 0.01);
+        if (N.inGain) vsSet(N.inGain.gain, VSS.inGain);
+        if (N.micMute) vsSet(N.micMute.gain, VS.micMute ? 0 : 1, 0.01);
+        if (N.passSend) vsSet(N.passSend.gain, live && VSS.mode === 'pass' ? 1 : 0, 0.02);
+        if (N.monSend) { vsSet(N.monSend.gain, live && VSS.mode === 'inst' ? VSS.monLvl : 0, 0.02); vsSet(N.monDelay.delayTime, VSS.monDelay / 1000, 0.05); }
+        vsSet(N.inst.gain, inst ? VS_I[VSS.inst].lvl * vsIP(VSS.inst).vol : 0, 0.03);
+        // effects (disconnected when off, to save processor time)
+        const echo = F.bypass ? 0 : F.echo, rev = F.bypass ? 0 : F.rev;
+        vsSet(N.echo.delayTime, F.echoMs / 1000, 0.05); vsSet(N.echoFb.gain, Math.min(0.85, F.echoFb)); vsSet(N.echoWet.gain, echo * 0.8);
+        if (echo > 0 && !N.echoOn) { N.fx.connect(N.echo); N.echoOn = true; } else if (!echo && N.echoOn) { setTimeout(() => { if (VS.N === N && !(VSS.fx[VSS.mode].echo > 0 && !VSS.fx[VSS.mode].bypass)) { try { N.fx.disconnect(N.echo); } catch (e) { } N.echoOn = false; } }, (F.echoMs * 6) + 300); }
+        if (rev > 0) { if (Math.abs(N.revSize - F.size) > 0.02) { N.rev.buffer = vsIR(VS.ctx, F.size); N.revSize = F.size; } if (!N.revOn) { N.fx.connect(N.rev); N.revOn = true; } }
+        else if (N.revOn) { const n0 = N; setTimeout(() => { if (VS.N === n0 && !(VSS.fx[VSS.mode].rev > 0 && !VSS.fx[VSS.mode].bypass)) { try { n0.fx.disconnect(n0.rev); } catch (e) { } n0.revOn = false; } }, 4000); }
+        vsSet(N.revWet.gain, rev * 0.9); vsSet(N.dry.gain, 1 - rev * 0.35);
+        if (N.proc && N.proc.port) N.proc.port.postMessage({ gate: (VSS.nr !== 'off') && !F.bypass, gateDb: VSS.gateDb, minF: VSS.style === 'speak' ? 70 : 65, maxF: VSS.style === 'speak' ? 600 : 1100, analyse: true, win: vsResp().win, hop: vsResp().hop });
+      }
+
+      // ---- instrument voices (synthesiser or General MIDI samples) ----
+      function vsWave(I) {
+        const N = VS.N; if (N.waves[I.id]) return N.waves[I.id];
+        const h = I.h || [1], re = new Float32Array(h.length + 1), im = new Float32Array(h.length + 1);
+        h.forEach((v, i) => { im[i + 1] = v; });
+        return (N.waves[I.id] = VS.ctx.createPeriodicWave(re, im));
+      }
+      const vsSus = () => VSS.sustain / 100;
+      function vsSynthVoice(I, hz, vel, out) {
+        const ctx = VS.ctx, N = VS.N, t = ctx.currentTime, P = vsIP(I.id), att = P.a / 1000, nodes = [];
+        const env = ctx.createGain(); env.gain.value = 0;
+        const filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = I.q || 0.7;
+        const cutOf = (h, v) => Math.min(16000, h * I.bright * (0.55 + 0.45 * v) + (I.cut || 0));
+        filt.frequency.value = cutOf(hz, vel);
+        const oscs = (I.osc || [{ w: 'wave', g: 1 }]).map(o => {
+          const s = ctx.createOscillator(); if (o.w === 'wave') s.setPeriodicWave(vsWave(I)); else s.type = o.w;
+          s.frequency.value = hz; s.detune.value = o.d || 0; const gg = ctx.createGain(); gg.gain.value = o.g; s.connect(gg); gg.connect(filt); nodes.push(gg); return s;
+        });
+        let lfo = null;
+        if (I.vib) {
+          lfo = ctx.createOscillator(); lfo.frequency.value = I.vib[0]; const lg = ctx.createGain(); lg.gain.value = 0; lg.gain.setTargetAtTime(I.vib[1], t + 0.25, 0.3);
+          lfo.connect(lg); oscs.forEach(o => lg.connect(o.detune)); lfo.start(t); nodes.push(lg);
+        }
+        let trem = null, tg = null;
+        const amp = ctx.createGain(); amp.gain.value = 1; filt.connect(amp); amp.connect(env);
+        if (I.trem) { trem = ctx.createOscillator(); trem.frequency.value = I.trem[0]; tg = ctx.createGain(); tg.gain.value = I.trem[1]; trem.connect(tg); tg.connect(amp.gain); amp.gain.value = 1 - I.trem[1]; trem.start(t); }
+        let ns = null, bp = null, ng = null;
+        if (I.breath) {
+          ns = ctx.createBufferSource(); ns.buffer = N.noise; ns.loop = true; bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = Math.min(9000, hz * 3); bp.Q.value = 1.2;
+          ng = ctx.createGain(); ng.gain.value = I.breath * 6; ns.connect(bp); bp.connect(ng); ng.connect(env); ns.start(t);
+        }
+        env.connect(out || N.inst);
+        const peak = 0.32 * (0.25 + 0.75 * vel);
+        oscs.forEach(o => o.start(t));
+        if (I.perc) {
+          const dec = I.dec * (0.35 + vsSus() * 1.8);
+          env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(peak, t + Math.max(0.002, att)); env.gain.setTargetAtTime(0, t + att, dec / 5);
+          filt.frequency.setValueAtTime(cutOf(hz, vel) * 2.2, t); filt.frequency.setTargetAtTime(cutOf(hz, vel) * 0.6, t + att, dec / 4);
+        } else {
+          env.gain.setValueAtTime(0, t); env.gain.setTargetAtTime(peak, t, Math.max(0.003, att / 3));
+          if (I.blare) { filt.frequency.setValueAtTime(cutOf(hz, vel) * 0.4, t); filt.frequency.setTargetAtTime(cutOf(hz, vel), t, 0.04); }
+        }
+        const v = {
+          I, hz, born: t, dead: false,
+          setFreq(h, glide) { if (v.dead) return; const n = ctx.currentTime; v.hz = h; oscs.forEach(o => o.frequency.setTargetAtTime(h, n, glide)); filt.frequency.setTargetAtTime(cutOf(h, vel), n, glide + 0.02); if (bp) bp.frequency.setTargetAtTime(Math.min(9000, h * 3), n, glide); },
+          setVel(x) { if (v.dead || I.perc) return; vel = x; env.gain.setTargetAtTime(0.32 * (0.25 + 0.75 * x), ctx.currentTime, 0.05); },
+          stop(rel) {
+            if (v.dead) return; v.dead = true; const n = ctx.currentTime, r = Math.max(0.02, rel);
+            env.gain.cancelScheduledValues(n); env.gain.setValueAtTime(env.gain.value, n); env.gain.setTargetAtTime(0, n, r / 4);
+            const end = n + r + 0.15; oscs.forEach(o => o.stop(end)); if (lfo) lfo.stop(end); if (trem) trem.stop(end); if (ns) ns.stop(end);
+            oscs[0].onended = () => { try { env.disconnect(); filt.disconnect(); amp.disconnect(); nodes.forEach(x => x.disconnect()); if (tg) tg.disconnect(); if (ng) ng.disconnect(); if (bp) bp.disconnect(); } catch (e) { } };
+          }
+        };
+        if (I.perc) { const life = I.dec * (0.35 + vsSus() * 1.8) * 1.6 + 0.3; v.auto = setTimeout(() => { v.stop(0.05); VS.voices = VS.voices.filter(x => x !== v); }, life * 1000); }
+        return v;
+      }
+      // General MIDI samples (the same free sound files the Sound library uses), decoded into the Voice Studio's own engine
+      const VS_PC = { C: 0, Db: 1, D: 2, Eb: 3, E: 4, F: 5, Gb: 6, G: 7, Ab: 8, A: 9, Bb: 10, B: 11 };
+      function vsBank(I) {
+        let b = VS.banks.get(I.gm);
+        if (b && b.state !== 'failed') { if (b.state === 'ready' && b.ctx !== VS.ctx) vsBankDecode(b); return b; }
+        b = { state: 'loading', notes: new Map(), bufs: new Map(), ctx: null }; VS.banks.set(I.gm, b);
+        (async () => {
+          try {
+            const r = await fetch('https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/' + I.gm + '-mp3.js'); if (!r.ok) throw new Error('HTTP ' + r.status);
+            const txt = await r.text(), re = /"([A-G]b?)(-?\d)"\s*:\s*"data:audio\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)"/g; let m;
+            while ((m = re.exec(txt))) { const midi = 12 * (+m[2] + 1) + VS_PC[m[1]]; if (midi >= 0 && midi < 128) b.notes.set(midi, m[3]); }
+            if (!b.notes.size) throw new Error('no notes');
+            b.state = 'ready'; await vsBankDecode(b); vsUiSoon();
+          } catch (e) { b.state = 'failed'; vsMsg('Could not download the ' + I.name + ' samples (offline?). The synthesiser plays instead.', 'bad'); vsUiSoon(); }
+        })();
+        return b;
+      }
+      async function vsBankDecode(b) {
+        const ctx = VS.ctx; if (!ctx || b.ctx === ctx) return; b.ctx = ctx; b.bufs = new Map();
+        const keys = [...b.notes.keys()].filter(k => k % 3 === 0 && k >= 33 && k <= 96);
+        for (const k of keys) {
+          if (VS.ctx !== ctx) return;
+          try { const bin = atob(b.notes.get(k)), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); b.bufs.set(k, await ctx.decodeAudioData(u.buffer)); } catch (e) { }
+        }
+      }
+      function vsSampleVoice(I, hz, vel, b, out) {
+        const ctx = VS.ctx, t = ctx.currentTime, P = vsIP(I.id), att = P.a / 1000, m = 69 + 12 * Math.log2(hz / 440);
+        let best = null, bd = 1e9; b.bufs.forEach((buf, k) => { const d = Math.abs(k - m); if (d < bd) { bd = d; best = k; } });
+        if (best == null) return null;
+        const buf = b.bufs.get(best), base = vsHz(best), src = ctx.createBufferSource(); src.buffer = buf; src.playbackRate.value = hz / base;
+        if (!I.perc && buf.duration > 1) { src.loop = true; src.loopStart = buf.duration * 0.35; src.loopEnd = buf.duration * 0.8; }
+        const env = ctx.createGain(), peak = 0.9 * (0.25 + 0.75 * vel); env.gain.value = 0; src.connect(env); env.connect(out || VS.N.inst);
+        env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(peak, t + Math.max(0.003, I.perc ? 0.003 : att));
+        if (I.perc) env.gain.setTargetAtTime(0, t + 0.05, I.dec * (0.35 + vsSus() * 1.8) / 4);
+        src.start(t);
+        const v = {
+          I, hz, born: t, dead: false,
+          setFreq(h, glide) { if (v.dead) return; v.hz = h; src.playbackRate.setTargetAtTime(h / base, ctx.currentTime, glide); },
+          setVel(x) { if (v.dead || I.perc) return; env.gain.setTargetAtTime(0.9 * (0.25 + 0.75 * x), ctx.currentTime, 0.05); },
+          stop(rel) { if (v.dead) return; v.dead = true; const n = ctx.currentTime; env.gain.cancelScheduledValues(n); env.gain.setValueAtTime(env.gain.value, n); env.gain.setTargetAtTime(0, n, Math.max(0.02, rel) / 4); src.stop(n + rel + 0.15); src.onended = () => { try { env.disconnect(); } catch (e) { } }; }
+        };
+        if (I.perc) { const life = Math.min(buf.duration, I.dec * (0.35 + vsSus() * 1.8) * 1.6) + 0.3; v.auto = setTimeout(() => { v.stop(0.05); VS.voices = VS.voices.filter(x => x !== v); }, life * 1000); }
+        return v;
+      }
+      function vsMake(I, hz, vel, out) {
+        let v = null;
+        if (VSS.engine === 'sample') { const b = vsBank(I); if (b.state === 'ready' && b.ctx === VS.ctx && b.bufs.size) v = vsSampleVoice(I, hz, vel, b, out); }
+        if (v) v.kind = 'sample'; else { v = vsSynthVoice(I, hz, vel, out); v.kind = 'synth'; }
+        return v;
+      }
+      function vsVoice(I, hz, vel) {
+        const v = vsMake(I, hz, vel);
+        VS.voices.push(v);
+        while (VS.voices.length > 8) { const o = VS.voices.shift(); clearTimeout(o.auto); o.stop(0.05); }
+        return v;
+      }
+      const vsRel = I => vsIP(I.id).r / 1000 + (I.perc ? 0 : vsSus() * 0.6);
+      function vsAllOff(fast) {
+        VS.voices.forEach(v => { clearTimeout(v.auto); v.stop(fast ? 0.03 : vsRel(v.I)); }); VS.voices = []; VS.cur = null; VS.note = null; VS.cont = null;
+        vsMidiAllOff();
+      }
+
+      // ---- optional: also play the notes on a MIDI keyboard (e.g. the ST50's own sounds over the USB cable) ----
+      const VS_ECHO = new Map();
+      const vsMidiPort = () => VSS.midi.on && VSS.mode === 'inst' ? vsMidiOuts().find(o => o.id === VSS.midi.port) || null : null;
+      function vsMidiSend(bytes) {
+        const p = vsMidiPort(); if (!p) return;
+        try { p.send(bytes); } catch (e) { return; }
+        if ((bytes[0] & 0xF0) === 0x90 || (bytes[0] & 0xF0) === 0x80) VS_ECHO.set((bytes[0] & 15) + '|' + bytes[1], performance.now());
+      }
+      function vsMidiNote(n, vel) {
+        const ch = VSS.midi.ch - 1, p = vsMidiPort(); if (!p) return;
+        if (VSS.midi.prog && !VS.progSent) { vsMidiSend([0xC0 + ch, VS_I[VSS.inst].prog]); VS.progSent = true; }
+        VS.midiOn.forEach(x => vsMidiSend([0x80 + ch, x, 0])); VS.midiOn.clear();
+        if (n != null && n >= 0 && n <= 127) { vsMidiSend([0x90 + ch, n, clamp(Math.round(30 + vel * 97), 1, 127)]); VS.midiOn.add(n); }
+      }
+      function vsMidiAllOff() {
+        const ch = (VSS.midi.ch || 1) - 1, ports = vsMidiOuts().filter(o => o.id === VSS.midi.port); if (!ports.length) { VS.midiOn.clear(); return; }
+        VS.midiOn.forEach(x => { try { ports[0].send([0x80 + ch, x, 0]); } catch (e) { } VS_ECHO.set(ch + '|' + x, performance.now()); }); VS.midiOn.clear();
+        if (VSS.midi.on) { try { ports[0].send([0xB0 + ch, 123, 0]); } catch (e) { } }
+      }
+      // notes we just sent come back from some keyboards ("MIDI thru"); they must never be logged as piano presses
+      {
+        const _onMidi73 = onMidi;
+        onMidi = function (e, input) {
+          if (VS_ECHO.size) {
+            const d = e && e.data, now = performance.now();
+            if (d && d.length >= 2 && ((d[0] & 0xF0) === 0x90 || (d[0] & 0xF0) === 0x80)) {
+              const t = VS_ECHO.get((d[0] & 15) + '|' + d[1]);
+              if (t && now - t < 80) { const p = vsMidiOuts().find(o => o.id === VSS.midi.port); if (p && input && input.name === p.name) return; }
+            }
+            if (VS_ECHO.size > 32) VS_ECHO.forEach((t, k) => { if (now - t > 1000) VS_ECHO.delete(k); });
+          }
+          return _onMidi73.apply(this, arguments);
+        };
+      }
+
+      // ---- pitch tracking → notes ----
+      const vsMed = a => { const s = a.slice().sort((x, y) => x - y); return s[s.length >> 1]; };
+      function vsFrame(d) {
+        if (!VS.running || !d) return;
+        const now = (d.t || 0) * 1000, T = VS.tr, sing = VSS.style === 'sing', R = vsResp();
+        const confMin = clamp(VSS.conf / 100 + (sing ? 0 : 0.04), 0.5, 0.99);
+        const voiced = d.f > 0 && d.db > VSS.noiseDb && d.c >= confMin && d.zcr < (sing ? 0.25 : 0.2) && !VS.micMute;
+        VS.last = { f: d.f, c: d.c, db: d.db, zcr: d.zcr, pk: d.pk, voiced, t: now };
+        // 7.3.2: a new syllable = the loudness dips at least 9 dB below its recent peak, then rises 7 dB again —
+        // so "la-la-la" on one pitch is three notes, and fast singing keeps its rhythm
+        const dt = T.lastT ? Math.max(0, now - T.lastT) : 0; T.lastT = now;
+        if (d.db > VSS.noiseDb - 6) {
+          T.pk = T.pk == null ? d.db : Math.max(d.db, T.pk - 0.06 * dt);
+          if (d.db < T.pk - 9) T.dip = T.dip == null ? d.db : Math.min(T.dip, d.db);
+          else if (T.dip != null && d.db > T.dip + 7) { T.dip = null; T.pk = d.db; T.syl = now; }
+        } else { T.dip = T.dip == null ? d.db : Math.min(T.dip, d.db); T.pk = null; }
+        let m = null;
+        if (voiced) {
+          const raw = 69 + 12 * Math.log2(d.f / 440);
+          // a sudden octave jump for one frame is usually a detection error: wait for it to repeat
+          if (T.voiced && T.md != null && Math.abs(Math.abs(raw - T.md) - 12) < 0.6 && T.oct !== Math.round(raw)) { T.oct = Math.round(raw); m = T.md; }
+          else {
+            T.oct = null;
+            T.hist.push(raw); const k = 1 + 2 * Math.round(VSS.smooth / 100 * 3); while (T.hist.length > k) T.hist.shift();
+            const md = vsMed(T.hist), a = 1 - VSS.smooth / 100 * 0.85;
+            T.md = md; T.sm = T.voiced ? T.sm + (md - T.sm) * a : md; m = md;     // notes use the median (fast); the glide uses the smoothed value
+          }
+          if (!T.voiced) { T.onT = now; T.vf = 0; }
+          T.vf = (T.vf || 0) + 1; T.voiced = true; T.last = now;
+        } else if (T.voiced && now - T.last > R.hang[sing ? 0 : 1]) { T.voiced = false; T.hist.length = 0; T.cand = null; T.vf = 0; T.md = null; }
+        VS.trail.push([now, voiced ? m : null, VS.note != null ? VS.note + VSS.octave * 12 + VSS.transpose : (VS.cont != null ? VS.cont : null), d.c]);
+        while (VS.trail.length && now - VS.trail[0][0] > 6000) VS.trail.shift();
+        if (VSS.mode !== 'inst') { if (VS.cur || VS.voices.length) vsAllOff(false); return; }
+        if (T.voiced && m != null) vsPlay(m, d.db, now);
+        else if (!T.voiced && (VS.cur || VS.note != null || VS.midiOn.size)) vsRelease(now);
+      }
+      function vsPlay(m, db, now) {
+        const I = VS_I[VSS.inst], sing = VSS.style === 'sing', sens = (sing ? VSS.sensSing : VSS.sensSpeak) / 100, R = vsResp();
+        const stable = VSS.stable * (sing ? 1 : 1.4), shift = VSS.octave * 12 + VSS.transpose, T = VS.tr;
+        const vel = VSS.dyn ? clamp((db - VSS.noiseDb) / 36, 0.12, 1) : 0.8;
+        const glide = 0.005 + VSS.smooth / 100 * 0.06;
+        const fresh = T.syl && now - T.syl < 80;                                     // just after a new syllable
+        if (VSS.snap === 'note' || I.perc) {
+          const n = Math.round(m);
+          if (VS.note == null) {                                                       // first note: as soon as two frames agree
+            if (T.cand !== n) { T.cand = n; T.candN = 0; T.candT = now; }
+            if (++T.candN >= R.onsetF) { vsNoteOn(I, n, shift, vel); T.cand = null; T.syl = 0; }
+            return;
+          }
+          const hyst = (1 - sens) * 0.45;
+          if (Math.abs(m - VS.note) <= 0.5 + hyst) {
+            T.cand = null;
+            if (R.retrig && fresh) { T.syl = 0; vsNoteOn(I, VS.note, shift, vel); return; }   // same pitch, new syllable: strike again
+            if (VS.cur) VS.cur.setVel(vel); return;
+          }
+          if (T.cand !== n) { T.cand = n; T.candN = 0; T.candT = now; }
+          T.candN++;
+          const need = stable * (Math.abs(n - VS.note) >= 11 ? 2 : 1);
+          if (now - T.candT >= need || (fresh && T.candN >= R.onsetF)) {          // a new syllable on a new pitch does not wait for the stability time
+            T.cand = null; const art = fresh; T.syl = 0;
+            if (I.perc || !VS.cur || VS.cur.dead || art) vsNoteOn(I, n, shift, vel);
+            else { VS.note = n; VS.cur.setFreq(vsHz(clamp(n + shift, 12, 115)), 0.012); VS.cur.setVel(vel); vsMidiNote(clamp(n + shift, 0, 127), vel); }
+          }
+        } else {
+          const dead = (1 - sens) * 0.3, sm = T.sm;
+          if (VS.cont == null) {
+            if ((T.vf || 0) < R.onsetF) return;
+            VS.cont = sm + shift; VS.cur = vsVoice(I, vsHz(clamp(VS.cont, 12, 115)), vel); VS.note = null; vsMidiNote(clamp(Math.round(VS.cont), 0, 127), vel); return;
+          }
+          if (R.retrig && fresh) { T.syl = 0; VS.cont = sm + shift; if (VS.cur) VS.cur.stop(0.03); VS.cur = vsVoice(I, vsHz(clamp(VS.cont, 12, 115)), vel); vsMidiNote(clamp(Math.round(VS.cont), 0, 127), vel); return; }
+          if (Math.abs(sm + shift - VS.cont) > dead) { VS.cont = sm + shift; if (VS.cur) VS.cur.setFreq(vsHz(clamp(VS.cont, 12, 115)), glide); const r = clamp(Math.round(VS.cont), 0, 127); if (!VS.midiOn.has(r)) vsMidiNote(r, vel); }
+          if (VS.cur) VS.cur.setVel(vel);
+        }
+      }
+      function vsNoteOn(I, n, shift, vel) {
+        if (VS.cur && !I.perc) VS.cur.stop(0.03);
+        VS.note = n; VS.cur = vsVoice(I, vsHz(clamp(n + shift, 12, 115)), vel);
+        vsMidiNote(clamp(n + shift, 0, 127), vel);
+      }
+      // 7.3.2: the note ends as soon as your voice stops (after the Response's short gap). "Sustain" only lengthens the fade of
+      // Piano Logger's own sound — it no longer holds the note (or the keyboard's MIDI note) on after you stop
+      function vsRelease() {
+        const I = VS_I[VSS.inst];
+        if (VS.cur && !I.perc) VS.cur.stop(vsRel(I));
+        VS.cur = null; VS.note = null; VS.cont = null; vsMidiNote(null);
+      }
+
+      // ---- fallback when the audio thread cannot be used (very old WebView / blocked worklet): analysis on the page, 30 times a second ----
+      function vsFallbackTick() {
+        const N = VS.N; if (!N || !N.inAn || !VS.running) return;
+        const sr = VS.ctx.sampleRate, dec = Math.max(1, Math.round(sr / 16000)), n = vsResp().win, raw = VS.fbRaw || (VS.fbRaw = new Float32Array(N.inAn.fftSize)), f = VS.fbF || (VS.fbF = new Float32Array(1024)), d = VS.fbD || (VS.fbD = new Float32Array(1024));
+        N.inAn.getFloatTimeDomainData(raw);
+        const off = raw.length - n * dec; for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < dec; j++) s += raw[off + i * dec + j]; f[i] = s / dec; }
+        const st = vsStats(f, n); let fr = 0, c = 0;
+        if (st[0] > -78) { const r = vsYin(f, n, sr / dec, VSS.style === 'speak' ? 70 : 65, VSS.style === 'speak' ? 600 : 1100, 0.15, d); fr = r[0]; c = r[1]; }
+        vsFrame({ f: fr, c, db: st[0], zcr: st[1], pk: st[2], t: VS.ctx.currentTime });
+      }
+
+      // ---- safety: clipping, feedback (howling), runaway volume, unplugged devices ----
+      function vsSafety() {
+        const N = VS.N; if (!N || !VS.ctx || VS.ctx.state === 'closed') return;
+        const now = performance.now(), b = VS.sbuf || (VS.sbuf = new Float32Array(1024));
+        N.outAn.getFloatTimeDomainData(b); let pk = 0; for (let i = 0; i < b.length; i++) { const a = Math.abs(b[i]); if (a > pk) pk = a; }
+        VS.outPk = pk; if (pk >= 0.99) VS.clipOut = now;
+        // runaway: louder than full scale before the limiter for 3 seconds → turn the volume down
+        VS.hot = pk >= 0.99 ? (VS.hot || now) : 0;
+        if (VS.hot && now - VS.hot > 3000 && !VS.outMute) { VSS.outVol = Math.max(0.05, VSS.outVol * 0.6); vsSave(); vsApply(); VS.hot = 0; vsMsg('Very loud output for 3 seconds — the volume was turned down to ' + Math.round(VSS.outVol * 100) + ' %.', 'bad'); vsUiSoon(); }
+        if (!N.inAn || !VS.running || VS.preview) return;
+        const ib = VS.ibuf || (VS.ibuf = new Float32Array(N.inAn.fftSize)); N.inAn.getFloatTimeDomainData(ib);
+        let ip = 0; for (let i = 0; i < ib.length; i++) { const a = Math.abs(ib[i]); if (a > ip) ip = a; }
+        if (ip >= 0.99) { VS.clipIn = now; VS.inClipN++; } else VS.inClipN = Math.max(0, VS.inClipN - 0.25);
+        if (!vsChipEl.hidden) vsChipEl.style.setProperty('--lvl', VS.micMute ? 0 : Math.min(1, Math.sqrt(ip) * 1.4).toFixed(2));
+        if (VS.inClipN > 25) { VS.inClipN = 0; vsMsg('The microphone signal is clipping (too loud). Lower the input gain or move a little away from the microphone.', 'bad'); }
+        // feedback: one frequency, far above everything else, steady for over a second while sound is going out
+        if (VS.outMute || VSS.outVol < 0.02) { VS.howl.n = 0; return; }
+        const fb = VS.fbin || (VS.fbin = new Float32Array(N.inAn.frequencyBinCount)); N.inAn.getFloatFrequencyData(fb);
+        const hz = VS.ctx.sampleRate / N.inAn.fftSize, lo = Math.floor(150 / hz), hi = Math.min(fb.length - 1, Math.floor(6000 / hz));
+        let mx = -200, mi = 0, sum = 0; for (let i = lo; i <= hi; i++) { if (fb[i] > mx) { mx = fb[i]; mi = i; } sum += fb[i]; }
+        let mx2 = -200; for (let i = lo; i <= hi; i++) if (Math.abs(i - mi) > 4 && fb[i] > mx2) mx2 = fb[i];
+        const avg = sum / (hi - lo + 1), H = VS.howl, pure = mx > -30 && mx - avg > 40 && mx - mx2 > 24;
+        if (pure && Math.abs(mi - H.bin) <= 1) H.n++; else { H.n = pure ? 1 : 0; H.bin = mi; }
+        if (H.n > 14) {                                                    // ~1.4 s at 10 checks per second
+          H.n = 0; VS.outMute = true; vsApply(); vsAllOff(true);
+          VS.fbWarn = Date.now(); vsMsg('Feedback detected (a howl at about ' + Math.round(mi * hz) + ' Hz) — the output was muted. Use headphones, turn the speakers down or move the microphone away from them, then press “Unmute output”. (A false alarm, e.g. while whistling? Just unmute.)', 'bad'); vsUiSoon(); vsChip();
+        }
+      }
+      if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', async () => {
+        const had = VS.devs.outs.map(d => d.deviceId); await vsDevices();
+        if (VS.running && VSS.outId !== 'default' && VS.devs.outs.length && !VS.devs.outs.some(d => d.deviceId === VSS.outId)) vsStop('The output “' + vsOutName() + '” was disconnected. Voice Studio stopped, so the sound does not jump to another speaker. Plug it back in and press Start.');
+        else if (!VS.running && VSS.outId !== 'default' && !had.includes(VSS.outId) && VS.devs.outs.some(d => d.deviceId === VSS.outId)) vsMsg('The output “' + vsOutName() + '” is back. Press Start when you are ready.', 'ok');
+        vsUiSoon();
+      });
+
+      // ---- start / stop ----
+      const vsLatHint = () => /^0\./.test(VSS.lat) ? +VSS.lat : VSS.lat;
+      let vsMsgT = 0;
+      function vsMsg(t, type) { VS.err = type === 'bad' ? t : ''; VS.info = t; VS.infoType = type || ''; const now = Date.now(); if (!$('#vsBox') || type === 'bad') { if (now - vsMsgT > 1500 || type === 'bad') toast(t, type); vsMsgT = now; } vsUiSoon(); }
+      function vsMicErr(e) {
+        const n = e && e.name;
+        if (n === 'NotAllowedError' || n === 'SecurityError') return vsOldApp() ? 'This version of the Piano Logger desktop app does not allow the microphone. Install the Piano Logger 7.3 (or newer) Windows app.' : 'Microphone permission was refused. ' + (VS_APP ? 'Check Windows Settings → Privacy → Microphone → “Allow desktop apps to access your microphone”.' : 'Click the icon left of the address bar → Site settings → Microphone → Allow, then press Start again.');
+        if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'No microphone found' + (VSS.inId !== 'default' ? ' (the one you chose may be unplugged — choose another under Devices & routing)' : '') + '.';
+        if (n === 'NotReadableError' || n === 'AbortError') return 'The microphone could not be opened. Another program may be using it exclusively, or Windows privacy settings block it.';
+        if (n === 'Timeout') return vsOldApp() ? 'The microphone permission never answered. This desktop app version cannot use the microphone — install Piano Logger 7.3 (or newer).' : 'The microphone did not answer within 15 seconds. Check that it is plugged in and allowed, then try again.';
+        return 'The microphone could not start: ' + ((e && (e.message || e.name)) || 'unknown error');
+      }
+      async function vsOpenCtx() {
+        const AC = window.AudioContext || window.webkitAudioContext; if (!AC) throw Object.assign(new Error('This browser has no Web Audio.'), { name: 'NoAudio' });
+        const ctx = new AC({ latencyHint: vsLatHint() });
+        if (VSS.outId !== 'default') {
+          if (typeof ctx.setSinkId !== 'function') { ctx.close(); throw Object.assign(new Error('This browser cannot choose an audio output. Choose “Windows default output”, or set the ST50 cable output as the default in Windows.'), { name: 'NoSink' }); }
+          try { await ctx.setSinkId(VSS.outId); } catch (e) { ctx.close(); throw Object.assign(new Error('The output “' + vsOutName() + '” could not be opened (unplugged or in use).'), { name: 'SinkFail' }); }
+        }
+        ctx.onstatechange = () => { if (VS.ctx === ctx && ctx.state === 'interrupted') vsMsg('Windows interrupted the audio output.', 'bad'); };
+        return ctx;
+      }
+      async function vsStart(confirmed) {
+        if (VS.running && !VS.preview) return; if (VS.starting) return;
+        if (TRAY.inTray) return vsMsg('Voice Studio cannot start while Piano Logger is in the system tray.', 'bad');
+        await vsDevices();
+        const r = vsRoute();
+        if (VSS.strict && !confirmed && r[0] === 'wait') { VS.pend = 'route'; VSU.tab = 'studio'; vsPaint(); return; }
+        VS.pend = null;
+        if (VS.preview) vsClose();
+        VS.starting = true; VS.err = ''; vsUiSoon();
+        const gen = ++VS.gen, gone = () => gen !== VS.gen;
+        let stream = null, ctx = null, late = false;
+        try {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw Object.assign(new Error(window.isSecureContext ? 'This browser cannot use a microphone.' : 'The microphone needs a secure page (https or the desktop app).'), { name: 'NoMedia' });
+          ctx = await vsOpenCtx();
+          const cons = { audio: { echoCancellation: VSS.ec, noiseSuppression: VSS.nr === 'strong', autoGainControl: false, channelCount: { ideal: 1 } } };
+          if (VSS.inId !== 'default') cons.audio.deviceId = { exact: VSS.inId };
+          const gum = navigator.mediaDevices.getUserMedia(cons);
+          stream = await Promise.race([gum, new Promise((_, rej) => setTimeout(() => { late = true; rej(Object.assign(new Error('timeout'), { name: 'Timeout' })); }, 15000))]);
+          gum.then(s => { if (late) s.getTracks().forEach(t => t.stop()); }).catch(() => { });   // a very late answer: close that microphone again at once
+          if (gone()) throw Object.assign(new Error('stopped'), { name: 'Stopped' });
+          let wl = false;
+          if (ctx.audioWorklet && window.AudioWorkletNode) {
+            try { const url = URL.createObjectURL(new Blob([VS_WORKLET], { type: 'application/javascript' })); try { await ctx.audioWorklet.addModule(url); wl = true; } finally { URL.revokeObjectURL(url); } } catch (e) { wl = false; }
+          }
+          if (gone()) throw Object.assign(new Error('stopped'), { name: 'Stopped' });
+          const N = vsBuildOut(ctx); vsBuildIn(ctx, N, stream, wl);
+          Object.assign(VS, { ctx, N, stream, wl, running: true, preview: false, starting: false, progSent: false, tr: { hist: [], sm: 0, voiced: false, last: 0, cand: null, candT: 0, onT: 0 }, trail: [], howl: { bin: -1, n: 0 }, inClipN: 0, wbuf: null, ibuf: null, fbin: null, fbRaw: null, sbuf: null });
+          const tr = stream.getAudioTracks()[0];
+          if (tr) { tr.onended = () => { if (VS.stream === stream) vsStop('The microphone “' + (tr.label || 'microphone') + '” was disconnected. Plug it back in and press Start.'); }; VS.micLabel = tr.label; }
+          if (ctx.state === 'suspended') await ctx.resume().catch(() => { });
+          vsApply();
+          VS.safety = setInterval(vsSafety, 100);
+          if (!wl) VS.fbTimer = setInterval(vsFallbackTick, 33);
+          if (VSS.engine === 'sample') vsBank(VS_I[VSS.inst]);
+          await vsDevices();
+          vsMsg(VSS.mode === 'pass' ? '🎙 Voice passthrough is on — you are live on “' + vsOutName() + '”.' : '🎻 Voice → ' + VS_I[VSS.inst].name + ' is on. Sing or hum a note.', 'ok');
+        } catch (e) {
+          if (stream) stream.getTracks().forEach(t => t.stop()); if (ctx) ctx.close().catch(() => { });
+          if (e && e.name === 'Stopped') { vsChip(); vsUiSoon(); return; }
+          VS.starting = false; VS.running = false; VS.ctx = null; VS.N = null; VS.stream = null;
+          vsMsg(['NoAudio', 'NoSink', 'SinkFail', 'NoMedia'].includes(e && e.name) ? e.message : vsMicErr(e), 'bad');
+        }
+        vsChip(); vsUiSoon();
+      }
+      function vsClose() {
+        const N = VS.N, ctx = VS.ctx;
+        clearInterval(VS.safety); clearInterval(VS.fbTimer); VS.safety = VS.fbTimer = 0;
+        VS.voices.forEach(v => clearTimeout(v.auto)); VS.voices = []; VS.cur = null; VS.note = null; VS.cont = null;
+        if (N && N.proc && N.proc.port) { try { N.proc.port.postMessage({ bye: true }); N.proc.port.onmessage = null; } catch (e) { } }
+        if (VS.stream) VS.stream.getTracks().forEach(t => { t.onended = null; t.stop(); });
+        if (ctx) { try { ctx.onstatechange = null; ctx.close(); } catch (e) { } }
+        VS.gen++; clearTimeout(VS.prevT);
+        Object.assign(VS, { ctx: null, N: null, stream: null, running: false, starting: false, preview: false, wl: false, last: null, play: null });
+      }
+      async function vsStop(why) {
+        if (VS.rec) await vsRecStop();
+        vsMidiAllOff(); vsPlayStop();
+        const was = VS.running && !VS.preview; vsClose();
+        if (why) vsMsg(why, 'bad'); else if (was) vsMsg('Voice Studio stopped. The microphone is closed.', 'ok');
+        vsChip(); vsUiSoon();
+      }
+      function vsEmergency() {
+        if (VS.N) { try { VS.N.safe.gain.cancelScheduledValues(0); VS.N.safe.gain.value = 0; } catch (e) { } }
+        VS.outMute = true; vsStop(''); vsMsg('■ Emergency stop: all sound stopped and the microphone is closed.', 'bad'); VS.outMute = false;
+      }
+      // preview (instruments, test tone, recordings) without opening the microphone
+      // the preview output (no microphone) closes itself after 15 s of silence — but not while a recording plays,
+      // and not while one is paused with the window open (so Resume keeps its place)
+      const vsWinOpen = () => !!$('#vsBox') && !$('#gm').hidden;           // 7.3.1: Esc / Done hide the window but leave it in the page
+      function vsPrevIdle() {
+        clearTimeout(VS.prevT); if (!VS.preview) return;
+        VS.prevT = setTimeout(() => {
+          if (!VS.preview) return; const P = VS.play;
+          if (P && (!P.paused || P.loading || vsWinOpen())) return vsPrevIdle();
+          vsClose(); vsUiSoon();
+        }, 15000);
+      }
+      async function vsEnsureOut() {
+        if (VS.ctx) { vsPrevIdle(); return true; }
+        try { await vsDevices(); const ctx = await vsOpenCtx(); Object.assign(VS, { ctx, N: vsBuildOut(ctx), running: true, preview: true }); vsApply(); VS.safety = setInterval(vsSafety, 100); vsPrevIdle(); return true; }
+        catch (e) { vsMsg(e.message || String(e), 'bad'); return false; }
+      }
+      async function vsPreview(id) {
+        if (!(await vsEnsureOut())) return;
+        const I = VS_I[id], N = VS.N;
+        if (VSS.engine === 'sample') vsBank(I);
+        vsSet(N.prev.gain, I.lvl * vsIP(id).vol, 0.01);
+        const seq = [0, 4, 7, 12], step = I.perc ? 0.28 : 0.42;
+        // 7.3.2: when "Also play on a MIDI keyboard" is on, the preview plays on the keyboard too (with that instrument's sound)
+        const mp = VSS.midi.on ? vsMidiOuts().find(o => o.id === VSS.midi.port) : null, ch = VSS.midi.ch - 1;
+        const ms = b => { if (!mp) return; try { mp.send(b); } catch (e) { return; } if ((b[0] & 0xE0) === 0x80) VS_ECHO.set((b[0] & 15) + '|' + b[1], performance.now()); };
+        if (mp && VSS.midi.prog) { ms([0xC0 + ch, I.prog]); VS.progSent = false; }      // the live instrument's sound is sent again at the next note
+        seq.forEach((s, i) => setTimeout(() => {
+          if (VS.N !== N) return; const v = vsMake(I, vsHz(60 + s), 0.75, N.prev); clearTimeout(v.auto); setTimeout(() => v.stop(vsRel(I)), step * 900);
+          ms([0x90 + ch, 60 + s, 96]); setTimeout(() => ms([0x80 + ch, 60 + s, 0]), step * 900);
+        }, i * step * 1000));
+        vsEnsureOut();
+      }
+      async function vsTone() {
+        if (!(await vsEnsureOut())) return;
+        const ctx = VS.ctx, t = ctx.currentTime;
+        [523.25, 659.25, 783.99].forEach((hz, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = hz; g.gain.value = 0; o.connect(g); g.connect(VS.N.lim); g.gain.setValueAtTime(0, t + i * 0.25); g.gain.linearRampToValueAtTime(0.18 * VSS.outVol + 0.02, t + i * 0.25 + 0.02); g.gain.setTargetAtTime(0, t + i * 0.25 + 0.05, 0.25); o.start(t + i * 0.25); o.stop(t + i * 0.25 + 1.6); o.onended = () => g.disconnect(); });
+        vsMsg('🔔 Test sound sent to “' + vsOutName() + '”. If it came out of the ST50, the route works.', 'ok');
+      }
+      // instrument switch: fade out, change, fade in — no click, no restart
+      function vsPickInst(id) {
+        if (!VS_I[id] || id === VSS.inst) { VSS.inst = id; vsSave(); vsUiSoon(); return; }
+        const N = VS.N;
+        if (N && VS.running) {
+          vsSet(N.instFade.gain, 0, 0.012);
+          setTimeout(() => { if (VS.N !== N) return; vsAllOff(true); VSS.inst = id; VS.progSent = false; vsApply(); vsSet(N.instFade.gain, 1, 0.02); if (VSS.engine === 'sample') vsBank(VS_I[id]); }, 60);
+        } else VSS.inst = id;
+        vsSave(); vsUiSoon();
+      }
+
+      // ---- recordings: their own database, separate from the piano log ----
+      let vsDbP = null;
+      function vsDbOpen() {
+        return vsDbP || (vsDbP = new Promise((res, rej) => {
+          const r = indexedDB.open('PianoLoggerVoiceStudio', 1);
+          r.onupgradeneeded = () => { const db = r.result; if (!db.objectStoreNames.contains('recordings')) db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true }); if (!db.objectStoreNames.contains('audio')) db.createObjectStore('audio'); };
+          r.onsuccess = () => res(r.result); r.onerror = () => { vsDbP = null; rej(r.error); }; r.onblocked = () => { vsDbP = null; rej(new Error('blocked')); };
+        }));
+      }
+      const vsTx = async (stores, mode, fn) => { const db = await vsDbOpen(); return new Promise((res, rej) => { const tx = db.transaction(stores, mode); let out; Promise.resolve(fn(tx, v => { out = v; })).catch(rej); tx.oncomplete = () => res(out); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error || new Error('aborted')); }); };
+      const vsReq = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+      async function vsRecList() { try { VSU.recs = (await vsTx(['recordings'], 'readonly', (tx, set) => vsReq(tx.objectStore('recordings').getAll()).then(set))) || []; VSU.recs.sort((a, b) => b.ts - a.ts); } catch (e) { VSU.recs = []; VSU.recErr = 'The recordings database could not be opened: ' + (e && e.message || e); } vsUiSoon(); }
+      function vsRecStart() {
+        if (!VS.running || VS.preview) return vsMsg('Press Start first — recording captures what Voice Studio is doing.', 'bad');
+        if (VS.rec) return; if (!window.MediaRecorder) return vsMsg('This browser cannot record audio.', 'bad');
+        const N = VS.N, node = VSS.recSrc === 'mic' ? N.micMute : N.lim; node.connect(N.rec);
+        const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'].find(m => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || '';
+        let mr; try { mr = new MediaRecorder(N.rec.stream, mime ? { mimeType: mime, audioBitsPerSecond: 128000 } : undefined); } catch (e) { try { node.disconnect(N.rec); } catch (x) { } return vsMsg('Recording could not start: ' + e.message, 'bad'); }
+        const R = VS.rec = { mr, chunks: [], t0: Date.now(), node, N, mode: VSS.mode, inst: VSS.inst, src: VSS.recSrc };
+        mr.ondataavailable = e => { if (e.data && e.data.size) R.chunks.push(e.data); };
+        R.done = new Promise(res => { mr.onstop = res; });
+        mr.start(1000);
+        VS.recT = setTimeout(() => { if (VS.rec === R) { vsRecStop(); vsMsg('Recording stopped after 30 minutes (the longest allowed). It was saved.', 'ok'); } }, 30 * 60 * 1000);
+        vsChip(); vsUiSoon();
+      }
+      async function vsRecStop() {
+        const R = VS.rec; if (!R) return; VS.rec = null; clearTimeout(VS.recT);
+        try { if (R.mr.state !== 'inactive') R.mr.stop(); } catch (e) { }
+        await Promise.race([R.done, new Promise(r => setTimeout(r, 3000))]);
+        try { R.node.disconnect(R.N.rec); } catch (e) { }
+        const blob = new Blob(R.chunks, { type: R.mr.mimeType || 'audio/webm' }), dur = (Date.now() - R.t0) / 1000;
+        if (!blob.size) { vsMsg('The recording was empty and was not saved.', 'bad'); vsChip(); return; }
+        const p = localParts(R.t0), meta = { ts: R.t0, name: 'Voice ' + p.date + ' ' + p.time.slice(0, 5) + (R.mode === 'inst' ? ' · ' + VS_I[R.inst].name : ' · passthrough'), mime: blob.type, dur, size: blob.size, mode: R.mode, inst: R.inst, src: R.src };
+        try {
+          await vsTx(['recordings', 'audio'], 'readwrite', (tx, set) => vsReq(tx.objectStore('recordings').add(meta)).then(id => { tx.objectStore('audio').put(blob, id); set(id); }));
+          vsMsg('⏺ Recording saved (' + vsFmtDur(dur) + '). Find it under Recordings.', 'ok');
+        } catch (e) { vsMsg('The recording could not be saved: ' + (e && e.message || e) + '. Use “Save to file” next time, or free some disk space.', 'bad'); }
+        vsChip(); vsRecList();
+      }
+      const vsFmtDur = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+      const vsBlob = id => vsTx(['audio'], 'readonly', (tx, set) => vsReq(tx.objectStore('audio').get(id)).then(set));
+      // 7.3.1: a real player — play / pause / resume, ±5 s, stop, a seek bar; pause keeps the position
+      // VS.play = { id, buf, src, dur, off (position when started/paused), t0 (audio time when started), paused, ended, loading }
+      const vsRecPaintSoon = () => { if (VSU.tab === 'rec' && vsWinOpen() && !VSU.seeking) vsPaint(); else vsUiSoon(); };
+      function vsPlayPos() { const P = VS.play; if (!P || !VS.ctx) return 0; return P.paused || !P.src ? P.off : Math.min(P.dur, P.off + (VS.ctx.currentTime - P.t0)); }
+      function vsPlaySrcStop() { const P = VS.play; if (P && P.src) { const s = P.src; P.src = null; s.onended = null; try { s.stop(); s.disconnect(); } catch (e) { } } }
+      function vsPlayFrom(off) {
+        const P = VS.play; if (!P || !P.buf || !VS.ctx || !VS.N) return;
+        vsPlaySrcStop();
+        P.off = clamp(off >= P.dur - 0.05 ? 0 : off, 0, P.dur); P.t0 = VS.ctx.currentTime; P.paused = false; P.ended = false;
+        const src = VS.ctx.createBufferSource(); src.buffer = P.buf; src.connect(VS.N.lim); P.src = src;
+        src.onended = () => { if (VS.play === P && P.src === src) { P.src = null; P.paused = true; P.ended = true; P.off = P.dur; vsRecPaintSoon(); vsPrevIdle(); } };
+        src.start(0, P.off); vsPrevIdle();
+      }
+      function vsPlayPause() { const P = VS.play; if (!P || P.paused || P.loading) return; P.off = vsPlayPos(); P.paused = true; vsPlaySrcStop(); vsUiSoon(); vsPrevIdle(); }
+      function vsPlaySeek(t) { const P = VS.play; if (!P || P.loading) return; t = clamp(t, 0, P.dur); if (P.paused) { P.off = t; P.ended = false; vsUiSoon(); } else vsPlayFrom(t); }
+      async function vsPlayRec(id) {
+        const cur = VS.play;
+        if (cur && cur.id === id && !cur.loading) { if (cur.paused) { if (await vsEnsureOut()) vsPlayFrom(cur.off); } else vsPlayPause(); vsUiSoon(); return; }
+        vsPlayStop();
+        const r = (VSU.recs || []).find(x => x.id === id), P = VS.play = { id, loading: true, paused: true, off: 0, dur: r ? r.dur : 0 };
+        vsRecPaintSoon();
+        const blob = await vsBlob(id).catch(() => null);
+        if (VS.play !== P) return;
+        if (!blob) { VS.play = null; vsRecPaintSoon(); return vsMsg('That recording could not be read.', 'bad'); }
+        if (!(await vsEnsureOut()) || VS.play !== P) { if (VS.play === P) VS.play = null; vsRecPaintSoon(); return; }
+        try { P.buf = await VS.ctx.decodeAudioData(await blob.arrayBuffer()); }
+        catch (e) { if (VS.play === P) VS.play = null; vsRecPaintSoon(); return vsMsg('That recording could not be played: ' + (e && e.message || e), 'bad'); }
+        if (VS.play !== P) return;
+        P.dur = P.buf.duration; P.loading = false; vsPlayFrom(0); vsRecPaintSoon();
+      }
+      function vsPlayStop() { if (VS.play) { vsPlaySrcStop(); VS.play = null; vsRecPaintSoon(); vsPrevIdle(); } }
+      function vsPlayLabel(id) { const P = VS.play; if (!P || P.id !== id) return '▶ Play'; return P.loading ? '… Loading' : !P.paused ? '❚❚ Pause' : P.ended ? '↺ Play again' : '▶ Resume'; }
+      function vsWav(buf) {
+        const ch = Math.min(2, buf.numberOfChannels), sr = buf.sampleRate, n = buf.length, out = new DataView(new ArrayBuffer(44 + n * ch * 2)), w = (o, s) => [...s].forEach((c, i) => out.setUint8(o + i, c.charCodeAt(0)));
+        w(0, 'RIFF'); out.setUint32(4, 36 + n * ch * 2, true); w(8, 'WAVE'); w(12, 'fmt '); out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, ch, true); out.setUint32(24, sr, true); out.setUint32(28, sr * ch * 2, true); out.setUint16(32, ch * 2, true); out.setUint16(34, 16, true); w(36, 'data'); out.setUint32(40, n * ch * 2, true);
+        const C = Array.from({ length: ch }, (_, i) => buf.getChannelData(i)); let o = 44;
+        for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) { const v = Math.max(-1, Math.min(1, C[c][i])); out.setInt16(o, v < 0 ? v * 0x8000 : v * 0x7FFF, true); o += 2; }
+        return out.buffer;
+      }
+      async function vsSaveRec(id, wav) {
+        const r = VSU.recs.find(x => x.id === id), blob = await vsBlob(id).catch(() => null); if (!r || !blob) return vsMsg('That recording could not be read.', 'bad');
+        const lp = localParts(r.ts), base = 'PianoLogger-voice-' + lp.date.replace(/-/g, '') + '-' + lp.time.slice(0, 8).replace(/:/g, '');
+        if (!wav) return download(base + (/ogg/.test(r.mime) ? '.ogg' : '.webm'), [blob], r.mime);
+        try { const AC = window.OfflineAudioContext || window.webkitOfflineAudioContext, oc = new AC(1, 1, 48000), buf = await oc.decodeAudioData(await blob.arrayBuffer()); download(base + '.wav', [vsWav(buf)], 'audio/wav'); }
+        catch (e) { vsMsg('Could not convert to WAV: ' + (e && e.message || e) + '. Saving the original file instead.', 'bad'); download(base + '.webm', [blob], r.mime); }
+      }
+      async function vsDelRec(id) {
+        const r = VSU.recs.find(x => x.id === id); if (!r) return;
+        if (!confirm('Delete the recording “' + r.name + '”? This cannot be undone.\n\n(Only this voice recording is deleted. Your piano log is not touched.)')) return;
+        if (VS.play && VS.play.id === id) vsPlayStop();
+        try { await vsTx(['recordings', 'audio'], 'readwrite', tx => { tx.objectStore('recordings').delete(id); tx.objectStore('audio').delete(id); }); vsMsg('Recording deleted.', 'ok'); } catch (e) { vsMsg('Could not delete: ' + (e && e.message || e), 'bad'); }
+        vsRecList();
+      }
+      async function vsRename(id, name) { const r = VSU.recs.find(x => x.id === id); if (!r) return; r.name = String(name).trim().slice(0, 80) || r.name; await vsTx(['recordings'], 'readwrite', tx => { tx.objectStore('recordings').put(r); }).catch(() => { }); }
+
+      // ---- leaving: release the microphone, the audio device and every note ----
+      window.addEventListener('pagehide', () => { vsMidiAllOff(); if (VS.ctx || VS.stream) vsClose(); });
+      window.addEventListener('pianoapp-visibility', e => { if (e.detail && e.detail.inTray && (VS.ctx || VS.stream)) { vsStop(''); toast('🎙 Voice Studio was stopped because Piano Logger went to the system tray (the microphone is closed).', 'ok'); } });
+
+      // ---- the window ----
+      const VSU = { tab: 'studio', recs: null };
+      let vsRaf = 0, vsUiT = 0;
+      function vsUiSoon() { if (vsUiT) return; vsUiT = setTimeout(() => { vsUiT = 0; vsChip(); if ($('#vsBox')) vsPaintLive(true); }, 60); }
+      const vsCtl = (k, label, min, max, step, fmt, help) => {
+        const v = k.split('.').reduce((o, p) => o[p], VSS);
+        return '<label class="vs-ctl"' + (help ? ' title="' + esc(help) + '"' : '') + '><span>' + esc(label) + ' <b data-o="' + k + '">' + esc(fmt(+v)) + '</b></span><input type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + v + '" data-k="' + k + '" aria-label="' + esc(label) + '"></label>';
+      };
+      const VS_FMT = {
+        pct: v => Math.round(v * 100) + ' %', pct100: v => Math.round(v) + ' %', ms: v => Math.round(v) + ' ms', db: v => Math.round(v) + ' dB', gain: v => '×' + v.toFixed(2) + ' (' + vsDb(v) + ' dB)',
+        oct: v => (v > 0 ? '+' : '') + v + ' oct', semi: v => (v > 0 ? '+' : '') + v + ' st', size: v => (0.4 + v * 3.2).toFixed(1) + ' s'
+      };
+      const vsFmtOf = { inGain: VS_FMT.gain, outVol: VS_FMT.pct, gateDb: VS_FMT.db, noiseDb: VS_FMT.db, conf: VS_FMT.pct100, sensSing: VS_FMT.pct100, sensSpeak: VS_FMT.pct100, smooth: VS_FMT.pct100, stable: VS_FMT.ms, sustain: VS_FMT.pct100, octave: VS_FMT.oct, transpose: VS_FMT.semi, monLvl: VS_FMT.pct, monDelay: VS_FMT.ms };
+      const vsFmtK = k => vsFmtOf[k] || (/\.(rev|echo|echoFb)$/.test(k) ? VS_FMT.pct : /\.echoMs$/.test(k) ? VS_FMT.ms : /\.size$/.test(k) ? VS_FMT.size : /^ip\..*\.vol$/.test(k) ? VS_FMT.pct : /^ip\./.test(k) ? VS_FMT.ms : v => String(v));
+      function vsSetK(k, val) { const p = k.split('.'), last = p.pop(); const o = p.reduce((o, x) => o[x], VSS); o[last] = val; }
+      function openVoice(tab) {
+        if (tab) VSU.tab = tab; navClose();
+        openModal('<div class="v71w vsw" id="vsBox"><div class="th-head"><h2 style="font-size:20px">🎙 Voice Studio</h2><span class="sub">Your microphone → your own voice, or a musical instrument · processed on this computer, never uploaded</span></div>' +
+          '<div class="v71tabs" role="tablist">' + [['studio', 'Studio'], ['inst', 'Instruments'], ['track', 'Voice tracking'], ['fx', 'Effects'], ['dev', 'Devices & routing'], ['rec', 'Recordings']].map(([v, l]) => '<button type="button" role="tab" data-vst="' + v + '" aria-selected="' + (VSU.tab === v) + '">' + l + '</button>').join('') + '</div>' +
+          '<div id="vsPane"></div><div class="actions"><button type="button" class="btn v71stop" id="vsEStop" title="Stops every sound at once and closes the microphone">■ Emergency stop</button><span style="flex:1"></span><button class="btn primary" data-act="close">Done</button></div></div>');
+        $('#vsBox .v71tabs').onclick = e => { const b = e.target.closest('[data-vst]'); if (!b) return; VSU.tab = b.dataset.vst; $('#vsBox .v71tabs').querySelectorAll('[data-vst]').forEach(x => x.setAttribute('aria-selected', x === b)); vsPaint(); };
+        $('#vsEStop').onclick = () => vsEmergency();
+        vsDevices().then(() => vsPaint()); vsPaint();
+        if (VSU.recs == null) vsRecList();
+      }
+      function vsStatusHtml() {
+        const [s, t, long] = vsRoute();
+        return '<div class="vs-route" data-s="' + s + '"><i></i><div><b>' + esc(t) + '</b><small>Output: ' + esc(vsOutName()) + '</small></div></div>' + (s === 'wait' || s === 'bad' ? '<p class="v71muted" style="margin:6px 0 0">' + esc(long) + '</p>' : '');
+      }
+      function vsPaint() {
+        const box = $('#vsPane'); if (!box) return; const F = VSS.fx[VSSm()], I = VS_I[VSS.inst];
+        const on = VS.running && !VS.preview;
+        if (VSU.tab === 'studio') {
+          box.innerHTML =
+            '<div class="vs-modes" role="radiogroup" aria-label="Mode">' +
+            '<button type="button" role="radio" class="vs-mode" data-mode="pass" aria-checked="' + (VSS.mode === 'pass') + '"><span class="vs-mi">🗣️</span><b>Voice passthrough</b><small>Hear your own voice through the output, with reverb, echo and noise reduction</small></button>' +
+            '<button type="button" role="radio" class="vs-mode" data-mode="inst" aria-checked="' + (VSS.mode === 'inst') + '"><span class="vs-mi">' + I.ico + '</span><b>Voice → instrument</b><small>Your sung or hummed melody is played by ' + esc(I.name) + '</small></button></div>' +
+            (VS.pend === 'route' ? '<div class="br-health vs-pend"><p><b>Where should the sound go?</b> ' + esc(vsRoute()[2]) + '</p><p><button type="button" class="btn small primary" id="vsCfSt">I connected this output to the ST50 — start</button><button type="button" class="btn small" id="vsCfPc">Use this PC output (not the ST50) — start</button><button type="button" class="btn small" id="vsCfTone">🔔 Test sound</button><button type="button" class="btn small" data-go="dev">Choose another output</button></p></div>' : '') +
+            '<div class="v71grid2"><div class="v71card">' +
+            '<div class="v71row" style="justify-content:space-between"><div class="v71stat" id="vsStat"><i></i><span></span></div><span class="vs-rec" id="vsRecInd" hidden>⏺ REC <b>0:00</b></span></div>' +
+            '<div class="vs-scope"><canvas id="vsWave" aria-label="Live waveform of the microphone"></canvas><div class="vs-note" id="vsNote" aria-live="off"><b>—</b><small></small></div></div>' +
+            '<div class="vs-meters"><div class="vs-m"><span>In</span><div class="vs-bar"><i id="vsMIn"></i><u id="vsPIn"></u></div><em id="vsClipIn" title="Input clipping">CLIP</em></div>' +
+            '<div class="vs-m"><span>Out</span><div class="vs-bar"><i id="vsMOut"></i><u id="vsPOut"></u></div><em id="vsClipOut" title="Output clipping (the limiter catches it)">CLIP</em></div></div>' +
+            '<div class="v71row" style="margin-top:12px"><button type="button" class="btn primary vs-go" id="vsGo"></button><button type="button" class="btn" id="vsMic" aria-pressed="' + VS.micMute + '"></button><button type="button" class="btn" id="vsOut" aria-pressed="' + VS.outMute + '"></button><button type="button" class="btn" id="vsRecB"></button></div>' +
+            '<div class="vs-quick">' + vsCtl('inGain', 'Input gain', 0, 4, 0.05, VS_FMT.gain, 'How much the microphone is amplified (at most ×4 = +12 dB)') + vsCtl('outVol', 'Output volume', 0, 1, 0.01, VS_FMT.pct, 'Overall volume. A limiter and a fixed safety ceiling keep it from getting dangerously loud') +
+            (VSS.mode === 'inst' ? vsCtl('ip.' + VSS.inst + '.vol', I.name + ' volume', 0, 1.5, 0.01, VS_FMT.pct) + vsCtl('monLvl', 'Your own voice in the mix', 0, 1, 0.01, VS_FMT.pct, 'Mix in your real voice under the instrument (0 = instrument only)') : vsCtl('fx.pass.rev', 'Reverb', 0, 1, 0.01, VS_FMT.pct) + vsCtl('fx.pass.echo', 'Echo', 0, 1, 0.01, VS_FMT.pct)) + '</div>' +
+            '</div><div class="v71card"><h4>Connection</h4>' + vsStatusHtml() +
+            '<div class="vs-path" id="vsPath"></div>' +
+            '<div class="v71nums" style="margin-top:10px;grid-template-columns:repeat(2,1fr)"><div><b id="vsLat">—</b><small>output delay</small></div><div><b id="vsPitch">—</b><small>detected pitch</small></div><div><b id="vsConf">—</b><small>voice confidence</small></div><div><b id="vsEng">—</b><small>analysis</small></div></div>' +
+            (VSS.mode === 'inst' ? '<p class="v71muted" style="margin:10px 0 0">Pitch tracking follows the <b>melody</b> of your voice — the note you sing or hum, or the rise and fall of speech. It cannot turn the words themselves into music: consonants, whispers and breaths have no pitch and are skipped. Singing or humming steady notes works best.</p>' :
+              '<p class="v71muted" style="margin:10px 0 0">Use <b>headphones</b>, or keep the microphone away from the speakers: a microphone near a loudspeaker can howl. Voice Studio mutes the output by itself if it hears feedback.</p>') +
+            '</div></div>' +
+            '<div class="v71card" style="margin-top:14px"><h4>Pitch over the last 6 seconds <small class="v71muted">· dots = your voice (brighter = more confident) · bar = the note being played</small></h4><canvas id="vsTrail" class="vs-trail" aria-label="Detected pitch over time"></canvas></div>' +
+            '<p class="v71muted vs-info" id="vsInfo" role="status"></p>';
+          box.querySelector('.vs-modes').onclick = e => { const b = e.target.closest('[data-mode]'); if (!b) return; vsMode(b.dataset.mode); };
+          // 7.3.1: decided at click time (it used the state from when the tab was drawn, so “Stop” called Start again)
+          $('#vsGo').onclick = () => ((VS.running && !VS.preview) || VS.starting) ? vsStop('') : vsStart();
+          $('#vsMic').onclick = () => { VS.micMute = !VS.micMute; vsApply(); if (VS.micMute) vsAllOff(false); vsPaintLive(true); vsChip(); };
+          $('#vsOut').onclick = () => { VS.outMute = !VS.outMute; vsApply(); vsPaintLive(true); vsChip(); };
+          $('#vsRecB').onclick = () => VS.rec ? vsRecStop() : vsRecStart();
+          if ($('#vsCfSt')) { $('#vsCfSt').onclick = () => { VSS.route[VSS.outId] = 'st50'; vsSave(); vsStart(true); }; $('#vsCfPc').onclick = () => { VSS.route[VSS.outId] = 'pc'; vsSave(); vsStart(true); }; $('#vsCfTone').onclick = () => vsTone(); }
+        } else if (VSU.tab === 'inst') {
+          box.innerHTML = '<div class="v71row" style="justify-content:space-between;margin-bottom:10px"><span class="seg" role="group" aria-label="Sound engine"><button type="button" class="v71chip" data-eng="synth" aria-pressed="' + (VSS.engine === 'synth') + '">Synthesiser (works offline, smooth glides)</button><button type="button" class="v71chip" data-eng="sample" aria-pressed="' + (VSS.engine === 'sample') + '">Sampled instruments (General MIDI SoundFont)</button></span>' +
+            '<span class="v71muted">Click a card to choose it · ▶ to hear it · switching is instant, without restarting</span></div>' +
+            '<div class="vs-insts">' + VS_INST.map(x => { const P = vsIP(x.id), b = VS.banks.get(x.gm); return '<div class="vs-inst' + (x.id === VSS.inst ? ' sel' : '') + '" data-inst="' + x.id + '" role="button" tabindex="0" aria-pressed="' + (x.id === VSS.inst) + '"><span class="vs-ii">' + x.ico + '</span><b>' + esc(x.name) + '</b><small>' + (x.perc ? 'Struck notes · whole notes' : 'Held notes · follows your voice') + (VSS.engine === 'sample' ? ' · samples ' + (b ? b.state === 'ready' ? (b.ctx ? 'ready' : 'downloaded') : b.state === 'failed' ? 'failed (synth used)' : 'loading…' : 'download on first use') : '') + '</small>' +
+              '<div class="vs-ir"><button type="button" class="btn small" data-prev="' + x.id + '" aria-label="Preview ' + esc(x.name) + '">▶ Preview</button>' + vsCtl('ip.' + x.id + '.vol', 'Volume', 0, 1.5, 0.01, VS_FMT.pct) + '</div>' +
+              (x.id === VSS.inst ? '<div class="vs-ir2">' + vsCtl('ip.' + x.id + '.a', 'Attack', 1, 1000, 1, VS_FMT.ms, 'How quickly a note starts') + vsCtl('ip.' + x.id + '.r', 'Release', 20, 3000, 10, VS_FMT.ms, 'How long a note takes to fade after your voice stops') + '<button type="button" class="btn small" data-reset="' + x.id + '">Instrument defaults</button></div>' : '') + '</div>'; }).join('') + '</div>' +
+            '<p class="v71muted" style="margin-top:10px">The synthesiser builds each instrument from its harmonics, vibrato and breath noise and follows your voice continuously. <b>Sampled instruments</b> use recorded notes of the free FluidR3 General MIDI SoundFont (downloaded once per instrument from the same site as the Sound library; your voice is never sent anywhere). Long held notes of samples loop a section of the recording.</p>';
+          box.querySelector('.seg').onclick = e => { const b = e.target.closest('[data-eng]'); if (!b) return; VSS.engine = b.dataset.eng; if (VSS.engine === 'sample' && VS.ctx) vsBank(VS_I[VSS.inst]); vsSave(); vsPaint(); };
+          box.querySelector('.vs-insts').addEventListener('click', e => {
+            const p = e.target.closest('[data-prev]'); if (p) { e.stopPropagation(); return vsPreview(p.dataset.prev); }
+            const r = e.target.closest('[data-reset]'); if (r) { const x = VS_I[r.dataset.reset]; VSS.ip[x.id] = { vol: 1, a: x.a, r: x.r }; vsSave(); vsApply(); return vsPaint(); }
+            if (e.target.closest('input,label')) return;
+            const c = e.target.closest('[data-inst]'); if (c) { vsPickInst(c.dataset.inst); vsPaint(); }
+          });
+          box.querySelector('.vs-insts').addEventListener('keydown', e => { const c = e.target.closest('[data-inst]'); if (c && e.target === c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); vsPickInst(c.dataset.inst); vsPaint(); } });
+        } else if (VSU.tab === 'track') {
+          const RT = { fast: ['⚡ Fast', 'Notes start about 25–65 ms after your voice and stop about 50–90 ms after it; every new syllable is a new note. Best for quick singing and speaking.'], balanced: ['Balanced', 'A little slower, a little steadier on shaky or breathy notes.'], steady: ['Steady', 'Slowest (about 0.15 s), fewest wrong notes; repeated syllables on one pitch stay one long note.'] };
+          box.innerHTML = '<div class="v71card vs-resp" style="margin-bottom:12px"><h4>Response — how quickly the instrument follows you</h4><div class="v71row"><span class="seg" role="group" aria-label="Response">' + Object.keys(RT).map(k => '<button type="button" class="v71chip" data-resp="' + k + '" aria-pressed="' + (VSS.resp === k) + '">' + RT[k][0] + '</button>').join('') + '</span></div>' +
+            '<p class="v71muted" style="margin:8px 0 0">' + esc(RT[VSS.resp] ? RT[VSS.resp][1] : '') + ' Choosing one also sets “Note stability” and “Pitch smoothing” below. <b>Tip for the ST50:</b> the keyboard’s own violin, strings, choir and pad sounds start slowly by design; piano, organ, flute or synth lead answer instantly.</p></div>' +
+            '<div class="v71row" style="margin-bottom:10px"><span class="seg" role="group" aria-label="Voice style"><button type="button" class="v71chip" data-style="sing" aria-pressed="' + (VSS.style === 'sing') + '">🎤 Singing / humming</button><button type="button" class="v71chip" data-style="speak" aria-pressed="' + (VSS.style === 'speak') + '">🗣 Speaking</button></span>' +
+            '<span class="seg" role="group" aria-label="Pitch"><button type="button" class="v71chip" data-snap="note" aria-pressed="' + (VSS.snap === 'note') + '">Whole notes</button><button type="button" class="v71chip" data-snap="cont" aria-pressed="' + (VSS.snap === 'cont') + '">Follow exact pitch (glide)</button></span>' +
+            '<label class="v71row"><input type="checkbox" id="vsDyn"' + (VSS.dyn ? ' checked' : '') + '> Louder voice = louder note</label></div>' +
+            '<div class="vs-grid">' +
+            vsCtl('sensSing', 'Pitch sensitivity — singing', 0, 100, 1, VS_FMT.pct100, 'Higher = follows smaller pitch changes; lower = holds notes steadier') +
+            vsCtl('sensSpeak', 'Pitch sensitivity — speaking', 0, 100, 1, VS_FMT.pct100, 'Speech glides a lot; a lower value avoids a flurry of notes') +
+            vsCtl('smooth', 'Pitch smoothing', 0, 100, 1, VS_FMT.pct100, 'Averages the detected pitch over a few frames') +
+            vsCtl('stable', 'Note stability', 0, 400, 5, VS_FMT.ms, 'How long a new pitch must be held before the note changes (a new syllable does not wait; ×1.4 for speech)') +
+            vsCtl('conf', 'Voice detection confidence', 50, 98, 1, VS_FMT.pct100, 'How clearly pitched a sound must be to count as voice. Higher = fewer false notes') +
+            vsCtl('noiseDb', 'Noise threshold', -80, -10, 1, VS_FMT.db, 'Sounds quieter than this are treated as silence') +
+            vsCtl('octave', 'Octave', -3, 3, 1, VS_FMT.oct) + vsCtl('transpose', 'Transpose', -12, 12, 1, VS_FMT.semi) +
+            vsCtl('sustain', 'Sustain', 0, 100, 1, VS_FMT.pct100, 'How long notes keep ringing after you stop') +
+            vsCtl('monLvl', 'Monitor your own voice', 0, 1, 0.01, VS_FMT.pct) + vsCtl('monDelay', 'Monitoring delay', 0, 500, 5, VS_FMT.ms, 'Delays your own voice in the mix (e.g. to line it up with the instrument)') +
+            '</div><div class="v71card" style="margin-top:12px"><h4>How the voice is analysed</h4><p class="v71muted" style="margin:0">40–60 times a second Voice Studio measures the loudness, the zero-crossing rate (hissy consonants like “s” and “f” cross zero very often) and the fundamental frequency with the YIN method, which also gives a confidence value. A note only sounds when the sound is <b>loud enough</b>, <b>clearly pitched</b> (confidence), <b>not hissy</b>, and <b>stable</b> for the note-stability time. Short gaps (plosives like “p”, “t”) are bridged; a single-frame octave jump is ignored. Silence and background noise do not make notes.</p></div>' +
+            '<div class="v71card" style="margin-top:12px"><h4>Also play on a MIDI keyboard <small class="v71muted">(optional, off by default)</small></h4><p class="v71muted" style="margin:0 0 8px">Sends the detected notes as MIDI to a keyboard, so <b>the ST50 plays them with its own sounds through its own speakers — over the USB cable you already have, no audio cable needed</b>. This uses the keyboard’s instruments, not Piano Logger’s. Notes the keyboard sends back are never logged as piano presses.</p>' +
+            '<div class="vs-grid"><label class="v71row"><input type="checkbox" id="vsMOn"' + (VSS.midi.on ? ' checked' : '') + '> Play on</label><label>MIDI output <select id="vsMPort"><option value="">— choose —</option>' + vsMidiOuts().map(o => '<option value="' + esc(o.id) + '"' + (o.id === VSS.midi.port ? ' selected' : '') + '>' + esc(o.name || 'MIDI output') + '</option>').join('') + '</select></label>' +
+            '<label>Channel <select id="vsMCh">' + Array.from({ length: 16 }, (_, i) => '<option' + (i + 1 === VSS.midi.ch ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') + '</select></label><label class="v71row"><input type="checkbox" id="vsMProg"' + (VSS.midi.prog ? ' checked' : '') + '> Switch the keyboard to the chosen instrument (General MIDI program)</label></div>' +
+            (typeof midiAccess === 'undefined' || !midiAccess ? '<p class="v71muted">MIDI is not connected yet — press Connect MIDI in Piano Logger first.</p>' : !vsMidiOuts().length ? '<p class="v71muted">No MIDI output ports found. Plug in the ST50 and press Reconnect.</p>' : '') + '</div>';
+          box.querySelector('[data-resp]').parentElement.onclick = e => { const b = e.target.closest('[data-resp]'); if (!b) return; const R = VS_RESP[b.dataset.resp]; VSS.resp = b.dataset.resp; VSS.stable = R.stable; VSS.smooth = R.smooth; vsSave(); vsApply(); vsPaint(); };
+          box.querySelector('[data-style]').parentElement.onclick = e => { const b = e.target.closest('[data-style]'); if (!b) return; VSS.style = b.dataset.style; vsSave(); vsApply(); vsPaint(); };
+          box.querySelector('[data-snap]').parentElement.onclick = e => { const b = e.target.closest('[data-snap]'); if (!b) return; VSS.snap = b.dataset.snap; vsAllOff(false); vsSave(); vsPaint(); };
+          $('#vsDyn').onchange = e => { VSS.dyn = e.target.checked; vsSave(); };
+          $('#vsMOn').onchange = e => { if (!e.target.checked) vsMidiAllOff(); VSS.midi.on = e.target.checked; VS.progSent = false; vsSave(); };
+          $('#vsMPort').onchange = e => { vsMidiAllOff(); VSS.midi.port = e.target.value; VS.progSent = false; vsSave(); };
+          $('#vsMCh').onchange = e => { vsMidiAllOff(); VSS.midi.ch = +e.target.value; VS.progSent = false; vsSave(); };
+          $('#vsMProg').onchange = e => { VSS.midi.prog = e.target.checked; VS.progSent = false; vsSave(); };
+        } else if (VSU.tab === 'fx') {
+          const m = VSSm(), nm = m === 'pass' ? 'Voice passthrough' : 'Voice → instrument';
+          box.innerHTML = '<p class="v71muted" style="margin:0 0 10px">Effects for <b>' + nm + '</b> (each mode keeps its own settings).</p><div class="vs-grid">' +
+            '<label class="v71row"><input type="checkbox" id="vsByp"' + (F.bypass ? ' checked' : '') + '> Bypass all effects (clean sound)</label>' +
+            vsCtl('fx.' + m + '.rev', 'Reverb', 0, 1, 0.01, VS_FMT.pct) + vsCtl('fx.' + m + '.size', 'Room size', 0, 1, 0.01, VS_FMT.size) +
+            vsCtl('fx.' + m + '.echo', 'Echo', 0, 1, 0.01, VS_FMT.pct) + vsCtl('fx.' + m + '.echoMs', 'Echo time', 20, 1500, 10, VS_FMT.ms) + vsCtl('fx.' + m + '.echoFb', 'Echo repeats', 0, 0.85, 0.01, VS_FMT.pct, 'Limited to 85 % so echoes always die away') +
+            '</div><div class="v71card" style="margin-top:12px"><h4>Noise reduction</h4><div class="v71row"><span class="seg" role="group" aria-label="Noise reduction">' + [['off', 'Off'], ['gate', 'Noise gate'], ['strong', 'Gate + background noise suppression']].map(([v, l]) => '<button type="button" class="v71chip" data-nr="' + v + '" aria-pressed="' + (VSS.nr === v) + '">' + l + '</button>').join('') + '</span></div>' +
+            '<div class="vs-grid" style="margin-top:8px">' + vsCtl('gateDb', 'Gate threshold', -80, -20, 1, VS_FMT.db, 'Below this level the microphone is turned down (room hiss, fan noise)') + '<label class="v71row"><input type="checkbox" id="vsEc"' + (VSS.ec ? ' checked' : '') + '> Echo cancellation (helps without headphones; adds a little delay)</label></div>' +
+            '<p class="v71muted" style="margin:6px 0 0">The noise gate runs inside Voice Studio. Background noise suppression and echo cancellation are done by Chromium / WebView2 on this computer; changing them restarts the microphone.</p></div>';
+          $('#vsByp').onchange = e => { VSS.fx[m].bypass = e.target.checked; vsSave(); vsApply(); };
+          box.querySelector('[data-nr]').parentElement.onclick = e => { const b = e.target.closest('[data-nr]'); if (!b) return; const was = VSS.nr; VSS.nr = b.dataset.nr; vsSave(); vsApply(); if ((was === 'strong') !== (VSS.nr === 'strong')) vsRestartMic(); vsPaint(); };
+          $('#vsEc').onchange = e => { VSS.ec = e.target.checked; vsSave(); vsRestartMic(); };
+        } else if (VSU.tab === 'dev') {
+          const D = VS.devs, ins = D.ins, outs = D.outs, st50a = outs.filter(d => VS_ST.test(d.label)).concat(ins.filter(d => VS_ST.test(d.label))), mI = vsMidiIns(), mO = vsMidiOuts(), st50m = mI.concat(mO).filter(p => VS_ST.test(p.name || ''));
+          const lab = (d, i, kind) => d.deviceId === 'default' ? 'Windows default' + (d.label ? ' — ' + d.label.replace(/^Default - /, '') : '') : d.deviceId === 'communications' ? 'Windows communications device' + (d.label ? ' — ' + d.label.replace(/^Communications - /, '') : '') : d.label || kind + ' ' + (i + 1);
+          box.innerHTML = '<div class="v71grid2"><div class="v71card"><h4>Audio devices (sound)</h4>' +
+            (!D.labels && !D.none ? '<div class="br-health"><p>Windows only tells Piano Logger the device names after the microphone has been allowed once. <button type="button" class="btn small" id="vsAsk">Allow the microphone to list devices</button></p><p class="v71muted" style="margin:0">(The microphone opens for a moment and is closed again straight away.)</p></div>' : '') +
+            '<div class="vs-grid1"><label>Microphone (input) <select id="vsIn"><option value="default">Windows default microphone</option>' + ins.filter(d => d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications').map((d, i) => '<option value="' + esc(d.deviceId) + '"' + (d.deviceId === VSS.inId ? ' selected' : '') + '>' + esc(lab(d, i, 'Microphone')) + '</option>').join('') + '</select></label>' +
+            '<label>Output <select id="vsOutSel"' + (vsCanSink() ? '' : ' disabled title="This browser cannot choose an output; it uses the Windows default"') + '><option value="default">Windows default output</option>' + outs.filter(d => d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications').map((d, i) => '<option value="' + esc(d.deviceId) + '"' + (d.deviceId === VSS.outId ? ' selected' : '') + '>' + esc(lab(d, i, 'Output')) + (VS_ST.test(d.label) ? ' (ST50)' : '') + '</option>').join('') + '</select></label>' +
+            '<label>Audio buffer <select id="vsLatSel">' + VS_LAT.map(([v, l]) => '<option value="' + v + '"' + (v === VSS.lat ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label></div>' +
+            '<p class="v71muted">Smaller buffers = less delay, but crackles on a busy PC. Changing the buffer or a device restarts Voice Studio if it is running.</p>' +
+            '<div class="v71row"><button type="button" class="btn small" id="vsTone2">🔔 Play a test sound on this output</button><button type="button" class="btn small" id="vsRefresh">↻ Look for devices again</button></div>' +
+            '<h4 style="margin-top:14px">Found on this computer</h4><table class="v71tbl"><tbody>' + ins.filter(d => d.deviceId !== 'default' && d.deviceId !== 'communications').map((d, i) => '<tr><td>🎙 input</td><td>' + esc(d.label || 'Microphone ' + (i + 1)) + '</td></tr>').join('') + outs.filter(d => d.deviceId !== 'default' && d.deviceId !== 'communications').map((d, i) => '<tr><td>🔊 output</td><td>' + esc(d.label || 'Output ' + (i + 1)) + (VS_ST.test(d.label) ? ' <b>(ST50 audio)</b>' : '') + '</td></tr>').join('') + (!ins.length && !outs.length ? '<tr><td colspan="2" class="v71muted">No audio devices reported.</td></tr>' : '') + '</tbody></table>' +
+            '<h4 style="margin-top:14px">MIDI devices (notes only — no sound)</h4><table class="v71tbl"><tbody>' + mI.map(p => '<tr><td>🎹 MIDI in</td><td>' + esc(p.name || 'MIDI input') + (p.state !== 'connected' ? ' — disconnected' : '') + '</td></tr>').join('') + mO.map(p => '<tr><td>🎹 MIDI out</td><td>' + esc(p.name || 'MIDI output') + '</td></tr>').join('') + (!mI.length && !mO.length ? '<tr><td colspan="2" class="v71muted">' + (typeof midiAccess !== 'undefined' && midiAccess ? 'No MIDI devices.' : 'MIDI not connected.') + '</td></tr>' : '') + '</tbody></table></div>' +
+            '<div class="v71card"><h4>Getting sound into the ST50</h4>' + vsStatusHtml() +
+            '<div class="vs-facts"><p><b>' + (st50m.length ? '✓ ST50 found as a MIDI device' : 'ST50 not found as a MIDI device right now') + '</b> — ' + (st50m.length ? esc([...new Set(st50m.map(p => p.name))].join(', ')) + '. ' : '') + 'USB MIDI carries notes and controls, never sound.</p>' +
+            '<p><b>' + (st50a.length ? '✓ The ST50 also has a USB audio device: ' + esc(st50a.map(d => d.label).join(', ')) : st50m.length ? 'The ST50 has no USB audio device' : 'No ST50 audio device found') + '</b>' + (st50a.length ? ' — choose it as the output.' : st50m.length ? ' — it is connected (as MIDI), but Windows lists no ST50 speaker or microphone, so the PC cannot send sound to it over USB.' : ' — the ST50 is not connected right now. (On this PC Windows has only ever listed it as MIDI ports, with no speaker or microphone.)') + '</p></div>' +
+            '<ol class="vs-steps"><li><b>Voice → ST50’s own sounds:</b> works over the USB cable you already have — Voice tracking → “Also play on a MIDI keyboard” → choose the ST50.</li>' +
+            '<li><b>Your real voice (or Piano Logger’s instruments) through the ST50 speakers</b> needs an <b>audio cable</b>: PC headphone / line-out jack (or a USB sound card’s output) → 3.5 mm stereo cable → the ST50’s <b>AUX IN / line-in</b> jack (check the back panel; if your model has no audio input, this route is not possible). Then pick that PC output above and press <b>Test sound</b>.</li>' +
+            '<li><b>Simplest for your voice:</b> many ST-series keyboards have their own <b>microphone input</b> with vocal effects — a microphone plugged straight into the keyboard needs no PC at all.</li></ol>' +
+            '<div class="v71row" style="margin-top:8px"><button type="button" class="btn small" id="vsRtSt">This output is connected to the ST50</button><button type="button" class="btn small" id="vsRtPc">This output is not the ST50</button><button type="button" class="btn small" id="vsRtX">Forget</button></div>' +
+            '<label class="v71row" style="margin-top:10px"><input type="checkbox" id="vsStrict"' + (VSS.strict ? ' checked' : '') + '> Ask before playing on an output that is not confirmed as the ST50</label></div></div>';
+          const restart = () => { if (VS.running && !VS.preview) { vsStop(''); setTimeout(() => vsStart(true), 150); } else if (VS.preview) vsClose(); };
+          $('#vsIn').onchange = e => { VSS.inId = e.target.value; vsSave(); restart(); };
+          $('#vsOutSel').onchange = e => { VSS.outId = e.target.value; vsSave(); restart(); vsPaint(); };
+          $('#vsLatSel').onchange = e => { VSS.lat = e.target.value; vsSave(); restart(); };
+          $('#vsTone2').onclick = () => vsTone();
+          $('#vsRefresh').onclick = () => vsDevices().then(() => { vsPaint(); toast('Found ' + VS.devs.ins.length + ' input(s) and ' + VS.devs.outs.length + ' output(s).', 'ok'); });
+          if ($('#vsAsk')) $('#vsAsk').onclick = async () => { try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop()); } catch (e) { vsMsg(vsMicErr(e), 'bad'); } await vsDevices(); vsPaint(); };
+          $('#vsRtSt').onclick = () => { VSS.route[VSS.outId] = 'st50'; vsSave(); vsPaint(); };
+          $('#vsRtPc').onclick = () => { VSS.route[VSS.outId] = 'pc'; vsSave(); vsPaint(); };
+          $('#vsRtX').onclick = () => { delete VSS.route[VSS.outId]; vsSave(); vsPaint(); };
+          $('#vsStrict').onchange = e => { VSS.strict = e.target.checked; vsSave(); };
+        } else if (VSU.tab === 'rec') {
+          const R = VSU.recs;
+          box.innerHTML = '<div class="v71row" style="justify-content:space-between;margin-bottom:10px"><div class="v71row"><button type="button" class="btn primary" id="vsRecB2"></button><span class="seg" role="group" aria-label="What to record"><button type="button" class="v71chip" data-rs="out" aria-pressed="' + (VSS.recSrc === 'out') + '">What you hear (with effects / instrument)</button><button type="button" class="v71chip" data-rs="mic" aria-pressed="' + (VSS.recSrc === 'mic') + '">Microphone only</button></span></div><span class="vs-rec" id="vsRecInd" hidden>⏺ REC <b>0:00</b></span></div>' +
+            '<p class="v71muted" style="margin:0 0 10px">Recordings are kept in their own storage on this computer (database “PianoLoggerVoiceStudio”), separate from your piano log and not part of piano backups. Use <b>Save</b> to keep a file in Downloads.</p>' +
+            (VSU.recErr ? '<p class="v71muted" style="color:#fb7185">' + esc(VSU.recErr) + '</p>' : '') +
+            '<div class="vs-recs">' + (R == null ? '<p class="v71muted">Loading…</p>' : !R.length ? '<p class="v71muted">No recordings yet. Press Start on the Studio tab, then ⏺ Record.</p>' : R.map(r => {
+              const P = VS.play && VS.play.id === r.id ? VS.play : null, dur = P && P.dur ? P.dur : r.dur;
+              return '<div class="vs-recr' + (P ? ' active' : '') + (P && !P.paused ? ' playing' : '') + '" data-id="' + r.id + '"><button type="button" class="btn small vs-playb" data-play="' + r.id + '" aria-pressed="' + !!(P && !P.paused) + '">' + vsPlayLabel(r.id) + '</button><input type="text" value="' + esc(r.name) + '" data-ren="' + r.id + '" aria-label="Recording name" maxlength="80"><span class="v71muted">' + vsFmtDur(r.dur) + ' · ' + (r.size / 1048576).toFixed(1) + ' MB</span><button type="button" class="btn small" data-wav="' + r.id + '">Save .wav</button><button type="button" class="btn small" data-orig="' + r.id + '">Save original</button><button type="button" class="btn small" data-del="' + r.id + '">🗑 Delete</button>' +
+                (P ? '<div class="vs-player" id="vsPlayer" role="group" aria-label="Playing ' + esc(r.name) + '"><i class="vs-eq" aria-hidden="true"><b></b><b></b><b></b><b></b></i>' +
+                  '<button type="button" class="btn small" data-pb="back" title="Back 5 seconds" aria-label="Back 5 seconds">⏪ 5 s</button><button type="button" class="btn small primary vs-pbt" data-pb="toggle" id="vsPbT"></button><button type="button" class="btn small" data-pb="fwd" title="Forward 5 seconds" aria-label="Forward 5 seconds">5 s ⏩</button><button type="button" class="btn small" data-pb="stop" title="Stop and close the player" aria-label="Stop">■ Stop</button>' +
+                  '<span class="vs-pt" id="vsPtCur">0:00</span><input type="range" class="vs-seek" id="vsSeek" min="0" max="' + Math.max(0.01, dur).toFixed(3) + '" step="0.01" value="' + vsPlayPos().toFixed(3) + '" aria-label="Position in the recording"' + (P.loading ? ' disabled' : '') + '><span class="vs-pt" id="vsPtDur">' + vsFmtDur(dur) + '</span></div>' : '') + '</div>';
+            }).join('')) + '</div>';
+          $('#vsRecB2').onclick = () => VS.rec ? vsRecStop() : vsRecStart();
+          box.querySelector('[data-rs]').parentElement.onclick = e => { const b = e.target.closest('[data-rs]'); if (!b) return; if (VS.rec) return toast('Stop the recording first.', 'bad'); VSS.recSrc = b.dataset.rs; vsSave(); vsPaint(); };
+          box.querySelector('.vs-recs').onclick = e => {
+            const b = e.target.closest('button'); if (!b) return; const d = b.dataset;
+            if (d.play) vsPlayRec(+d.play);
+            else if (d.pb === 'toggle') { const P = VS.play; if (P) vsPlayRec(P.id); }
+            else if (d.pb === 'back') vsPlaySeek(vsPlayPos() - 5);
+            else if (d.pb === 'fwd') vsPlaySeek(vsPlayPos() + 5);
+            else if (d.pb === 'stop') vsPlayStop();
+            else if (d.wav) vsSaveRec(+d.wav, true); else if (d.orig) vsSaveRec(+d.orig, false); else if (d.del) { vsDelRec(+d.del).then(() => vsPaint()); }
+          };
+          box.querySelector('.vs-recs').addEventListener('change', e => { const t = e.target.closest('[data-ren]'); if (t) vsRename(+t.dataset.ren, t.value); });
+          const sk = $('#vsSeek');
+          if (sk) {
+            sk.addEventListener('input', () => { VSU.seeking = true; const el = $('#vsPtCur'); if (el) el.textContent = vsFmtDur(+sk.value); sk.style.setProperty('--p', (+sk.value / (+sk.max || 1) * 100).toFixed(2) + '%'); });
+            sk.addEventListener('change', () => { VSU.seeking = false; vsPlaySeek(+sk.value); });
+          }
+        }
+        box.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { VSU.tab = b.dataset.go; $('#vsBox .v71tabs').querySelectorAll('[data-vst]').forEach(x => x.setAttribute('aria-selected', x.dataset.vst === VSU.tab)); vsPaint(); });
+        box.querySelectorAll('input[type=range][data-k]').forEach(r => r.oninput = () => {
+          const k = r.dataset.k, v = +r.value; vsSetK(k, v);
+          const o = box.querySelector('[data-o="' + k + '"]'); if (o) o.textContent = vsFmtK(k)(v);
+          if (k === 'octave' || k === 'transpose') vsAllOff(false);
+          vsSave(); vsApply();
+        });
+        vsPaintLive(true); vsLoop();
+      }
+      const VSSm = () => VSS.mode;
+      function vsMode(m) {
+        if (m === VSS.mode) return; VSS.mode = m; vsAllOff(false); VS.progSent = false; vsSave(); vsApply(); vsPaint(); vsChip();
+        if (VS.running && !VS.preview) vsMsg(m === 'pass' ? '🗣 Voice passthrough' : '🎻 Voice → ' + VS_I[VSS.inst].name, 'ok');
+      }
+      async function vsRestartMic() { if (VS.running && !VS.preview) { await vsStop(''); setTimeout(() => vsStart(true), 150); } }
+      function vsState() {
+        if (VS.starting) return ['wait', 'Starting… (allow the microphone if asked)'];
+        if (!VS.running || VS.preview) return VS.err ? ['bad', 'Stopped — see the message below'] : ['off', 'Stopped · the microphone is closed'];
+        if (VS.outMute) return ['wait', 'Output muted' + (VS.fbWarn && Date.now() - VS.fbWarn < 60000 ? ' (feedback)' : '')];
+        if (VS.micMute) return ['wait', 'Microphone muted'];
+        return ['live', VSS.mode === 'pass' ? 'Live · voice passthrough' : 'Live · voice → ' + VS_I[VSS.inst].name];
+      }
+      function vsPaintLive(full) {
+        const box = $('#vsBox'); if (!box) return;
+        const [s, t] = vsState(), st = $('#vsStat'); if (st) { st.dataset.s = s; st.querySelector('span').textContent = t; }
+        const on = VS.running && !VS.preview, tx = (el, v) => { if (el.textContent !== v) el.textContent = v; };   // 7.3.1: only touch the DOM when the text changes
+        const go = $('#vsGo'); if (go) { tx(go, VS.starting ? 'Starting…' : on ? '■ Stop' : '▶ Start (opens the microphone)'); go.classList.toggle('on', on); }
+        const mic = $('#vsMic'); if (mic) { tx(mic, VS.micMute ? '🎙 Unmute mic' : '🎙 Mute mic'); mic.setAttribute('aria-pressed', VS.micMute); mic.disabled = !on; }
+        const out = $('#vsOut'); if (out) { tx(out, VS.outMute ? '🔊 Unmute output' : '🔇 Mute output'); out.setAttribute('aria-pressed', VS.outMute); }
+        ['#vsRecB', '#vsRecB2'].forEach(id => { const b = $(id); if (b) { tx(b, VS.rec ? '■ Stop recording' : '⏺ Record'); b.classList.toggle('rec', !!VS.rec); b.disabled = !on && !VS.rec; } });
+        // 7.3.1: the recording player — which row plays, the button labels, position and time
+        box.querySelectorAll('[data-play]').forEach(b => {
+          const id = +b.dataset.play, P = VS.play && VS.play.id === id ? VS.play : null, row = b.closest('.vs-recr');
+          tx(b, vsPlayLabel(id)); b.setAttribute('aria-pressed', !!(P && !P.paused));
+          if (row) { row.classList.toggle('active', !!P); row.classList.toggle('playing', !!(P && !P.paused)); }
+        });
+        const P = VS.play, sk = $('#vsSeek');
+        if (P && sk) {
+          const pos = VSU.seeking ? +sk.value : vsPlayPos(), dur = P.dur || 0.01;
+          if (!VSU.seeking) { sk.max = dur.toFixed(3); sk.value = pos.toFixed(3); }
+          sk.disabled = !!P.loading; sk.style.setProperty('--p', clamp(pos / dur * 100, 0, 100).toFixed(2) + '%');
+          const c = $('#vsPtCur'), d = $('#vsPtDur'), t = $('#vsPbT'); if (c) tx(c, vsFmtDur(pos)); if (d) tx(d, vsFmtDur(dur));
+          if (t) tx(t, P.loading ? '…' : P.paused ? (P.ended ? '↺ Play again' : '▶ Play') : '❚❚ Pause');
+        }
+        const ri = $('#vsRecInd'); if (ri) { ri.hidden = !VS.rec; if (VS.rec) ri.querySelector('b').textContent = vsFmtDur((Date.now() - VS.rec.t0) / 1000); }
+        const inf = $('#vsInfo'); if (inf) { inf.textContent = VS.info || ''; inf.dataset.t = VS.infoType || ''; }
+        const ctx = VS.ctx, set = (id, v) => { const el = $('#' + id); if (el && el.textContent !== v) el.textContent = v; };
+        set('vsLat', ctx ? Math.round(((ctx.baseLatency || 0) + (ctx.outputLatency || 0)) * 1000) + ' ms' : '—');
+        set('vsEng', !on ? '—' : VS.wl ? 'audio thread' : 'page (fallback)');
+        const L = VS.last;
+        set('vsPitch', on && L && L.voiced ? Math.round(L.f) + ' Hz' : '—'); set('vsConf', on && L ? Math.round(L.c * 100) + ' %' : '—');
+        const nt = $('#vsNote');
+        if (nt) { const m = on && L && L.voiced ? 69 + 12 * Math.log2(L.f / 440) : null, r = m == null ? null : Math.round(m); nt.querySelector('b').textContent = r == null ? '—' : nName(r); nt.querySelector('small').textContent = r == null ? (on ? (L && L.db > VSS.noiseDb ? (L.zcr >= 0.2 ? 'consonant / noise' : 'not clearly pitched') : 'silence') : '') : ((m - r) >= 0 ? '+' : '') + Math.round((m - r) * 100) + ' ¢'; nt.dataset.v = r == null ? '0' : '1'; }
+        const p = $('#vsPath');
+        if (p && full) {
+          const I = VS_I[VSS.inst], mp = vsMidiPort();
+          p.innerHTML = '<span>🎙 ' + esc(VS.micLabel || vsInName()) + '</span><i>→</i><span>' + (VSS.mode === 'pass' ? 'gain · ' + (VSS.nr !== 'off' ? 'noise gate · ' : '') + 'reverb / echo' : 'pitch tracker → ' + I.ico + ' ' + esc(I.name) + (VSS.engine === 'sample' ? ' (samples)' : ' (synth)')) + '</span><i>→</i><span>limiter</span><i>→</i><span>🔊 ' + esc(vsOutName()) + '</span>' + (mp ? '<i>+</i><span>🎹 MIDI → ' + esc(mp.name) + '</span>' : '');
+        }
+      }
+      // visualisations: drawn only while the window is open and something is running
+      function vsLoop() {
+        if (vsRaf) return;
+        let lastDraw = 0;
+        const frame = now => {
+          vsRaf = 0; const box = $('#vsBox'); if (!box || $('#gm').hidden) return;
+          if (now - lastDraw >= 33 && !document.hidden) { lastDraw = now; vsDraw(); vsPaintLive(false); }
+          vsRaf = requestAnimationFrame(frame);
+        };
+        vsRaf = requestAnimationFrame(frame);
+      }
+      function vsCanvas(id) {
+        const c = $('#' + id); if (!c) return null; const r = c.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.max(10, Math.round(r.width * dpr)), H = Math.max(10, Math.round(r.height * dpr));
+        if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+        return [c.getContext('2d'), W, H, dpr];
+      }
+      function vsLevel(an, buf) { an.getFloatTimeDomainData(buf); let s = 0, p = 0; for (let i = 0; i < buf.length; i++) { const v = buf[i]; s += v * v; const a = v < 0 ? -v : v; if (a > p) p = a; } return [Math.sqrt(s / buf.length), p]; }
+      const vsMeterPos = r => clamp((20 * Math.log10(Math.max(r, 1e-6)) + 60) / 60, 0, 1);
+      function vsDraw() {
+        const cs = getComputedStyle(document.documentElement), c1 = cs.getPropertyValue('--c1').trim() || '#8b5cf6', c2 = cs.getPropertyValue('--c2').trim() || '#06b6d4', mut = cs.getPropertyValue('--mut').trim() || '#94a3b8';
+        const N = VS.N, on = VS.running && !VS.preview, now = performance.now();
+        // meters
+        const mb = VS.mbuf || (VS.mbuf = new Float32Array(1024));
+        const [ri, pi] = on && N && N.inAn ? vsLevel(N.inAn, VS.wbuf || (VS.wbuf = new Float32Array(N.inAn.fftSize))) : [0, 0];
+        const [ro, po] = N ? vsLevel(N.meter, mb) : [0, 0];
+        VS.pkIn = Math.max(vsMeterPos(pi), (VS.pkIn || 0) - 0.012); VS.pkOut = Math.max(vsMeterPos(po), (VS.pkOut || 0) - 0.012);
+        const setBar = (id, v) => { const el = $('#' + id); if (el) el.style.transform = 'scaleX(' + v.toFixed(3) + ')'; };
+        setBar('vsMIn', vsMeterPos(ri)); setBar('vsMOut', vsMeterPos(ro));
+        const pk = (id, v) => { const el = $('#' + id); if (el) el.style.left = (v * 100).toFixed(1) + '%'; }; pk('vsPIn', VS.pkIn); pk('vsPOut', VS.pkOut);
+        const ci = $('#vsClipIn'), co = $('#vsClipOut'); if (ci) ci.classList.toggle('on', now - VS.clipIn < 1500); if (co) co.classList.toggle('on', now - VS.clipOut < 1500);
+        // waveform
+        const W0 = vsCanvas('vsWave');
+        if (W0) {
+          const [g, W, H, dpr] = W0; g.clearRect(0, 0, W, H);
+          g.strokeStyle = mut; g.globalAlpha = 0.25; g.lineWidth = 1; g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W, H / 2); g.stroke(); g.globalAlpha = 1;
+          if (on && N && N.inAn) {
+            const b = VS.wbuf, n = Math.min(b.length, 1024), off = b.length - n, grad = g.createLinearGradient(0, 0, W, 0); grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+            g.strokeStyle = grad; g.lineWidth = 2 * dpr; g.lineJoin = 'round'; if (motionOK()) { g.shadowColor = c1; g.shadowBlur = 8 * dpr; }
+            g.beginPath(); for (let i = 0; i < n; i++) { const x = i / (n - 1) * W, y = H / 2 - clamp(b[off + i] * 3, -1, 1) * H * 0.45; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); g.shadowBlur = 0;
+          }
+        }
+        // pitch trail
+        const T0 = vsCanvas('vsTrail');
+        if (T0) {
+          const [g, W, H, dpr] = T0; g.clearRect(0, 0, W, H);
+          const lo = 36, hi = 84, y = m => H - (clamp(m, lo, hi) - lo) / (hi - lo) * H, tr = VS.trail, tn = tr.length ? tr[tr.length - 1][0] : 0;
+          g.font = (10 * dpr) + 'px system-ui,sans-serif'; g.fillStyle = mut;
+          for (let m = lo; m <= hi; m++) { if (m % 12 === 0) { g.globalAlpha = 0.35; g.fillRect(0, y(m), W, Math.max(1, dpr)); g.globalAlpha = 0.8; g.fillText(nName(m), 4 * dpr, y(m) - 3 * dpr); } else if (!isBlack(m)) { g.globalAlpha = 0.08; g.fillRect(0, y(m), W, 1); } }
+          g.globalAlpha = 1;
+          const x = t => W - (tn - t) / 6000 * W;
+          g.fillStyle = c2; g.globalAlpha = 0.85;
+          for (let i = 1; i < tr.length; i++) { const p = tr[i], q = tr[i - 1]; if (p[2] != null && q[2] != null) g.fillRect(x(q[0]), y(p[2]) - 3 * dpr, Math.max(1, x(p[0]) - x(q[0]) + 0.5), 6 * dpr); }
+          g.fillStyle = c1;
+          for (const p of tr) if (p[1] != null) { g.globalAlpha = clamp((p[3] - 0.5) * 2, 0.15, 1); g.beginPath(); g.arc(x(p[0]), y(p[1]), 2.2 * dpr, 0, 6.283); g.fill(); }
+          g.globalAlpha = 1;
+          if (!on) { g.fillStyle = mut; g.font = (13 * dpr) + 'px system-ui,sans-serif'; g.textAlign = 'center'; g.fillText('Press Start and sing a note', W / 2, H / 2); g.textAlign = 'left'; }
+        }
+      }
+      // floating chip while Voice Studio is live and its window is closed
+      const vsChipEl = document.createElement('div'); vsChipEl.id = 'vsChip'; vsChipEl.hidden = true; vsChipEl.setAttribute('role', 'status');
+      // 7.3.2: the floating bars are "islands" — a dark glass capsule with the theme's glow, an icon badge (click = make it small),
+      // a title over the status, and round buttons. Voice Studio's island shows the microphone level; both stack in one corner.
+      const PLI_SVG = { mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/>', keys: '<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M6 6v7M10 6v7M14 6v7M18 6v7M6 13v6M10 13v6M14 13v6M18 13v6"/>', open: '<path d="M14 4h6v6M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>', micoff: '<path d="M3 3l18 18M9 9v2a3 3 0 0 0 5 2.2M15 9.3V5a3 3 0 0 0-5.9-.7M5 11a7 7 0 0 0 11.5 5.3M19 11a7 7 0 0 1-.6 2.8M12 18v4M8 22h8"/>' };
+      const pliSvg = n => '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + PLI_SVG[n] + '</svg>';
+      const plDock = document.createElement('div'); plDock.id = 'plDock'; document.body.appendChild(plDock);
+      // notifications move up while an island is showing, so they never cover it
+      if (window.ResizeObserver) new ResizeObserver(() => HTML.style.setProperty('--pl-dock', (plDock.offsetHeight ? plDock.offsetHeight + 10 : 0) + 'px')).observe(plDock);
+      vsChipEl.className = 'pl-island pli-voice';
+      vsChipEl.innerHTML = '<button type="button" class="pli-badge" data-c="mini" aria-label="Make the Voice Studio island small or large" title="Make small / large">' + pliSvg('mic') + '<i class="pli-ring" aria-hidden="true"></i></button>' +
+        '<div class="pli-txt"><b class="pli-t">Voice Studio</b><span class="pli-s"></span></div>' +
+        '<span class="pli-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' +
+        '<button type="button" class="pli-b" data-c="mic" aria-pressed="false"></button><button type="button" class="pli-b" data-c="open" title="Open Voice Studio" aria-label="Open Voice Studio">' + pliSvg('open') + '</button>' +
+        '<button type="button" class="pli-stop" data-c="stop" title="Stop Voice Studio (closes the microphone)">■ Stop</button>';
+      plDock.appendChild(vsChipEl);
+      vsChipEl.onclick = e => {
+        const b = e.target.closest('[data-c]'); if (!b) return; const c = b.dataset.c;
+        if (c === 'stop') vsStop(''); else if (c === 'open') openVoice('studio'); else if (c === 'mini') vsChipEl.classList.toggle('mini');
+        else { VS.micMute = !VS.micMute; vsApply(); if (VS.micMute) vsAllOff(false); vsChip(); }
+      };
+      function vsChip() {
+        const on = (VS.running && !VS.preview) || VS.starting; vsChipEl.hidden = !on; HTML.classList.toggle('vs-live', on);
+        if (!on) return; const [s, t] = vsState(); vsChipEl.dataset.s = s; vsChipEl.classList.toggle('rec', !!VS.rec);
+        const st = vsChipEl.querySelector('.pli-s'), txt = t + (VS.rec ? ' · ⏺ REC' : '');
+        if (st.textContent !== txt) st.textContent = txt;
+        const mb = vsChipEl.querySelector('[data-c=mic]'), lab = VS.micMute ? 'Unmute' : 'Mute';
+        if (mb.dataset.l !== lab) { mb.dataset.l = lab; mb.innerHTML = pliSvg(VS.micMute ? 'micoff' : 'mic') + '<span>' + lab + '</span>'; }
+        mb.setAttribute('aria-pressed', VS.micMute); mb.title = VS.micMute ? 'Turn the microphone back on' : 'Mute the microphone'; mb.setAttribute('aria-label', mb.title);
+      }
+      // the MIDI Bridge bar becomes an island too (its own buttons, texts and actions are kept; only the look and layout change)
+      {
+        const el = brChipEl, dot = el.querySelector(':scope > i'), span = el.querySelector(':scope > span');
+        el.classList.add('pl-island', 'pli-bridge');
+        const badge = document.createElement('button'); badge.type = 'button'; badge.className = 'pli-badge'; badge.title = 'Make small / large'; badge.setAttribute('aria-label', 'Make the MIDI Bridge island small or large');
+        badge.innerHTML = pliSvg('keys') + '<i class="pli-ring" aria-hidden="true"></i>'; badge.onclick = e => { e.stopPropagation(); el.classList.toggle('mini'); };
+        if (dot) dot.replaceWith(badge); else el.prepend(badge);
+        const txt = document.createElement('div'); txt.className = 'pli-txt'; txt.innerHTML = '<b class="pli-t">MIDI Bridge</b>';
+        if (span) { span.className = 'pli-s'; span.before(txt); txt.appendChild(span); }
+        el.querySelectorAll('[data-c=go],[data-c=open]').forEach(b => { b.className = 'pli-b' + (b.dataset.c === 'go' ? ' go' : ''); });
+        const s = el.querySelector('[data-c=stop]'); if (s) s.className = 'pli-stop';
+        plDock.appendChild(el);
+        const _brChip73 = brChip;
+        brChip = function () { _brChip73.apply(this, arguments); const sp = el.querySelector('.pli-s'); if (sp) sp.textContent = sp.textContent.replace(/^MIDI Bridge · /, ''); };
+        brChip();
+      }
+      {
+        const st = document.createElement('style'); st.id = 'v73css';
+        st.textContent = `
+.vsw .vs-modes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media (max-width:700px){.vsw .vs-modes{grid-template-columns:1fr}}
+.vs-mode{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:12px;text-align:left;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--txt);font:inherit;cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .25s ease,background .25s ease}
+.vs-mode:hover{transform:translateY(-1px);border-color:var(--c1)}
+.vs-mode .vs-mi{grid-row:1/3;font-size:30px;line-height:1;align-self:center;filter:saturate(1.1)}
+.vs-mode b{font-size:15px}.vs-mode small{color:var(--mut);font-size:12.5px;line-height:1.4}
+.vs-mode[aria-checked=true]{border-color:transparent;background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 26%,transparent),color-mix(in srgb,var(--c2) 18%,transparent));box-shadow:0 0 0 2px var(--c1),0 10px 30px -12px var(--c1)}
+.vs-scope{position:relative;height:130px;margin-top:10px;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.05));border:1px solid var(--line)}
+.vs-scope canvas{width:100%;height:100%;display:block}
+.vs-note{position:absolute;right:12px;top:8px;text-align:right;pointer-events:none}
+.vs-note b{display:block;font-size:30px;font-weight:800;letter-spacing:.5px;line-height:1.05;background:linear-gradient(135deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent;transition:opacity .2s}
+.vs-note[data-v="0"] b{opacity:.35}.vs-note small{color:var(--mut);font-size:11.5px}
+.vs-meters{display:grid;gap:7px;margin-top:10px}
+.vs-m{display:grid;grid-template-columns:30px 1fr 38px;gap:8px;align-items:center;font-size:12px;color:var(--mut)}
+.vs-bar{position:relative;height:10px;border-radius:999px;background:rgba(127,127,127,.18);overflow:hidden}
+.vs-bar i{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#22c55e 0%,#22c55e 62%,#facc15 80%,#ef4444 96%);border-radius:inherit}
+.vs-bar u{position:absolute;top:0;bottom:0;width:2px;left:0;background:var(--txt);opacity:.7;text-decoration:none}
+.vs-m em{font-style:normal;font-size:10px;font-weight:800;text-align:center;border-radius:6px;padding:2px 0;color:var(--mut);border:1px solid var(--line)}
+.vs-m em.on{background:#ef4444;color:#fff;border-color:#ef4444}
+.vs-quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 16px;margin-top:12px}
+.vs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px 18px;align-items:end}
+.vs-grid1{display:grid;gap:8px}
+.vs-grid1 label,.vs-grid>label:not(.vs-ctl):not(.v71row){display:flex;flex-direction:column;gap:4px;font-size:13px;min-width:0}
+.vs-grid1 select,.vs-grid select{width:100%;max-width:100%}
+.vs-ctl{display:flex;flex-direction:column;gap:3px;font-size:12.5px;min-width:0}
+.vs-ctl>span{display:flex;justify-content:space-between;gap:8px;color:var(--mut)}.vs-ctl b{color:var(--txt);font-variant-numeric:tabular-nums;font-weight:700}
+.vs-ctl input[type=range]{width:100%;accent-color:var(--c1)}
+.btn.vs-go{min-width:220px;font-weight:800}.btn.vs-go.on{background:linear-gradient(135deg,#dc2626,#f97316)!important;color:#fff!important;border-color:transparent!important}
+.btn.rec{background:#dc2626!important;color:#fff!important;border-color:#b91c1c!important}
+.vs-rec{color:#ef4444;font-weight:800;font-size:13px;letter-spacing:.5px}.vs-rec:not([hidden]){animation:vsBlink 1.2s steps(2,start) infinite}
+@keyframes vsBlink{50%{opacity:.35}}
+.v71stat[data-s=bad] i{background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.22)}
+.vs-route{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.vs-route i{flex:0 0 12px;height:12px;border-radius:50%;background:#64748b}
+.vs-route b{display:block;font-size:14px}.vs-route small{color:var(--mut);font-size:12px;overflow-wrap:anywhere}
+.vs-route[data-s=ok]{border-color:rgba(74,222,128,.5)}.vs-route[data-s=ok] i{background:#4ade80;box-shadow:0 0 0 4px rgba(74,222,128,.22)}
+.vs-route[data-s=wait]{border-color:rgba(251,191,36,.55)}.vs-route[data-s=wait] i{background:#fbbf24;box-shadow:0 0 0 4px rgba(251,191,36,.22)}
+.vs-route[data-s=pc] i{background:#38bdf8;box-shadow:0 0 0 4px rgba(56,189,248,.2)}
+.vs-route[data-s=bad]{border-color:rgba(239,68,68,.55)}.vs-route[data-s=bad] i{background:#ef4444}
+.vs-path{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:12px}
+.vs-path span{padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);overflow-wrap:anywhere}.vs-path i{color:var(--mut);font-style:normal}
+.vs-trail{width:100%;height:150px;display:block}
+.vs-info{min-height:18px;margin:10px 0 0}.vs-info[data-t=bad]{color:#fb7185}
+.vs-insts{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
+.vs-inst{position:relative;display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);cursor:pointer;transition:transform .18s ease,box-shadow .25s ease,border-color .18s ease;min-width:0}
+.vs-inst:hover{transform:translateY(-2px);border-color:var(--c1)}
+.vs-inst:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+.vs-inst.sel{border-color:transparent;box-shadow:0 0 0 2px var(--c1),0 12px 32px -14px var(--c1);background:linear-gradient(160deg,color-mix(in srgb,var(--c1) 22%,transparent),color-mix(in srgb,var(--c2) 10%,transparent))}
+.vs-inst.sel::after{content:'✓';position:absolute;top:10px;right:12px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2))}
+.vs-ii{font-size:34px;line-height:1.1}.vs-inst b{font-size:15px}.vs-inst small{color:var(--mut);font-size:11.5px;line-height:1.35}
+.vs-ir{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:end;margin-top:6px}
+.vs-ir2{display:grid;gap:6px;margin-top:6px;padding-top:8px;border-top:1px solid var(--line)}
+.vs-facts p{margin:10px 0 0;font-size:13px;line-height:1.5}
+.vs-steps{margin:10px 0 0;padding-left:20px;font-size:13px;line-height:1.5}.vs-steps li{margin-bottom:6px}
+.vs-recs{display:grid;gap:8px}
+.vs-recr{display:grid;grid-template-columns:auto minmax(120px,1fr) auto auto auto auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)}
+.vs-recr input{min-width:0;width:100%}
+@media (max-width:760px){.vs-recr{grid-template-columns:auto 1fr}.vs-recr>span,.vs-recr>button:not(:first-child){grid-column:span 1}}
+.vs-recr{transition:border-color .2s ease,box-shadow .25s ease,background .25s ease}
+.vs-recr.active{border-color:var(--c1);background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 14%,transparent),color-mix(in srgb,var(--c2) 8%,transparent))}
+.vs-recr.playing{box-shadow:0 0 0 1px var(--c1),0 10px 28px -16px var(--c1)}
+.vs-recr .vs-playb{min-width:104px}
+.vs-recr.playing .vs-playb{background:linear-gradient(135deg,var(--c1),var(--c2))!important;color:#fff!important;border-color:transparent!important}
+.vs-player{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px;padding-top:9px;border-top:1px solid var(--line)}
+.vs-player .vs-pbt{min-width:96px;font-weight:800}
+.vs-pt{font:600 12.5px ui-monospace,Consolas,monospace;color:var(--mut);min-width:38px;text-align:center}
+input.vs-seek[type=range]{flex:1 1 220px;min-width:140px;height:6px;-webkit-appearance:none;appearance:none;border-radius:999px;cursor:pointer;background:linear-gradient(90deg,var(--c1),var(--c2)) 0/var(--p,0%) 100% no-repeat,rgba(127,127,127,.25)}
+input.vs-seek[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:#fff;border:2px solid var(--c1);box-shadow:0 1px 6px rgba(0,0,0,.35)}
+input.vs-seek[type=range]:disabled{opacity:.5;cursor:default}
+.vs-eq{display:inline-flex;gap:2px;align-items:flex-end;height:16px;width:18px}
+.vs-eq b{display:block;width:3px;height:4px;border-radius:2px;background:var(--c1)}
+.vs-recr.playing .vs-eq b{animation:vsEq .9s ease-in-out infinite}
+.vs-recr.playing .vs-eq b:nth-child(2){animation-delay:-.3s}.vs-recr.playing .vs-eq b:nth-child(3){animation-delay:-.6s}.vs-recr.playing .vs-eq b:nth-child(4){animation-delay:-.15s}
+@keyframes vsEq{0%,100%{height:4px}50%{height:16px}}
+.vs-pend{margin-bottom:12px}
+#vsChip{position:fixed;right:18px;bottom:66px;z-index:61;display:flex;gap:8px;align-items:center;padding:8px 10px 8px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(15,18,32,.9);color:#fff;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.35);max-width:calc(100vw - 36px)}
+#vsChip[hidden]{display:none}#vsChip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#vsChip i{flex:0 0 9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 4px rgba(74,222,128,.2)}#vsChip[data-s=wait] i{background:#fbbf24}
+html:has(#gm:not([hidden]) #vsBox) #vsChip{display:none}
+@property --pli-a{syntax:'<angle>';inherits:false;initial-value:0deg}
+#plDock{position:fixed;right:18px;bottom:18px;z-index:61;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none;max-width:calc(100vw - 36px)}
+#plDock>*{pointer-events:auto}
+#plDock>.pl-island{position:relative;inset:auto;right:auto;bottom:auto;display:flex;align-items:center;gap:9px;padding:6px 7px 6px 6px;border-radius:999px;border:0;color:#f8fafc;font-size:13px;max-width:100%;
+  background:radial-gradient(130% 160% at 0% 0%,color-mix(in srgb,var(--c1) 34%,transparent),transparent 58%),radial-gradient(120% 140% at 100% 100%,color-mix(in srgb,var(--c2) 22%,transparent),transparent 60%),linear-gradient(135deg,rgba(9,11,22,.95),rgba(20,16,38,.95));
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.08),0 0 26px -8px color-mix(in srgb,var(--c1) 70%,transparent);-webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5);animation:pliIn .4s cubic-bezier(.2,.9,.3,1.25)}
+#plDock>.pl-island[hidden]{display:none}
+#plDock>.pl-island::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1.5px;pointer-events:none;background:conic-gradient(from var(--pli-a),var(--c1),var(--c2),transparent 35%,transparent 60%,var(--c1));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+#plDock>.pl-island[data-s=live]::before{animation:pliSpin 3.2s linear infinite}
+#plDock>.pl-island[data-s=wait]::before{background:conic-gradient(from var(--pli-a),#f59e0b,#fb923c,transparent 40%,#f59e0b);animation:pliSpin 6s linear infinite}
+#plDock>.pl-island.rec::before{background:conic-gradient(from var(--pli-a),#ef4444,#f97316,transparent 40%,#ef4444)}
+@keyframes pliSpin{to{--pli-a:360deg}}
+@keyframes pliIn{from{transform:translateY(14px) scale(.94);opacity:0}}
+.pl-island .pli-badge{position:relative;flex:0 0 38px;width:38px;height:38px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 5px 16px -5px var(--c1)}
+.pl-island .pli-badge svg,.pl-island .pli-b svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#plDock .pl-island .pli-ring{position:absolute;inset:-4px;width:auto;height:auto;flex:none;background:none;box-shadow:none;border-radius:50%;border:2px solid var(--c1);opacity:0;pointer-events:none}
+#plDock .pl-island[data-s=live] .pli-ring{animation:pliPulse 1.9s ease-out infinite}
+@keyframes pliPulse{0%{transform:scale(.86);opacity:.85}100%{transform:scale(1.38);opacity:0}}
+.pl-island[data-s=wait] .pli-badge{background:linear-gradient(135deg,#f59e0b,#f97316);box-shadow:0 5px 16px -5px #f59e0b}
+.pl-island[data-s=prev] .pli-badge{background:linear-gradient(135deg,#0ea5e9,#6366f1)}
+.pl-island .pli-txt{display:flex;flex-direction:column;min-width:0;line-height:1.2;padding-right:2px}
+.pl-island .pli-t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:color-mix(in srgb,var(--c1) 55%,#fff)}
+.pl-island .pli-s{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:min(300px,52vw);color:#f1f5f9}
+.pl-island .pli-eq{display:flex;align-items:flex-end;gap:2px;height:22px;padding:0 2px}
+#plDock .pl-island .pli-eq i{flex:none;box-shadow:none;display:block;width:3px;height:100%;border-radius:2px;background:linear-gradient(var(--c2),var(--c1));transform-origin:bottom;transform:scaleY(calc(.14 + var(--lvl,0) * var(--k,.8)));transition:transform .12s ease-out}
+#plDock .pli-eq i:nth-child(1){--k:.55}#plDock .pli-eq i:nth-child(2){--k:.85}#plDock .pli-eq i:nth-child(3){--k:1}#plDock .pli-eq i:nth-child(4){--k:.7}#plDock .pli-eq i:nth-child(5){--k:.45}
+.pl-island .pli-b{height:32px;min-width:32px;padding:0 11px;border-radius:999px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.11);color:#fff;font:600 12.5px/1 inherit;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;transition:background .15s,transform .15s,border-color .15s}
+.pl-island .pli-b:hover{background:rgba(255,255,255,.16);transform:translateY(-1px)}
+.pl-island .pli-b[data-c=open]{padding:0;width:32px}
+.pl-island .pli-b[aria-pressed=true]{background:#f59e0b;border-color:transparent;color:#1f1300}
+.pl-island .pli-b.go{background:linear-gradient(135deg,var(--c1),var(--c2));border-color:transparent}
+.pl-island .pli-b[hidden]{display:none}
+.pl-island .pli-stop{height:32px;padding:0 14px;border-radius:999px;border:0;cursor:pointer;color:#fff;font:800 12.5px/1 inherit;font-family:inherit;white-space:nowrap;background:linear-gradient(135deg,#f43f5e,#dc2626);box-shadow:0 6px 18px -6px #ef4444;transition:transform .15s,filter .15s}
+.pl-island .pli-stop:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.pl-island :is(.pli-badge,.pli-b,.pli-stop):focus-visible{outline:2px solid #fff;outline-offset:2px}
+.pl-island.mini .pli-txt,.pl-island.mini .pli-eq,.pl-island.mini .pli-b{display:none}
+.pl-island.mini{gap:6px}
+@media (max-width:640px){.pl-island .pli-b span{display:none}.pl-island .pli-s{max-width:42vw}}
+@media (prefers-reduced-motion:reduce){html:not(.mo-force) #plDock>.pl-island,html:not(.mo-force) #plDock>.pl-island::before,html:not(.mo-force) #plDock .pl-island .pli-ring{animation:none}}
+html.pl-tray #plDock{display:none}
+html #toasts{bottom:calc(16px + var(--pl-dock,0px));transition:bottom .25s ease}
+@media (prefers-reduced-motion:reduce){html:not(.motion-over) .vs-mode,html:not(.motion-over) .vs-inst{transition:none}}
+`;
+        document.head.appendChild(st);
+      }
+      // navigation, quick search, What's new
+      ICO.mic = '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/>';
+      {
+        NAV.push(['voice', 'Voice Studio', 'mic', () => openVoice()]);
+        const ref = nav.querySelector('.nv-i[data-nv="sound"]');
+        if (ref) { const b = document.createElement('button'); b.type = 'button'; b.className = 'nv-i'; b.dataset.nv = 'voice'; b.title = 'Voice Studio'; b.innerHTML = icon('mic') + '<span>Voice Studio</span>'; ref.after(b); }
+        const _cmd73 = commands;
+        commands = function () { const C = _cmd73(); C.push(['Voice Studio (microphone → your voice or an instrument)', 'Sound', () => openVoice()], ['Voice Studio: stop everything (closes the microphone)', 'Sound', () => vsEmergency()]); return C; };
+      }
+      VERSIONS.unshift({
+        v: '7.3', date: '2026-11-01', title: 'Voice Studio',
+        groups: [
+          ['New features', [
+            '🎙 Voice Studio (navigation → Create → Voice Studio): speak or sing into a microphone and hear it live — either your own voice (Voice passthrough, with reverb, echo and a noise gate) or turned into one of 10 instruments (Voice → instrument: grand piano, electric piano, violin, cello, flute, clarinet, trumpet, synth lead, synth pad, organ)',
+            'Real pitch tracking on the audio thread (YIN): only clearly pitched, loud-enough, stable sounds make notes — silence, background noise, “s”/“f” sounds and breaths do not. Separate sensitivity for singing and speaking, smoothing, note stability, octave and transpose, attack / release / sustain, whole notes or a gliding exact pitch',
+            'Synthesised instruments (offline) or sampled General MIDI instruments; preview each instrument; switch instruments without a click or a restart',
+            'Choose the microphone, the output device and the audio buffer; live waveform, input and output meters with clipping lights, a 6-second pitch display',
+            'Record what you hear or only the microphone; play, rename, save as .wav or delete (with confirmation). Recordings are kept in their own storage, never in your piano log',
+            'Optional: also send the notes to a MIDI keyboard, so the ST50 plays them with its own sounds over the USB cable'
+          ]],
+          ['Safety', ['The microphone only opens when you press Start. Emergency stop, mute microphone, mute output, a limiter and a fixed volume ceiling, automatic mute when feedback (howling) is heard, volume turned down after 3 seconds of overload, stops cleanly when a device is unplugged, when Piano Logger goes to the tray, or closes']],
+          ['Honest limits', ['The ST50 is a USB MIDI keyboard: its USB cable carries notes, not sound. To hear the PC (your voice or Piano Logger’s instruments) through the ST50’s speakers, an audio cable from the PC’s output to the keyboard’s audio input is needed. Voice Studio shows this clearly and asks before playing on an output that is not confirmed']]
+        ]
+      });
+      VERSIONS.unshift({
+        v: '7.3.1', date: '2026-11-02', title: 'Voice Studio: a real recording player, Stop that stops',
+        groups: [
+          ['Bug fixes', [
+            'Voice Studio → Studio: after pressing Start, the “■ Stop” button did nothing until you switched to another tab and back. It stops at the first click now',
+            'Voice Studio → Recordings: the recording you play is now clearly shown (highlighted row, “Pause” button, moving equaliser)'
+          ]],
+          ['New features', ['A player for recordings: play, pause and resume where you left off, back / forward 5 seconds, stop, and a bar showing how far it has played — drag or click it to jump anywhere']]
+        ]
+      });
+      VERSIONS.unshift({
+        v: '7.3.2', date: '2026-11-02', title: 'Voice → instrument keeps up with you · new floating islands · section dragging fixed',
+        groups: [
+          ['Voice Studio', [
+            'Much faster voice → instrument: notes now start about 25–65 ms after your voice instead of about 150–200 ms, and stop about 50–90 ms after it instead of up to a quarter of a second (measured with a fast test phrase). Quick singing and speaking keep their rhythm',
+            'Every new syllable is a new note — singing “la-la-la” on one pitch plays three notes instead of one long one',
+            'New “Response” choice on the Voice tracking tab: ⚡ Fast (new default), Balanced or Steady',
+            '“Sustain” now only lengthens the fade of Piano Logger’s own sound; it no longer keeps the note (or the keyboard’s MIDI note) sounding after you stop',
+            'Fewer wrong high notes at the start of a note (an octave check in the pitch detector)',
+            '▶ Preview also plays on the keyboard when “Also play on a MIDI keyboard” is on'
+          ]],
+          ['UI & UX', ['The floating Voice Studio and MIDI Bridge bars are now “islands”: a dark glass capsule with a glowing border in your theme’s colours, an icon badge (click it to make the island small), a title above the status, a live microphone meter, and round buttons. They stack neatly in the corner, and notifications move up so they never cover them']],
+          ['Bug fixes', ['Desktop app: “Drag to move this section” never worked — the window refused every drag. It works now (needs the Windows app 7.3.2)']]
+        ]
+      });
+      window.__pl73 = Object.freeze({
+        vs: { open: openVoice, start: vsStart, stop: vsStop, emergency: vsEmergency, settings: () => JSON.parse(JSON.stringify(VSS)), insts: () => VS_INST.map(i => i.id), pick: vsPickInst, mode: vsMode, recStart: vsRecStart, recStop: vsRecStop, recList: () => vsRecList().then(() => VSU.recs.map(r => ({ id: r.id, name: r.name, dur: r.dur, size: r.size }))), del: vsDelRec, devices: vsDevices, route: vsRoute, yin: vsYin, stats: vsStats, player: () => VS.play ? { id: VS.play.id, pos: vsPlayPos(), dur: VS.play.dur, paused: !!VS.play.paused, ended: !!VS.play.ended, loading: !!VS.play.loading } : null,
+          state: () => ({ kinds: VS.voices.map(v => v.kind), resp: VSS.resp, running: VS.running, preview: VS.preview, wl: VS.wl, err: VS.err, info: VS.info, micMute: VS.micMute, outMute: VS.outMute, note: VS.note, cont: VS.cont, voices: VS.voices.length, last: VS.last && Object.assign({}, VS.last), trail: VS.trail.length, rec: !!VS.rec, ctx: VS.ctx ? VS.ctx.state : null, sink: VS.ctx && 'sinkId' in VS.ctx ? VS.ctx.sinkId : null, midiOn: [...VS.midiOn], played: VS.trail.filter(p => p[2] != null).map(p => p[2]) }),
+          level: () => { const N = VS.N; if (!N) return null; const b = new Float32Array(1024), r = an => { an.getFloatTimeDomainData(b); let q = 0; for (let i = 0; i < b.length; i++) q += b[i] * b[i]; return Math.sqrt(q / b.length); }; return { in: N.inAn ? r(N.inAn) : 0, out: r(N.meter) }; },
+          set: (k, v) => { vsSetK(k, v); vsSave(); vsApply(); } }
+      });
 
       // debugging / automated checks only (no access to your logged data)
       window.__pl71 = Object.freeze({
