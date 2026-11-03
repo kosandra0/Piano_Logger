@@ -3,6 +3,27 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 7.3.5 — 2026-11-03 · Release history & maintenance update
+
+### Release history
+- Corrected the release-history ordering: newest releases now appear first (7.3.5, 7.3.4, 7.3.3, …).
+- Cause: the list was sorted before the newest entries were added, so entries added later kept the wrong order. The list is now sorted each time it opens.
+- The newest release is selected and marked "Current" when What's New opens.
+- Website and desktop release-history displays use the same code.
+
+### Branding maintenance
+- Kept the new Piano Logger waveform emblem introduced in 7.3.4.
+- Kept the website and desktop branding consistent.
+- Kept the corrected sidebar branding.
+- Kept the updated Windows application icon assets and website favicons.
+
+### Windows maintenance
+- Investigated the remaining Windows taskbar icon issue. Cause: the old icon belongs to the legacy Electron app (`Piano Logger 6.1 (Electron)`), not the current Tauri app. Manual steps are in the development record.
+
+### Commits in this history
+- `188797b`: initial logo replacement.
+- `c7ebdeb`: sidebar branding correction.
+
 ## 7.3.4 — 2026-11-03 · Branding & maintenance update
 
 ### Branding
@@ -292,6 +313,7 @@ Measured in Chrome on this PC (GeForce GT 710), Aurora Glass theme, glow notes, 
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
+| 7.3.5 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Release-history ordering fixed; branding kept. Built locally, not published yet. |
 | 7.3.4 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Branding & maintenance: new logo in the sidebar and app icons. Page 7.3.4. Built locally, not published yet. |
 | 7.3.3 | 2026-11-02 | Tauri 2.12.5 (WebView2) | No code change. Page 7.3.3 (animated islands, sliding sections). Built locally, Published 2026-11-02 as `app-v7.3.3`. |
 | 7.3.2 | 2026-11-02 | Tauri 2.12.5 (WebView2) | HTML5 drag and drop in the page works (`disable_drag_drop_handler`). Page 7.3.2. Published 2026-11-02 as `app-v7.3.2`. |

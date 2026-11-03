@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 7.3.4: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="7.3.4">
+  <meta name="description" content="Piano Logger 7.3.5: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="7.3.5">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17376,7 +17376,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.3.4';
+      const APP_VERSION = '7.3.5';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -17843,6 +17843,7 @@ PianoLogger.on('noteon', e => {
         }
       ];
       function openNews() {
+        sortVersions();
         LS.set('pll.seenVer', APP_VERSION); $('#btnNews').classList.remove('new');
         openModal('<div class="th-head"><h2 style="font-size:20px">🆕 What’s new</h2><span class="sub">Version ' + APP_VERSION + '</span></div>' +
           '<div class="news">' + VERSIONS.map((r, i) => '<section class="news-v' + (i === 0 ? ' cur' : '') + '"><div class="news-h"><b>v' + r.v + '</b><span>' + esc(r.title) + '</span><time datetime="' + r.date + '">' +
@@ -20351,9 +20352,11 @@ PianoLogger.on('noteon', e => {
       });
       // newest version first (compared number by number), and every grouped entry also gets its flat list of items
       const verCmp = (a, b) => { const x = String(a.v).split('.').map(Number), y = String(b.v).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (y[i] || 0) - (x[i] || 0); if (d) return d; } return 0; };
-      VERSIONS.sort(verCmp); VERSIONS.forEach(r => { if (r.groups) r.items = r.groups.flatMap(g => g[1]); });
+      const sortVersions = () => { VERSIONS.sort(verCmp); VERSIONS.forEach(r => { if (r.groups) r.items = r.groups.flatMap(g => g[1]); }); };
+      sortVersions();
       let wnSel = 0;
       function openNewsV7(i) {
+        sortVersions();
         navClose(); LS.set('pll.seenVer', APP_VERSION); const nb = $('#btnNews'); if (nb) nb.classList.remove('new'); const nd = nav.querySelector('.nv-dot'); if (nd) nd.hidden = true;
         wnSel = typeof i === 'number' ? i : 0;
         const r = VERSIONS[wnSel], when = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -23098,6 +23101,26 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
           e.stopPropagation(); pliMini(el);
         }, true);
       }
+      VERSIONS.unshift({
+        v: '7.3.5', date: '2026-11-03', title: 'Release History & Maintenance Update',
+        groups: [
+          ['Release history', [
+            'Corrected the release-history ordering',
+            'Newest releases now appear first',
+            'Improved consistency between website and desktop release-history displays',
+            'Corrected default selection of the latest release'
+          ]],
+          ['Branding maintenance', [
+            'Retained the new Piano Logger waveform emblem introduced in 7.3.4',
+            'Maintained consistent website and desktop branding',
+            'Preserved the corrected dynamically generated sidebar branding',
+            'Retained updated Windows application icon assets and website favicons'
+          ]],
+          ['Windows maintenance', [
+            'Investigated the remaining Windows taskbar icon discrepancy (cause and manual steps recorded in the development record)'
+          ]]
+        ]
+      });
       VERSIONS.unshift({
         v: '7.3.4', date: '2026-11-03', title: 'Branding & Maintenance Update',
         groups: [
