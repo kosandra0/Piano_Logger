@@ -3,6 +3,21 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 7.3.4 — 2026-11-03 · Branding & maintenance update
+
+### Branding
+- Introduced the new Piano Logger waveform emblem.
+- Replaced the old musical-note branding in the application sidebar.
+- Updated the Windows application icon assets.
+- Updated the website logo.
+- Updated the website favicon and Apple touch icon.
+- Corrected the dynamically generated sidebar branding.
+- Improved consistency between the website and the desktop application branding.
+
+### Maintenance
+- Version updated to 7.3.4 everywhere (page, sidebar label, desktop app files). No change to piano, MIDI, Voice Studio or stored data.
+- Development record: commit `188797b` (initial logo replacement) and `c7ebdeb` (sidebar branding correction).
+
 ## 7.3.3 — 2026-11-02 · Smooth motion: islands and sections
 
 ### UI & UX (owner's notes on G2 and G3 in `TESTING-7.3-voice.md`)
@@ -277,6 +292,7 @@ Measured in Chrome on this PC (GeForce GT 710), Aurora Glass theme, glow notes, 
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
+| 7.3.4 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Branding & maintenance: new logo in the sidebar and app icons. Page 7.3.4. Built locally, not published yet. |
 | 7.3.3 | 2026-11-02 | Tauri 2.12.5 (WebView2) | No code change. Page 7.3.3 (animated islands, sliding sections). Built locally, Published 2026-11-02 as `app-v7.3.3`. |
 | 7.3.2 | 2026-11-02 | Tauri 2.12.5 (WebView2) | HTML5 drag and drop in the page works (`disable_drag_drop_handler`). Page 7.3.2. Published 2026-11-02 as `app-v7.3.2`. |
 | 7.3.1 | 2026-11-02 | Tauri 2.12.5 (WebView2) | Page 7.3.1 (recording player, Stop fix). No change to the app's code. Built locally, not published. |

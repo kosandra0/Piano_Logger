@@ -15,7 +15,7 @@ the same API the Electron app's `preload.js` provides, so the page code is ident
 | `package.json` | version, and the `dev` / `build` scripts (Tauri CLI 2.12) |
 | `scripts/copy-page.mjs` | copies the newest page (`../index.html` or `../piano-logger.html`) to `web/index.html` before every build |
 | `web/` | the page inside the app (generated; do not edit) |
-| `src-tauri/tauri.conf.json` | name, version 7.3.2, identifier, installer settings |
+| `src-tauri/tauri.conf.json` | name, version 7.3.4, identifier, installer settings |
 | `src-tauri/capabilities/default.json` | no plugin permissions are given to the page (least privilege) |
 | `src-tauri/src/lib.rs` | the app: window, page serving and updates, SoundFonts, backups, always on top, start with Windows, MIDI + microphone permission, system tray |
 | `src-tauri/src/bridge.js` | `window.pianoApp` for the page |
@@ -31,7 +31,7 @@ npm install
 npm run build        # web page copied in, release build, NSIS installer
 ```
 
-The installer is written to `src-tauri/target/release/bundle/nsis/Piano Logger_7.3.2_x64-setup.exe`,
+The installer is written to `src-tauri/target/release/bundle/nsis/Piano Logger_7.3.4_x64-setup.exe`,
 and the app itself to `src-tauri/target/release/piano-logger.exe`. `npm run dev` starts a debug build.
 
 ## How it behaves

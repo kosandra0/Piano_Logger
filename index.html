@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 7.0.4: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="7.0.4">
+  <meta name="description" content="Piano Logger 7.3.4: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="7.3.4">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17376,7 +17376,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.3.3';
+      const APP_VERSION = '7.3.4';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -23098,6 +23098,23 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
           e.stopPropagation(); pliMini(el);
         }, true);
       }
+      VERSIONS.unshift({
+        v: '7.3.4', date: '2026-11-03', title: 'Branding & Maintenance Update',
+        groups: [
+          ['Branding', [
+            'Introduced the new Piano Logger waveform emblem',
+            'Replaced the old musical-note branding in the application sidebar',
+            'Updated the Windows application icon assets',
+            'Updated the website logo',
+            'Updated the website favicon and Apple touch icon',
+            'Corrected the dynamically generated sidebar branding',
+            'Improved consistency between website and desktop application branding'
+          ]],
+          ['Maintenance', [
+            'Version updated to 7.3.4. No change to piano, MIDI, Voice Studio or stored data'
+          ]]
+        ]
+      });
       VERSIONS.unshift({
         v: '7.3.3', date: '2026-11-02', title: 'Smooth motion: islands and sections',
         groups: [
