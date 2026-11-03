@@ -6,7 +6,7 @@ A single-file, browser-based piano MIDI visualizer and lifetime key logger. Plug
 
 **Windows app:** [Download Piano-Logger-Setup.exe](https://github.com/kosandra0/Piano_Logger/releases/latest/download/Piano-Logger-Setup.exe) (Windows 10 & 11, 64-bit)
 
-**Current version:** 7.3.5 — 🎙 **Voice Studio**: sing, hum or speak into a microphone and hear your own voice with effects, or turn your voice into one of 10 instruments (and, optionally, play it on your MIDI keyboard). Voice → instrument keeps up with fast singing and speaking; floating "island" controls that shrink and grow smoothly; sections slide into place when you move them; a recording player. See [CHANGELOG.md](CHANGELOG.md) for everything that changed.
+**Current version:** 7.4.0 — 📊 **Voice activity tracking** (how long you speak or sing, with history, statistics and a dashboard section; only times are saved). 🎙 **Voice Studio**: sing, hum or speak into a microphone and hear your own voice with effects, or turn your voice into one of 10 instruments (and, optionally, play it on your MIDI keyboard). Voice → instrument keeps up with fast singing and speaking; floating "island" controls that shrink and grow smoothly; sections slide into place when you move them; a recording player. See [CHANGELOG.md](CHANGELOG.md) for everything that changed.
 
 **Jump to:** [Features](#-features) · [System requirements](#-system-requirements) · [Privacy](#-privacy) · [How to use](#-how-to-use) · [Voice Studio](#-voice-studio) · [Windows app](#-windows-app)
 
@@ -16,6 +16,7 @@ A single-file, browser-based piano MIDI visualizer and lifetime key logger. Plug
 - **Three ways to play:** a real MIDI keyboard (via Web MIDI), your computer keyboard (two playable rows, remappable), or click/tap the on-screen keys
 - **Lifetime logging** — every key press is saved forever on your device, including note, velocity, duration, timestamp, and input source
 - **🎙 Voice Studio** *(new in 7.3)* — **Voice passthrough** (hear your own voice live with reverb, echo, noise gate and noise suppression) or **Voice → instrument** (a real-time pitch tracker turns the melody you sing, hum or speak into Grand Piano, Electric Piano, Violin, Cello, Flute, Clarinet, Trumpet, Synth Lead, Synth Pad or Organ). Optional: also play the notes on your MIDI keyboard. Recordings with a full player (play/pause, ±5 s, seek bar) and `.wav` export. Your voice never adds to your lifetime key-press count.
+- **📊 Voice activity tracking** *(new in 7.4.0)* — Voice Studio now saves how long you speak or sing: each session (Speaking or Singing, from the *Voice style* setting) keeps its start and end time, the time the microphone was watched and the time a voice was detected. See them in **History → Voice activity**, **Key statistics → Voice statistics** and the **Dashboard**. Sessions are part of your full backups. Only times are saved, never sound; the detected time is an estimate.
 - **🎮 MIDI Keyboard Bridge** *(Windows app)* — play Roblox Virtual Piano and other games with your MIDI keyboard: notes become computer-keyboard keys (full 88-key Roblox layout included), sent only to the game window you choose and only while it is in front. Mapping studio with learn mode, profiles, octave/transpose, split keyboard, sustain pedal, a live monitor, and an Emergency stop (**Ctrl+Alt+End**). On the website it shows a preview of the keys only.
 - **Floating islands** — while Voice Studio or the MIDI Bridge is running, a small dark-glass control "island" stays in the corner (status, live microphone meter, Stop); click its icon to shrink it
 - **🗕 System tray** *(Windows app)* — optionally keep Piano Logger running in the tray when you close the window: it keeps logging with very little memory and no graphics (the bridge does not press keys while in the tray)
@@ -49,6 +50,8 @@ Notes: only the *tested* machine above was actually measured; the *Recommended* 
 ## 🔒 Privacy
 
 This app has **no server and no accounts**. All data — your key presses, voice recordings, settings, and practice scores — is stored only on your own device. Nothing is uploaded anywhere. The microphone is used only while Voice Studio is started and is closed when you press Stop. If you clear your browser data, your log history is lost unless you've made a backup, so regular backups are recommended (the Windows app makes one every day).
+
+Voice activity tracking (7.4.0) saves only numbers — when a session started and ended, how long the microphone was watched and how long a voice was detected. It saves no audio, no text and nothing is uploaded. These sessions are included in full backups.
 
 ## 🚀 How to use
 

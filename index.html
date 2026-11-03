@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 7.3.5: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="7.3.5">
+  <meta name="description" content="Piano Logger 7.4.0: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="7.4.0">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11883,7 +11883,7 @@
         const withSettings = fmt === 'json' && !test && (kind === 'backup' || kind === 'all');
         let blob = new Blob([fmt === 'csv' ? '﻿' + CSV_HEAD.join(',') + '\r\n' :
           '{"app":"piano-lifetime-logger","version":1,"kind":"' + kind + '","exportedAt":"' + new Date().toISOString() + '",' +
-          (withSettings ? '"settings":' + JSON.stringify(await settingsSnapshot()) + ',' : '') + '"logs":[']), parts = [], size = 0, n = 0;
+          (withSettings ? '"settings":' + JSON.stringify(await settingsSnapshot()) + ',' : '') + (withSettings && window.__vaBackup ? '"voiceActivityVersion":1,"voiceSessions":' + JSON.stringify(await window.__vaBackup()) + ',' : '') + '"logs":[']), parts = [], size = 0, n = 0;
         await eachLogBatch(f, async rows => {
           if (test) rows = rows.filter(test);
           if (rows.length) {
@@ -17376,7 +17376,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.3.5';
+      const APP_VERSION = '7.4.0';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -20142,7 +20142,7 @@ PianoLogger.on('noteon', e => {
         let s = head.settings || null;
         if (!s && head.kind === 'recovery-extras') s = { localStorage: head.localStorage || {}, gestures: (head.pianoLoggerExtras && head.pianoLoggerExtras.gestures) || [] };
         if (s && (typeof s.localStorage !== 'object' || !s.localStorage)) s = null;
-        return { hasLogs: at >= 0, settings: s };
+        return { hasLogs: at >= 0, settings: s, voice: Array.isArray(head.voiceSessions) ? head.voiceSessions : null };
       }
       async function applySettingsBackup(s) {
         const keys = Object.keys(s.localStorage).filter(k => /^pll\./.test(k) && !BK_SKIP.includes(k) && typeof s.localStorage[k] === 'string');
@@ -23102,6 +23102,36 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
         }, true);
       }
       VERSIONS.unshift({
+        v: '7.4.0', date: '2026-11-03', title: 'Voice Activity Tracking & Analytics',
+        groups: [
+          ['Voice Studio', [
+            'Persistent Speaking and Singing session tracking: a session starts when the microphone and analysis are running (Start) and ends when you stop',
+            'Each session saves its start and end time, the session duration (paused time not counted) and the detected active vocal duration',
+            'Speaking or singing is taken from the existing Voice style setting; changing the style ends the session and starts a new one',
+            'Activity across midnight is split correctly between the two days',
+            'Live session box in Voice Studio and a summary when you stop'
+          ]],
+          ['History', [
+            'New Voice activity view in History (switch between Piano presses and Voice activity)',
+            'Sessions grouped by date, with Speaking and Singing filters, a period filter and pages'
+          ]],
+          ['Statistics', [
+            'Voice statistics in Key statistics: lifetime and period totals, session counts and averages, personal bests',
+            'Daily, weekly and monthly charts and a session-length chart'
+          ]],
+          ['Dashboard', [
+            'New Voice activity section with lifetime and today cards and a 14-day chart'
+          ]],
+          ['Data & backup', [
+            'Voice sessions are included in backups and restored from them without duplicates',
+            'Older backups without voice data still restore normally'
+          ]],
+          ['Privacy', [
+            'Voice activity is measured on this computer. No sound is saved automatically, nothing is uploaded, and there is no speech-to-text'
+          ]]
+        ]
+      });
+      VERSIONS.unshift({
         v: '7.3.5', date: '2026-11-03', title: 'Release History & Maintenance Update',
         groups: [
           ['Release history', [
@@ -23148,6 +23178,444 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
           ]]
         ]
       });
+      /* =====================================================================
+         7.4.0 — VOICE ACTIVITY TRACKING & ANALYTICS
+         A session starts when Voice Studio's microphone and analysis are running (Start) and ends when it stops. It records
+         only numbers: when it started and ended, how long the microphone was watched (paused time excluded), and how long a
+         voice was detected (speaking or singing, from the existing "Voice style"). No audio and no text are saved.
+         Stored in its own database "PianoLoggerVoiceActivity" (the piano database is never opened for upgrade).
+         ===================================================================== */
+      {
+        const VA_DB = 'PianoLoggerVoiceActivity', VA_ST = 'voiceSessions', VA_SCHEMA = 1;
+        const dayKey = ts => localParts(ts).date;
+        const nextDay = ts => { const d = new Date(ts); return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime(); };
+        const blank = () => ({ sessionMs: 0, activeMs: 0, pausedMs: 0 });
+        const newId = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'va-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+        const tz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } };
+        const hm = ts => localParts(ts).time.slice(0, 5);
+        const TYPES = ['speaking', 'singing'];
+
+        // ---- the measuring engine (the clock is passed in, so it can be tested without waiting) ----
+        // vocal detection: singing = a clearly pitched, confident, loud-enough frame (the existing tracker's idea of "voiced");
+        // speaking = loud enough above an adaptive noise floor and not hiss-like (consonants/breaths are bridged by a short hang time).
+        function vaEngine(clock, cfg) {
+          let cur = null;
+          const spread = (map, w0, w1, ms, field) => {            // share ms between the local days in [w0, w1]
+            if (!(ms > 0)) return;
+            if (!(w1 > w0)) { const k = dayKey(w1); (map[k] = map[k] || blank())[field] += ms; return; }
+            for (let a = w0; a < w1;) {
+              const e = Math.min(w1, nextDay(a)), k = dayKey(a); (map[k] = map[k] || blank())[field] += ms * (e - a) / (w1 - w0); a = e;
+            }
+          };
+          const tick = () => {
+            if (!cur) return;
+            const m = clock.mono(), w = clock.wall(), dt = Math.max(0, m - cur.lastM);
+            spread(cur.daily, w - dt, w, dt, cur.paused ? 'pausedMs' : 'sessionMs');
+            cur.lastM = m; cur.lastW = w;
+          };
+          const snapshot = (status, why) => {
+            const days = {}; let s = 0, a = 0, p = 0;
+            Object.keys(cur.daily).sort().forEach(k => { const d = cur.daily[k]; days[k] = { sessionMs: Math.round(d.sessionMs), activeMs: Math.round(d.activeMs), pausedMs: Math.round(d.pausedMs) }; });
+            Object.values(days).forEach(d => { s += d.sessionMs; a += d.activeMs; p += d.pausedMs; });
+            if (a > s) { const f = s / a; a = 0; Object.values(days).forEach(d => { d.activeMs = Math.round(d.activeMs * f); a += d.activeMs; }); }
+            const now = clock.wall(), end = status === 'active' ? null : now;
+            return {
+              sessionId: cur.id, schemaVersion: VA_SCHEMA, activityType: cur.type, startTimestamp: cur.t0, endTimestamp: end,
+              localDate: dayKey(cur.t0), startTime: hm(cur.t0), endTime: end ? hm(end) : null, timezone: cur.tz,
+              microphoneSessionDurationMs: s, activeVoiceDurationMs: a, pausedDurationMs: p, inactiveDurationMs: Math.max(0, s - a),
+              sessionStatus: status, createdAt: cur.t0, updatedAt: now, interruptionReason: why || '', dailyBreakdown: days
+            };
+          };
+          return {
+            get on() { return !!cur; },
+            get style() { return cur ? cur.style : null; },
+            get id() { return cur ? cur.id : null; },
+            get paused() { return !!cur && cur.paused; },
+            get voiced() { return !!cur && cur.vocalNow; },
+            begin(style) {
+              if (cur) return false;
+              cur = { id: newId(), style: style === 'speak' ? 'speak' : 'sing', type: style === 'speak' ? 'speaking' : 'singing', t0: clock.wall(), tz: tz(), lastM: clock.mono(), lastW: clock.wall(),
+                paused: false, daily: {}, fSec: null, fMin: 0, fMins: [], lastFt: null, lastVocal: null, vocalNow: false };
+              return true;
+            },
+            tick,
+            setPaused(p) { if (!cur || cur.paused === !!p) return; tick(); cur.paused = !!p; if (p) { cur.lastVocal = null; cur.vocalNow = false; } },
+            frame(d) {
+              if (!cur || !d) return;
+              tick();
+              const db = +d.db, ft = (+d.t || 0) * 1000; if (!isFinite(db)) return;
+              const dtf = cur.lastFt != null ? Math.min(Math.max(ft - cur.lastFt, 0), 100) : 0; cur.lastFt = ft;
+              if (cur.paused) { cur.vocalNow = false; return; }
+              const noise = cfg.noiseDb(), sing = cur.style === 'sing';
+              // adaptive noise floor = the quietest second of the last 10 s (speech has pauses, steady noise does not)
+              const sec = Math.floor(ft / 1000);
+              if (cur.fSec !== sec) { if (cur.fSec != null) { cur.fMins.push(cur.fMin); if (cur.fMins.length > 10) cur.fMins.shift(); } cur.fSec = sec; cur.fMin = db; } else if (db < cur.fMin) cur.fMin = db;
+              const floor = cur.fMins.length ? Math.min(cur.fMin, ...cur.fMins) : -70;
+              let vocal;
+              if (sing) vocal = d.f > 0 && d.c >= Math.max(0.5, cfg.conf() / 100 * 0.8) && db > noise && d.zcr < 0.3;
+              else vocal = db > Math.max(noise, floor + 9) && d.zcr < 0.5 && (!(d.f > 0) || d.c >= 0.2);
+              cur.vocalNow = vocal;
+              if (!vocal) return;
+              const hang = sing ? 450 : 350;
+              const add = cur.lastVocal != null && ft - cur.lastVocal <= hang && ft >= cur.lastVocal ? ft - cur.lastVocal : (dtf || 8);
+              cur.lastVocal = ft;
+              const w = clock.wall(); spread(cur.daily, w - add, w, add, 'activeMs');
+            },
+            peek(status) { if (!cur) return null; tick(); return snapshot(status || 'active', ''); },
+            end(status, why) { if (!cur) return null; tick(); const r = snapshot(status, why); cur = null; return r; }
+          };
+        }
+
+        // ---- storage (its own database; nothing else is touched) ----
+        let vaDbP = null;
+        const vaOpen = () => vaDbP || (vaDbP = new Promise((res, rej) => {
+          if (!window.indexedDB) return rej(new Error('IndexedDB is not available'));
+          const r = indexedDB.open(VA_DB, 1);
+          r.onupgradeneeded = () => {
+            const d = r.result;
+            if (!d.objectStoreNames.contains(VA_ST)) {
+              const s = d.createObjectStore(VA_ST, { keyPath: 'sessionId' });
+              s.createIndex('activityType', 'activityType'); s.createIndex('startTimestamp', 'startTimestamp'); s.createIndex('localDate', 'localDate');
+            }
+          };
+          r.onsuccess = () => { r.result.onversionchange = () => { r.result.close(); vaDbP = null; }; res(r.result); };
+          r.onerror = () => { vaDbP = null; rej(r.error); };
+        }));
+        const vaTx = (mode, fn) => vaOpen().then(d => new Promise((res, rej) => {
+          const tx = d.transaction(VA_ST, mode); let out; try { out = fn(tx.objectStore(VA_ST)); } catch (e) { return rej(e); }
+          tx.oncomplete = () => res(out && out.result !== undefined ? out.result : out); tx.onerror = tx.onabort = () => rej(tx.error);
+        }));
+        const vaPut = rec => vaTx('readwrite', s => s.put(rec));
+        const vaDel = id => vaTx('readwrite', s => s.delete(id));
+        const VA = { list: null, map: new Map(), rev: 0, loading: null, err: '', last: null, why: '' };
+        const vaLoad = () => VA.list ? Promise.resolve(VA.list) : (VA.loading || (VA.loading = vaTx('readonly', s => s.getAll()).then(a => {
+          VA.list = []; VA.map.clear(); (a || []).forEach(o => { const r = vaSanitize(o); if (r) { VA.list.push(r); VA.map.set(r.sessionId, r); } });
+          VA.list.sort((x, y) => y.startTimestamp - x.startTimestamp); VA.rev++; VA.err = ''; return VA.list;
+        }).catch(e => { VA.err = String(e && e.message || e); VA.list = []; VA.loading = null; return VA.list; })));
+        const vaCache = rec => {
+          const had = VA.map.has(rec.sessionId); VA.map.set(rec.sessionId, rec);
+          if (!VA.list) VA.list = [];
+          if (had) { const i = VA.list.findIndex(x => x.sessionId === rec.sessionId); if (i >= 0) VA.list[i] = rec; else VA.list.push(rec); } else VA.list.push(rec);
+          VA.list.sort((x, y) => y.startTimestamp - x.startTimestamp); VA.rev++;
+        };
+
+        // ---- validation (used for the database and for backups from a file) ----
+        const num = (v, max) => Number.isFinite(+v) && +v >= 0 && +v <= max ? Math.round(+v) : null;
+        function vaSanitize(o) {
+          if (!o || typeof o !== 'object') return null;
+          const id = typeof o.sessionId === 'string' && o.sessionId.length >= 4 && o.sessionId.length <= 80 ? o.sessionId : null;
+          const t0 = num(o.startTimestamp, 4102444800000); if (!id || t0 == null || !TYPES.includes(o.activityType)) return null;
+          const status = ['active', 'completed', 'interrupted'].includes(o.sessionStatus) ? o.sessionStatus : 'completed';
+          const days = {}; const bd = o.dailyBreakdown && typeof o.dailyBreakdown === 'object' ? o.dailyBreakdown : null; if (!bd) return null;
+          let s = 0, a = 0, p = 0;
+          for (const k of Object.keys(bd).slice(0, 400)) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return null;
+            const d = bd[k], sm = num(d && d.sessionMs, 864e6), am = num(d && d.activeMs, 864e6), pm = num(d && d.pausedMs, 864e6);
+            if (sm == null || am == null || pm == null) return null;
+            days[k] = { sessionMs: sm, activeMs: Math.min(am, sm), pausedMs: pm }; s += sm; a += days[k].activeMs; p += pm;
+          }
+          const t1 = o.endTimestamp == null ? null : num(o.endTimestamp, 4102444800000);
+          return {
+            sessionId: id, schemaVersion: VA_SCHEMA, activityType: o.activityType, startTimestamp: t0, endTimestamp: t1,
+            localDate: dayKey(t0), startTime: hm(t0), endTime: t1 != null ? hm(t1) : null, timezone: typeof o.timezone === 'string' ? o.timezone.slice(0, 64) : '',
+            microphoneSessionDurationMs: s, activeVoiceDurationMs: a, pausedDurationMs: p, inactiveDurationMs: Math.max(0, s - a),
+            sessionStatus: status, createdAt: num(o.createdAt, 4102444800000) || t0, updatedAt: num(o.updatedAt, 4102444800000) || t1 || t0,
+            interruptionReason: typeof o.interruptionReason === 'string' ? o.interruptionReason.slice(0, 200) : '', dailyBreakdown: days
+          };
+        }
+        // merge sessions from a backup file: new ones are added by sessionId; ones already there are left as they are
+        async function vaImport(list) {
+          const res = { added: 0, dup: 0, bad: 0 }; if (!Array.isArray(list)) return res;
+          await vaLoad();
+          const fresh = [];
+          for (const o of list) {
+            const r = vaSanitize(o);
+            if (!r) res.bad++;
+            else if (VA.map.has(r.sessionId)) res.dup++;
+            else {
+              if (r.sessionStatus === 'active') { r.sessionStatus = 'interrupted'; r.endTimestamp = r.endTimestamp || r.updatedAt; r.interruptionReason = r.interruptionReason || 'Saved while still running'; }
+              fresh.push(r);
+            }
+          }
+          if (fresh.length) { await vaTx('readwrite', s => { fresh.forEach(r => s.put(r)); }); fresh.forEach(vaCache); res.added = fresh.length; }
+          return res;
+        }
+
+        // ---- statistics ----
+        const wkKey = k => { const [y, m, d] = k.split('-').map(Number), t = new Date(y, m - 1, d), off = (t.getDay() + 6) % 7; t.setDate(t.getDate() - off); return localParts(t.getTime()).date; };
+        const addDays = (k, n) => { const [y, m, d] = k.split('-').map(Number); return localParts(new Date(y, m - 1, d + n).getTime()).date; };
+        function vaRangeOf(key, from, to) {
+          const t = localParts(Date.now()).date;
+          if (key === 'today') return { from: t, to: t };
+          if (key === 'yesterday') { const y = addDays(t, -1); return { from: y, to: y }; }
+          if (key === '7') return { from: addDays(t, -6), to: t };
+          if (key === '30') return { from: addDays(t, -29), to: t };
+          if (key === 'month') return { from: t.slice(0, 7) + '-01', to: t };
+          if (key === 'lastmonth') { const d = new Date(), a = new Date(d.getFullYear(), d.getMonth() - 1, 1), b = new Date(d.getFullYear(), d.getMonth(), 0); return { from: localParts(a.getTime()).date, to: localParts(b.getTime()).date }; }
+          if (key === 'year') return { from: t.slice(0, 4) + '-01-01', to: t };
+          if (key === 'custom') return { from: from || null, to: to || null };
+          return { from: null, to: null };
+        }
+        const inRange = (k, r) => (!r.from || k >= r.from) && (!r.to || k <= r.to);
+        // totals for a period: per type (active / session / paused ms and number of sessions that have time in the period) and per day
+        function vaCompute(sessions, range, type) {
+          const r = range || { from: null, to: null }, out = { sp: { active: 0, session: 0, paused: 0, n: 0 }, si: { active: 0, session: 0, paused: 0, n: 0 }, days: {}, sessions: [] };
+          for (const s of sessions) {
+            if (type && type !== 'all' && s.activityType !== type) continue;
+            let touched = false; const g = s.activityType === 'speaking' ? out.sp : out.si;
+            for (const k of Object.keys(s.dailyBreakdown)) {
+              if (!inRange(k, r)) continue; const d = s.dailyBreakdown[k]; touched = true;
+              g.active += d.activeMs; g.session += d.sessionMs; g.paused += d.pausedMs;
+              const dd = out.days[k] || (out.days[k] = { sp: 0, si: 0, spS: 0, siS: 0, n: 0 });
+              if (s.activityType === 'speaking') { dd.sp += d.activeMs; dd.spS += d.sessionMs; } else { dd.si += d.activeMs; dd.siS += d.sessionMs; }
+              dd.n++;
+            }
+            if (touched) { g.n++; out.sessions.push(s); }
+          }
+          return out;
+        }
+        // lifetime personal bests
+        function vaRecords(sessions) {
+          const rec = { speakLong: 0, singLong: 0, speakActive: 0, singActive: 0, day: null, week: null, month: null }, days = {};
+          for (const s of sessions) {
+            if (s.activityType === 'speaking') { rec.speakLong = Math.max(rec.speakLong, s.microphoneSessionDurationMs); rec.speakActive = Math.max(rec.speakActive, s.activeVoiceDurationMs); }
+            else { rec.singLong = Math.max(rec.singLong, s.microphoneSessionDurationMs); rec.singActive = Math.max(rec.singActive, s.activeVoiceDurationMs); }
+            for (const k of Object.keys(s.dailyBreakdown)) days[k] = (days[k] || 0) + s.dailyBreakdown[k].activeMs;
+          }
+          const best = keyFn => { const m = {}; Object.keys(days).forEach(k => { const g = keyFn(k); m[g] = (m[g] || 0) + days[k]; }); let b = null; Object.keys(m).forEach(g => { if (m[g] > 0 && (!b || m[g] > b[1])) b = [g, m[g]]; }); return b; };
+          rec.day = best(k => k); rec.week = best(wkKey); rec.month = best(k => k.slice(0, 7)); return rec;
+        }
+
+        // ---- the session lifecycle (hooked into Voice Studio; nothing in Voice Studio's own code is rewritten) ----
+        const eng = vaEngine({ wall: () => Date.now(), mono: () => performance.now() }, { noiseDb: () => VSS.noiseDb, conf: () => VSS.conf });
+        const vaLive = () => VS.running && !VS.preview && !!VS.stream && !VS.starting;
+        const vaSave = () => { const r = eng.peek('active'); if (!r) return; vaCache(r); vaPut(r).catch(e => { VA.err = String(e && e.message || e); }); };
+        function vaBegin() { if (eng.on || !vaLive()) return; eng.begin(VSS.style); VA.why = ''; vaSave(); vaPaintLive(); }
+        function vaEnd(status, why) {
+          const r = eng.end(status || 'completed', status === 'interrupted' ? why || '' : ''); if (!r) return;
+          if (r.microphoneSessionDurationMs < 1000) {                    // an accidental start/stop: nothing worth keeping
+            VA.map.delete(r.sessionId); if (VA.list) VA.list = VA.list.filter(x => x.sessionId !== r.sessionId); VA.rev++; vaDel(r.sessionId).catch(() => { }); vaPaintLive(); return;
+          }
+          vaCache(r); VA.last = r; vaPut(r).catch(e => { VA.err = String(e && e.message || e); toast('Could not save the voice session: ' + VA.err, 'bad'); });
+          vaPaintLive(); vaRefreshViews();
+        }
+        function vaGuard() {
+          if (!eng.on) return;
+          if (!vaLive()) { vaEnd('interrupted', 'Voice Studio stopped unexpectedly.'); return; }
+          if (eng.style !== VSS.style) { vaEnd('completed'); vaBegin(); }     // a session never changes from speaking to singing: the first ends, a new one starts
+          eng.setPaused(!!VS.micMute || !!(VS.ctx && VS.ctx.state !== 'running'));
+        }
+        const _vsFrame74 = vsFrame; vsFrame = function (d) { _vsFrame74(d); try { if (!eng.on) vaBegin(); if (eng.on) { vaGuard(); eng.frame(d); } } catch (e) { } };
+        const _vsClose74 = vsClose; vsClose = function () { try { const w = VA.why; VA.why = ''; if (eng.on) vaEnd(w ? 'interrupted' : 'completed', w); } catch (e) { } return _vsClose74.apply(this, arguments); };
+        const _vsStop74 = vsStop; vsStop = function (why) { VA.why = why || ''; return _vsStop74.apply(this, arguments); };
+        const _vsStart74 = vsStart; vsStart = async function () { const r = await _vsStart74.apply(this, arguments); try { vaBegin(); } catch (e) { } return r; };
+        setInterval(() => { try { if (eng.on) { vaGuard(); vaSave(); } } catch (e) { } }, 5000);                 // checkpoint: at most 5 s are ever lost
+        setInterval(() => { try { if (eng.on) vaGuard(); vaPaintLive(); } catch (e) { } }, 500);
+        window.addEventListener('pagehide', () => { try { if (eng.on) { const r = eng.end('interrupted', 'The window was closed.'); if (r && r.microphoneSessionDurationMs >= 1000) vaPut(r); } } catch (e) { } });
+        // a session left "active" by a crash or power cut: it is closed at its last saved point; the time after that is never counted
+        async function vaRecover() {
+          const l = await vaLoad(), now = Date.now(); let n = 0;
+          for (const s of l.slice()) {
+            if (s.sessionStatus === 'active' && s.sessionId !== eng.id && now - s.updatedAt > 45000) {
+              const r = Object.assign({}, s, { sessionStatus: 'interrupted', endTimestamp: s.updatedAt, endTime: hm(s.updatedAt), interruptionReason: 'The app closed before this session ended. Time after the last saved point is not counted.' });
+              try { await vaPut(r); vaCache(r); n++; } catch (e) { }
+            }
+          }
+          return n;
+        }
+        setTimeout(() => { vaRecover().then(n => { if (n) vaRefreshViews(); }).catch(() => { }); }, 1500);
+
+        // ---- text and chart helpers ----
+        const vaF = ms => { const s = Math.round(Math.max(0, ms) / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? h + 'h ' + m + 'm' : m ? m + 'm ' + (s % 60) + 's' : (s % 60) + 's'; };
+        const vaClock = ms => { const s = Math.floor(Math.max(0, ms) / 1000); return pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s % 3600 / 60)) + ':' + pad(s % 60); };
+        const vaTime = ts => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const vaDate = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
+        const vaType = t => t === 'speaking' ? '🗣 Speaking' : '🎤 Singing';
+        const vaAllNow = () => { const l = (VA.list || []).slice(); return l; };
+        const vaCard = (l, v, s) => '<div class="card"><span>' + l + '</span><b>' + v + '</b><em>' + (s || '&nbsp;') + '</em></div>';
+        function vaChart(rows, o) {
+          o = o || {}; const W = 640, H = 120, n = rows.length, max = Math.max(...rows.map(r => r.a + (r.b || 0)), 0);
+          if (!n || max <= 0) return '<p class="sub va-empty">' + (o.empty || 'No voice activity in this period yet.') + '</p>';
+          const bw = (W - 16) / n, fmt = o.fmt || vaF; let s = '<svg class="va-svg" viewBox="0 0 ' + W + ' ' + (H + 20) + '" role="img" aria-label="' + esc(o.label || 'Voice activity chart') + '" preserveAspectRatio="none">';
+          rows.forEach((r, i) => {
+            const x = 8 + i * bw, ha = r.a / max * H, hb = (r.b || 0) / max * H, w = Math.max(1, bw * 0.72), txt = o.tip ? o.tip(r) : ((r.a ? 'speaking ' + fmt(r.a) : '') + (r.a && r.b ? ' · ' : '') + (r.b ? 'singing ' + fmt(r.b) : '') || '0'), tip = esc(r.l + ' · ' + txt);
+            s += '<g><title>' + tip + '</title><rect class="va-a" x="' + x.toFixed(1) + '" y="' + (H - ha).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + ha.toFixed(1) + '" rx="2"/>' +
+              (hb ? '<rect class="va-b" x="' + x.toFixed(1) + '" y="' + (H - ha - hb).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + hb.toFixed(1) + '" rx="2"/>' : '') + '</g>';
+            if (n <= 14 || i % Math.ceil(n / 8) === 0 || i === n - 1) s += '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (H + 14) + '" text-anchor="middle">' + esc(r.s || r.l) + '</text>';
+          });
+          return s + '</svg><div class="va-key"><i class="va-a"></i>Speaking<i class="va-b"></i>Singing<span>tallest bar = ' + fmt(max) + '</span></div>';
+        }
+        const lastDays = (days, n) => { const t = localParts(Date.now()).date, o = []; for (let i = n - 1; i >= 0; i--) { const k = addDays(t, -i), d = days[k] || { sp: 0, si: 0 }; o.push({ l: k, s: k.slice(8), a: d.sp, b: d.si }); } return o; };
+        const lastWeeks = (days, n) => { const m = {}; Object.keys(days).forEach(k => { const w = wkKey(k); (m[w] = m[w] || { sp: 0, si: 0 }); m[w].sp += days[k].sp; m[w].si += days[k].si; }); let w = wkKey(localParts(Date.now()).date); const o = []; for (let i = 0; i < n; i++) { const d = m[w] || { sp: 0, si: 0 }; o.unshift({ l: 'Week of ' + w, s: w.slice(5), a: d.sp, b: d.si }); w = addDays(w, -7); } return o; };
+        const lastMonths = (days, n) => { const m = {}; Object.keys(days).forEach(k => { const g = k.slice(0, 7); (m[g] = m[g] || { sp: 0, si: 0 }); m[g].sp += days[k].sp; m[g].si += days[k].si; }); const d0 = new Date(); const o = []; for (let i = n - 1; i >= 0; i--) { const d = new Date(d0.getFullYear(), d0.getMonth() - i, 1), g = localParts(d.getTime()).date.slice(0, 7), v = m[g] || { sp: 0, si: 0 }; o.push({ l: d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }), s: d.toLocaleDateString(undefined, { month: 'short' }), a: v.sp, b: v.si }); } return o; };
+        const BINS = [['< 1 min', 0, 60e3], ['1–5 min', 60e3, 300e3], ['5–15 min', 300e3, 900e3], ['15–30 min', 900e3, 1800e3], ['30–60 min', 1800e3, 3600e3], ['1 h +', 3600e3, Infinity]];
+        const distRows = ss => BINS.map(([l, a, b]) => ({ l, a: ss.filter(s => s.activityType === 'speaking' && s.microphoneSessionDurationMs >= a && s.microphoneSessionDurationMs < b).length, b: ss.filter(s => s.activityType === 'singing' && s.microphoneSessionDurationMs >= a && s.microphoneSessionDurationMs < b).length }));
+        const cnt = r => r.a + ' speaking · ' + r.b + ' singing';
+
+        // ---- Dashboard ----
+        const vaDashEl = () => { const p = $('#p-dash'); if (!p) return null; let e = $('#vaDash'); if (!e) { e = document.createElement('div'); e.id = 'vaDash'; e.className = 'va-sec'; p.appendChild(e); } return e; };
+        async function vaRenderDash() {
+          const el = vaDashEl(); if (!el) return; await vaLoad();
+          const all = vaAllNow(), t = localParts(Date.now()).date, life = vaCompute(all, null), today = vaCompute(all, { from: t, to: t }), rec = vaRecords(all);
+          const n = life.sp.n + life.si.n, act = life.sp.active + life.si.active, ses = life.sp.session + life.si.session;
+          const long = all.reduce((b, s) => !b || s.microphoneSessionDurationMs > b.microphoneSessionDurationMs ? s : b, null);
+          el.innerHTML = '<div class="speed-head"><h3>🎙 VOICE ACTIVITY</h3><span class="sub">Time a voice was detected in Voice Studio. Only numbers are saved — never audio.</span></div>' +
+            '<div class="cards">' +
+            vaCard('Lifetime voice activity', vaF(act), 'speaking ' + vaF(life.sp.active) + ' · singing ' + vaF(life.si.active)) +
+            vaCard('Today’s voice activity', vaF(today.sp.active + today.si.active), (today.sp.n + today.si.n) + ' session' + (today.sp.n + today.si.n === 1 ? '' : 's')) +
+            vaCard('Today’s speaking time', vaF(today.sp.active), today.sp.n + ' session' + (today.sp.n === 1 ? '' : 's')) +
+            vaCard('Today’s singing time', vaF(today.si.active), today.si.n + ' session' + (today.si.n === 1 ? '' : 's')) +
+            vaCard('Speaking sessions', fmtInt(life.sp.n), 'in total') + vaCard('Singing sessions', fmtInt(life.si.n), 'in total') +
+            vaCard('Average voice session', n ? vaF(ses / n) : '—', n ? 'voice detected ' + vaF(act / n) : 'no sessions yet') +
+            vaCard('Longest voice session', long ? vaF(long.microphoneSessionDurationMs) : '—', long ? vaType(long.activityType) + ' · ' + long.localDate : '&nbsp;') +
+            vaCard('Most active voice day', rec.day ? vaF(rec.day[1]) : '—', rec.day ? rec.day[0] : '&nbsp;') + '</div>' +
+            '<div class="chart wide va-chart"><h3>VOICE ACTIVITY · LAST 14 DAYS</h3>' + vaChart(lastDays(vaCompute(all, null).days, 14), { label: 'Voice activity in the last 14 days' }) + '</div>' +
+            '<div class="row"><button type="button" class="btn small" id="vaToHist">🎙 Voice activity history</button><button type="button" class="btn small" id="vaToStats">📊 Voice statistics</button></div>';
+          $('#vaToHist').onclick = () => { showTab('hist'); vaHistMode('voice'); };
+          $('#vaToStats').onclick = () => { showTab('keys'); const s = $('#vaStats'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+        }
+
+        // ---- History: a switch between piano presses and voice activity ----
+        const VAH = { mode: 'piano', type: 'all', range: 'all', from: '', to: '', page: 0, size: 20 };
+        function vaHistEnsure() {
+          const p = $('#p-hist'); if (!p || $('#vaHbar')) return;
+          const bar = document.createElement('div'); bar.id = 'vaHbar'; bar.className = 'va-hbar va-keep';
+          bar.innerHTML = '<span class="seg" role="group" aria-label="History type"><button type="button" class="v71chip" data-vh="piano" aria-pressed="true">🎹 Piano presses</button><button type="button" class="v71chip" data-vh="voice" aria-pressed="false">🎙 Voice activity</button></span>';
+          const w = document.createElement('div'); w.id = 'vaHist'; w.className = 'va-wrap va-keep'; w.hidden = true;
+          p.insertBefore(w, p.firstChild); p.insertBefore(bar, p.firstChild);
+          bar.onclick = e => { const b = e.target.closest('[data-vh]'); if (b) vaHistMode(b.dataset.vh); };
+        }
+        function vaHistMode(m) {
+          vaHistEnsure(); VAH.mode = m; const p = $('#p-hist'); p.classList.toggle('va-on', m === 'voice'); $('#vaHist').hidden = m !== 'voice';
+          $$('#vaHbar [data-vh]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vh === m)));
+          if (m === 'voice') vaRenderHist();
+        }
+        async function vaRenderHist() {
+          vaHistEnsure(); const el = $('#vaHist'); if (!el || VAH.mode !== 'voice') return; await vaLoad();
+          const r = vaRangeOf(VAH.range, VAH.from, VAH.to);
+          const rows = vaAllNow().filter(s => (VAH.type === 'all' || s.activityType === VAH.type) && Object.keys(s.dailyBreakdown).some(k => inRange(k, r)));
+          const pages = Math.max(1, Math.ceil(rows.length / VAH.size)); VAH.page = Math.min(VAH.page, pages - 1);
+          const shown = rows.slice(VAH.page * VAH.size, (VAH.page + 1) * VAH.size); let h = '', lastD = '';
+          const opt = (v, t, c) => '<option value="' + v + '"' + (c === v ? ' selected' : '') + '>' + t + '</option>';
+          shown.forEach(s => {
+            if (s.localDate !== lastD) { lastD = s.localDate; const dd = rows.filter(x => x.localDate === lastD); h += '<h4 class="va-day">' + esc(vaDate(lastD)) + '<small>' + dd.length + ' session' + (dd.length === 1 ? '' : 's') + '</small></h4>'; }
+            const cross = Object.keys(s.dailyBreakdown).length > 1;
+            h += '<div class="va-row" data-t="' + s.activityType + '"><b>' + vaType(s.activityType) + '</b><span class="va-when">' + esc(vaTime(s.startTimestamp)) + (s.endTimestamp ? ' – ' + esc(vaTime(s.endTimestamp)) : ' – now') + (cross ? ' <small>(crosses midnight)</small>' : '') + '</span>' +
+              '<span>Session <b>' + vaF(s.microphoneSessionDurationMs) + '</b></span><span>Active ' + (s.activityType === 'speaking' ? 'speaking' : 'singing') + ' <b>' + vaF(s.activeVoiceDurationMs) + '</b></span>' +
+              (s.pausedDurationMs ? '<span>Paused ' + vaF(s.pausedDurationMs) + '</span>' : '') + '<span class="va-st" data-s="' + s.sessionStatus + '"' + (s.interruptionReason ? ' title="' + esc(s.interruptionReason) + '"' : '') + '>' + s.sessionStatus + '</span></div>';
+          });
+          el.innerHTML = '<div class="filters"><label>Type<select id="vaHType">' + opt('all', 'All voice activity', VAH.type) + opt('speaking', 'Speaking', VAH.type) + opt('singing', 'Singing', VAH.type) + '</select></label>' +
+            '<label>Period<select id="vaHRange">' + [['all', 'All time'], ['today', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['month', 'This month'], ['custom', 'Custom…']].map(([v, t]) => opt(v, t, VAH.range)).join('') + '</select></label>' +
+            (VAH.range === 'custom' ? '<label>From<input type="date" id="vaHFrom" value="' + esc(VAH.from) + '"></label><label>To<input type="date" id="vaHTo" value="' + esc(VAH.to) + '"></label>' : '') + '</div>' +
+            (rows.length ? h : '<p class="sub va-empty">No voice sessions found' + (VA.err ? ' (' + esc(VA.err) + ')' : ' for these filters yet. Open Voice Studio, choose a voice style and press Start.') + '</p>') +
+            '<div class="row va-pager"><button type="button" class="btn small" id="vaHPrev"' + (VAH.page ? '' : ' disabled') + '>◀ Newer</button><span class="sub">' + fmtInt(rows.length) + ' session' + (rows.length === 1 ? '' : 's') + ' · page ' + (VAH.page + 1) + ' of ' + pages + '</span><button type="button" class="btn small" id="vaHNext"' + (VAH.page + 1 < pages ? '' : ' disabled') + '>Older ▶</button></div>';
+          $('#vaHType').onchange = e => { VAH.type = e.target.value; VAH.page = 0; vaRenderHist(); };
+          $('#vaHRange').onchange = e => { VAH.range = e.target.value; VAH.page = 0; vaRenderHist(); };
+          if ($('#vaHFrom')) { $('#vaHFrom').onchange = e => { VAH.from = e.target.value; VAH.page = 0; vaRenderHist(); }; $('#vaHTo').onchange = e => { VAH.to = e.target.value; VAH.page = 0; vaRenderHist(); }; }
+          $('#vaHPrev').onclick = () => { VAH.page = Math.max(0, VAH.page - 1); vaRenderHist(); };
+          $('#vaHNext').onclick = () => { VAH.page++; vaRenderHist(); };
+        }
+
+        // ---- Statistics (a Voice statistics area at the top of "Key statistics") ----
+        const VAS = { range: 'all', from: '', to: '' };
+        const vaStatsEl = () => { const p = $('#p-keys'); if (!p) return null; let e = $('#vaStats'); if (!e) { e = document.createElement('div'); e.id = 'vaStats'; e.className = 'va-sec'; p.insertBefore(e, p.firstChild); } return e; };
+        async function vaRenderStats() {
+          const el = vaStatsEl(); if (!el) return; await vaLoad();
+          const all = vaAllNow(), r = vaRangeOf(VAS.range, VAS.from, VAS.to), per = vaCompute(all, r), life = vaCompute(all, null), rec = vaRecords(all);
+          const sp = per.sp, si = per.si, tot = sp.active + si.active, opt = (v, t) => '<option value="' + v + '"' + (VAS.range === v ? ' selected' : '') + '>' + t + '</option>';
+          const avg = (g, k) => g.n ? vaF(g[k] / g.n) : '—', tl = Math.max(1, tot);
+          el.innerHTML = '<div class="speed-head"><h3>🎙 VOICE STATISTICS</h3><span class="sub">Detected speaking and singing time from Voice Studio (an estimate, measured on this computer).</span></div>' +
+            '<div class="row dash-bar"><label class="sub">Period&nbsp;<select id="vaSRange">' + [['all', 'All time'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['month', 'This month'], ['lastmonth', 'Last month'], ['year', 'This year'], ['custom', 'Custom…']].map(([v, t]) => opt(v, t)).join('') + '</select></label>' +
+            (VAS.range === 'custom' ? '<span><input type="date" id="vaSFrom" value="' + esc(VAS.from) + '" aria-label="From date"> – <input type="date" id="vaSTo" value="' + esc(VAS.to) + '" aria-label="To date"></span>' : '') + '</div>' +
+            '<div class="cards">' +
+            vaCard('Total speaking', vaF(sp.active), sp.n + ' session' + (sp.n === 1 ? '' : 's')) + vaCard('Total singing', vaF(si.active), si.n + ' session' + (si.n === 1 ? '' : 's')) +
+            vaCard('Total voice activity', vaF(tot), (sp.n + si.n) + ' sessions') + vaCard('Microphone watched', vaF(sp.session + si.session), 'paused time not counted') +
+            vaCard('Average speaking session', avg(sp, 'session'), 'voice detected ' + avg(sp, 'active')) + vaCard('Average singing session', avg(si, 'session'), 'voice detected ' + avg(si, 'active')) + '</div>' +
+            '<div class="va-cmp" aria-label="Speaking versus singing"><div><b>🗣 Speaking</b><span style="width:' + (sp.active / tl * 100).toFixed(1) + '%" class="va-a"></span><em>' + vaF(sp.active) + '</em></div><div><b>🎤 Singing</b><span style="width:' + (si.active / tl * 100).toFixed(1) + '%" class="va-b"></span><em>' + vaF(si.active) + '</em></div></div>' +
+            '<div class="speed-head"><h3>PERSONAL BESTS <small>· all time</small></h3></div><div class="cards">' +
+            vaCard('Longest speaking session', rec.speakLong ? vaF(rec.speakLong) : '—') + vaCard('Longest singing session', rec.singLong ? vaF(rec.singLong) : '—') +
+            vaCard('Longest active speaking', rec.speakActive ? vaF(rec.speakActive) : '—') + vaCard('Longest active singing', rec.singActive ? vaF(rec.singActive) : '—') +
+            vaCard('Most active day', rec.day ? vaF(rec.day[1]) : '—', rec.day ? rec.day[0] : '') + vaCard('Most active week', rec.week ? vaF(rec.week[1]) : '—', rec.week ? 'week of ' + rec.week[0] : '') +
+            vaCard('Most active month', rec.month ? vaF(rec.month[1]) : '—', rec.month ? rec.month[0] : '') + vaCard('All sessions', fmtInt(life.sp.n + life.si.n), 'speaking ' + life.sp.n + ' · singing ' + life.si.n) + '</div>' +
+            '<div class="chart wide va-chart"><h3>DAILY ACTIVITY · LAST 30 DAYS</h3>' + vaChart(lastDays(life.days, 30), { label: 'Daily voice activity' }) + '</div>' +
+            '<div class="chart wide va-chart"><h3>WEEKLY ACTIVITY · LAST 12 WEEKS</h3>' + vaChart(lastWeeks(life.days, 12), { label: 'Weekly voice activity' }) + '</div>' +
+            '<div class="chart wide va-chart"><h3>MONTHLY TREND · LAST 12 MONTHS</h3>' + vaChart(lastMonths(life.days, 12), { label: 'Monthly voice activity' }) + '</div>' +
+            '<div class="chart wide va-chart"><h3>SESSION LENGTH · SELECTED PERIOD</h3>' + vaChart(distRows(per.sessions), { label: 'Session length distribution', fmt: x => x + '', tip: cnt, empty: 'No sessions in this period.' }) + '</div>';
+          $('#vaSRange').onchange = e => { VAS.range = e.target.value; vaRenderStats(); };
+          if ($('#vaSFrom')) { $('#vaSFrom').onchange = e => { VAS.from = e.target.value; vaRenderStats(); }; $('#vaSTo').onchange = e => { VAS.to = e.target.value; vaRenderStats(); }; }
+        }
+
+        // ---- Voice Studio: the live session box ----
+        function vaPaintLive() {
+          const box = $('#vsBox'); if (!box) return; let el = $('#vaLive');
+          if (!el) { const a = $('#vsStat'); if (!a || !a.parentNode) return; el = document.createElement('div'); el.id = 'vaLive'; el.className = 'va-live'; a.parentNode.insertBefore(el, a.nextSibling); }
+          let h = '', st = 'idle';
+          const r = eng.peek('active');
+          if (r) {
+            st = eng.paused ? 'paused' : eng.voiced ? 'voice' : 'live';
+            const sing = r.activityType === 'singing';
+            h = '<b>VOICE SESSION</b><span>Mode: <b>' + (sing ? 'Singing' : 'Speaking') + '</b></span><span>Started: <b>' + esc(vaTime(r.startTimestamp)) + '</b></span><span>Session: <b>' + vaClock(r.microphoneSessionDurationMs) + '</b></span><span>Active ' + (sing ? 'singing' : 'speaking') + ': <b>' + vaClock(r.activeVoiceDurationMs) + '</b></span><span>' + (eng.paused ? '⏸ Paused (microphone muted)' : eng.voiced ? '● Voice detected' : '○ Listening') + '</span>' +
+              '<small>Changing the voice style ends this session and starts a new one. Only times are saved, not sound.</small>';
+          } else if (VA.last && Date.now() - VA.last.endTimestamp < 6e5) {
+            const s = VA.last, sing = s.activityType === 'singing'; st = 'done';
+            h = '<b>SESSION COMPLETE</b><span>' + (sing ? 'Singing' : 'Speaking') + ' duration: <b>' + vaF(s.activeVoiceDurationMs) + '</b></span><span>Session duration: <b>' + vaF(s.microphoneSessionDurationMs) + '</b></span><span>Date: <b>' + esc(s.localDate) + '</b></span>' + (s.sessionStatus === 'interrupted' ? '<span>⚠ ' + esc(s.interruptionReason || 'interrupted') + '</span>' : '');
+          } else { h = '<small>Voice activity tracking: a session starts when you press Start and ends when you stop. Only times are saved, never sound.</small>'; }
+          if (el.dataset.s !== st || el._h !== h) { el.dataset.s = st; el._h = h; el.innerHTML = h; }
+        }
+        function vaRefreshViews() {
+          const t = typeof activeTab === 'function' ? activeTab() : ''; VA.rev++;
+          if (t === 'dash') vaRenderDash(); else if (t === 'keys') vaRenderStats(); else if (t === 'hist' && VAH.mode === 'voice') vaRenderHist(); else if (t === 'data') vaBkNote();
+        }
+        async function vaBkNote() { await vaLoad(); let e = $('#vaBk'); if (!e) { const p = $('#p-data'); if (!p) return; e = document.createElement('p'); e.id = 'vaBk'; e.className = 'sub va-note'; p.appendChild(e); } e.textContent = '🎙 Voice activity: ' + fmtInt(VA.list.length) + ' session' + (VA.list.length === 1 ? '' : 's') + ' are included in full backups and restored from them (no audio is saved).'; }
+        const _showTab74 = showTab; showTab = function (n) { _showTab74(n); try { if (n === 'dash') vaRenderDash(); else if (n === 'keys') vaRenderStats(); else if (n === 'hist') { vaHistEnsure(); if (VAH.mode === 'voice') vaRenderHist(); } else if (n === 'data') vaBkNote(); } catch (e) { } };
+
+        // ---- backups: voice sessions travel in the backup file (before the presses, next to the settings) ----
+        window.__vaBackup = async () => { try { await vaLoad(); return VA.list.map(s => Object.assign({}, s)); } catch (e) { return []; } };
+        {
+          const _rs74 = $('#btnRestore').onclick;
+          $('#btnRestore').onclick = async () => {
+            const file = $('#restoreFile').files[0];
+            if (file && !RS) {
+              try {
+                const meta = await readBackupMeta(file);
+                if (meta && Array.isArray(meta.voice) && meta.voice.length) {
+                  const r = await vaImport(meta.voice);
+                  toast('🎙 Voice activity: ' + fmtInt(r.added) + ' session' + (r.added === 1 ? '' : 's') + ' restored' + (r.dup ? ', ' + fmtInt(r.dup) + ' already there' : '') + (r.bad ? ', ' + fmtInt(r.bad) + ' damaged ignored' : '') + '.', r.added || r.dup ? 'ok' : 'bad');
+                  vaRefreshViews();
+                }
+              } catch (e) { toast('Voice activity in the backup could not be read: ' + (e && e.message || e), 'bad'); }
+            }
+            return _rs74();
+          };
+        }
+
+        // ---- look (uses the app's own colours) ----
+        { const st = document.createElement('style'); st.id = 'v74css'; st.textContent = `
+          .va-sec{margin-top:18px}
+          .va-svg{width:100%;height:150px;display:block}
+          .va-svg text{fill:var(--mut,#9b9dbb);font-size:10px}
+          .va-a{fill:var(--c1,#38bdf8);background:var(--c1,#38bdf8)} .va-b{fill:var(--c2,#a78bfa);background:var(--c2,#a78bfa)}
+          .va-key{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut,#9b9dbb);margin-top:4px}
+          .va-key i{width:10px;height:10px;border-radius:3px;display:inline-block}.va-key span{margin-left:auto}
+          .va-empty{padding:14px 4px}
+          .va-cmp{display:grid;gap:8px;margin:10px 0 14px}.va-cmp div{display:grid;grid-template-columns:110px 1fr 90px;align-items:center;gap:10px}
+          .va-cmp span{height:12px;border-radius:6px;min-width:2px}.va-cmp em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
+          .va-hbar{margin-bottom:12px}
+          #p-hist.va-on>:not(.va-keep){display:none!important}
+          .va-day{margin:16px 0 8px;font-size:14px;display:flex;gap:10px;align-items:baseline}.va-day small{color:var(--mut,#9b9dbb);font-weight:400}
+          .va-row{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 12px;margin-bottom:6px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+          .va-row[data-t=speaking]{border-left:3px solid var(--c1,#38bdf8)}.va-row[data-t=singing]{border-left:3px solid var(--c2,#a78bfa)}
+          .va-row .va-when{font-variant-numeric:tabular-nums}.va-row small{color:var(--mut,#9b9dbb)}
+          .va-st{margin-left:auto;font-size:11px;padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.08);text-transform:capitalize}.va-st[data-s=interrupted]{background:rgba(251,146,60,.22)}.va-st[data-s=active]{background:rgba(52,211,153,.22)}
+          .va-pager{justify-content:space-between;margin-top:12px}
+          .va-live{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;margin:10px 0;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);font-size:13px}
+          .va-live[data-s=voice]{border-color:var(--c1,#38bdf8)}.va-live[data-s=paused]{opacity:.75}.va-live b{font-variant-numeric:tabular-nums}.va-live>b:first-child{letter-spacing:.08em;font-size:11px;color:var(--mut,#9b9dbb)}
+          .va-live small{flex-basis:100%;color:var(--mut,#9b9dbb)}
+          .va-note{margin-top:14px}`; document.head.appendChild(st); }
+
+        // ---- a small test handle (the automated tests use it; the app does not) ----
+        window.__pl74 = Object.freeze({ version: '7.4.0', engine: vaEngine, compute: vaCompute, records: vaRecords, rangeOf: vaRangeOf, sanitize: vaSanitize, import: vaImport, load: vaLoad, recover: vaRecover, put: vaPut, cache: vaCache, dbName: VA_DB, store: VA_ST, live: () => ({ on: eng.on, style: eng.style, paused: eng.paused, voiced: eng.voiced, snap: eng.peek('active') }), reset: () => { VA.list = null; VA.loading = null; VA.map.clear(); } });
+      }
       window.__pl73 = Object.freeze({
         vs: { open: openVoice, start: vsStart, stop: vsStop, emergency: vsEmergency, settings: () => JSON.parse(JSON.stringify(VSS)), insts: () => VS_INST.map(i => i.id), pick: vsPickInst, mode: vsMode, recStart: vsRecStart, recStop: vsRecStop, recList: () => vsRecList().then(() => VSU.recs.map(r => ({ id: r.id, name: r.name, dur: r.dur, size: r.size }))), del: vsDelRec, devices: vsDevices, route: vsRoute, yin: vsYin, stats: vsStats, player: () => VS.play ? { id: VS.play.id, pos: vsPlayPos(), dur: VS.play.dur, paused: !!VS.play.paused, ended: !!VS.play.ended, loading: !!VS.play.loading } : null,
           state: () => ({ kinds: VS.voices.map(v => v.kind), resp: VSS.resp, running: VS.running, preview: VS.preview, wl: VS.wl, err: VS.err, info: VS.info, micMute: VS.micMute, outMute: VS.outMute, note: VS.note, cont: VS.cont, voices: VS.voices.length, last: VS.last && Object.assign({}, VS.last), trail: VS.trail.length, rec: !!VS.rec, ctx: VS.ctx ? VS.ctx.state : null, sink: VS.ctx && 'sinkId' in VS.ctx ? VS.ctx.sinkId : null, midiOn: [...VS.midiOn], played: VS.trail.filter(p => p[2] != null).map(p => p[2]) }),

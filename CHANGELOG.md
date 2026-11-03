@@ -3,6 +3,38 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 7.4.0 — 2026-11-03 · Voice activity tracking & analytics
+
+### Voice Studio
+- **Speaking and Singing sessions are tracked and saved.** A session starts when the microphone and the analysis are running (after you press Start) and ends when you stop. The mode comes from the existing **Voice style** setting (Singing / humming or Speaking). If you change the style while a session runs, that session ends and a new one starts.
+- Each session saves its start and end time, the **session duration** (time the microphone was watched; muted/paused time is not counted) and the **active vocal duration** (time a voice was detected). Silence is not counted as speaking or singing.
+- Activity that crosses midnight is split between the two calendar days (local time).
+- A live session box in Voice Studio (mode, start time, session time, active time, state) and a summary when you stop.
+- If the app closes unexpectedly, the session is kept as "interrupted" at its last saved point (saved every 5 seconds); the time after that is never counted.
+
+### History
+- New **Voice activity** view (switch next to *Piano presses*): sessions grouped by date with start/end time, session and active duration, paused time and status; Speaking / Singing filter, period filter, pages. The piano history is unchanged.
+
+### Statistics
+- **Voice statistics** at the top of *Key statistics*: totals and averages for the chosen period (today, yesterday, 7/30 days, this/last month, this year, all time, custom), session counts, personal bests (longest sessions, most active day / week / month), daily / weekly / monthly charts and a session-length chart.
+
+### Dashboard
+- New **Voice activity** section with 9 cards (lifetime, today, speaking, singing, sessions, average, longest, most active day) and a 14-day chart. Zero sessions show clean empty states.
+
+### Data & backup
+- Voice sessions are stored in their own database (`PianoLoggerVoiceActivity`); the piano database is not changed.
+- Backups include the voice sessions (placed before the presses, next to the settings); restoring merges them by session id without duplicates. Backups from 7.3.5 and older restore normally (voice history starts empty), and 7.3.5 can still restore a 7.4.0 backup (it skips the voice part).
+
+### Privacy
+- Voice activity is measured on this computer from the existing analysis (level, pitch, noise). **No sound is saved, nothing is uploaded, and there is no speech-to-text.** Only times and counts are stored.
+
+### Limits
+- The speaking and singing time is an **estimate** from level and pitch, not speech recognition: loud background noise above the Voice Studio noise setting can be counted as speech. Sessions shorter than one second are not saved.
+- Tested automatically with a controlled clock and a simulated microphone (audio file). Testing with a physical microphone has not been done yet.
+
+### Desktop app 7.4.0
+- Page 7.4.0 bundled. No change to the app's Rust code.
+
 ## 7.3.5 — 2026-11-03 · Release history & maintenance update
 
 ### Release history
@@ -313,6 +345,7 @@ Measured in Chrome on this PC (GeForce GT 710), Aurora Glass theme, glow notes, 
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
+| 7.4.0 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Voice activity tracking and analytics (page 7.4.0). No change to the app's Rust code. Built locally, not published yet. |
 | 7.3.5 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Release-history ordering fixed; branding kept. Built locally, not published yet. |
 | 7.3.4 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Branding & maintenance: new logo in the sidebar and app icons. Page 7.3.4. Built locally, not published yet. |
 | 7.3.3 | 2026-11-02 | Tauri 2.12.5 (WebView2) | No code change. Page 7.3.3 (animated islands, sliding sections). Built locally, Published 2026-11-02 as `app-v7.3.3`. |
