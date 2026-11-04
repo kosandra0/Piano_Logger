@@ -3,6 +3,27 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 7.4.1 — 2026-11-04 · MIDI octave & Roblox sustain fixes
+
+### MIDI keyboard
+- **Notes outside the old 88-key range are detected.** The page accepts every MIDI note 0–127. The keyboard now shows C0 (MIDI 12) to C9 (MIDI 120), which covers the Electro FM ST-50 in octave -2 and +2. Before, notes below A0 and above C8 were ignored.
+- Notes outside the drawn keyboard (MIDI 0–11 and 121–127) are logged and counted, but not drawn.
+- Statistics show "Keys used / 109" and a 109-key chart.
+
+### MIDI Bridge
+- **Roblox sustain (CC64):** a repeated sustain-pedal-down message no longer presses Space again. Space is released when the pedal is lifted.
+- Key mappings, profiles and the Roblox Space sustain setting are unchanged.
+
+### Data
+- No change to the recording database, settings or backups.
+
+### Testing
+- Simulated MIDI only (no hardware, no Roblox): the new MIDI range and sustain test 27/27, the existing simulated-MIDI suite 10/10.
+- Not tested: a real Electro FM ST-50 and Roblox.
+
+### Desktop app 7.4.1
+- Page 7.4.1 bundled. No change to the app's Rust code.
+
 ## 7.4.0 — 2026-11-03 · Voice activity tracking & analytics
 
 ### Voice Studio
@@ -345,6 +366,7 @@ Measured in Chrome on this PC (GeForce GT 710), Aurora Glass theme, glow notes, 
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
+| 7.4.1 | 2026-11-04 | Tauri 2.12.5 (WebView2) | MIDI octave range (MIDI 0–127) and Roblox sustain (CC64) fixes (page 7.4.1). No change to the app's Rust code. Built locally, not published yet. |
 | 7.4.0 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Voice activity tracking and analytics (page 7.4.0). No change to the app's Rust code. Built locally, not published yet. |
 | 7.3.5 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Release-history ordering fixed; branding kept. Built locally, not published yet. |
 | 7.3.4 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Branding & maintenance: new logo in the sidebar and app icons. Page 7.3.4. Built locally, not published yet. |

@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 7.4.0: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="7.4.0">
+  <meta name="description" content="Piano Logger 7.4.1: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="7.4.1">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11422,7 +11422,8 @@
       const nowEpoch = () => performance.timeOrigin + performance.now();
       const fmtNF = new Intl.NumberFormat();
       const fmtInt = n => fmtNF.format(Number(n || 0));
-      const FIRST = 21, LAST = 108;
+      const MIDI_MIN = 0, MIDI_MAX = 127;   // every valid MIDI note number is accepted, logged and named
+      const FIRST = 12, LAST = 120;         // on-screen keyboard: C0 (MIDI 12) … C9 (MIDI 120); covers ST-50 octave -2 … +2
       const SRC = { midi: ['🎹', 'MIDI keyboard (ST50)'], computer: ['⌨', 'PC keyboard'], screen: ['🖱', 'On-screen click'] };
       const srcText = s => SRC[s] ? SRC[s][0] + ' ' + SRC[s][1] : s;
       const srcBadge = s => '<span class="src ' + esc(s) + '">' + esc(srcText(s)) + '</span>';
@@ -11500,7 +11501,7 @@
       const saveSettings = () => { try { localStorage.setItem('pll.settings', JSON.stringify(S)); } catch (e) { } };
 
       /* ============================================================
-         Piano construction (88 keys, A0 = MIDI 21 … C8 = MIDI 108)
+         Piano construction (C0 = MIDI 12 … C9 = MIDI 120; 88-key A0–C8 is inside it)
          ============================================================ */
       const KEY = {};
       (() => {
@@ -11534,6 +11535,8 @@
           KEY[m] = { el, x, w, black: isBlack(m) };
         }
         blacks.forEach(b => keysEl.appendChild(b));
+        // notes outside the drawn keyboard (MIDI 0–11, 121–127) still get a hidden stand-in so they are logged and never crash
+        for (let m = MIDI_MIN; m <= MIDI_MAX; m++) if (!KEY[m]) KEY[m] = { el: document.createElement('div'), x: 0, w: 0, black: isBlack(m) };
       })();
 
       /* ============================================================
@@ -12057,7 +12060,7 @@
       }
 
       function noteOn({ id, midi, vel, source, device, channel, src, tRaw }) {
-        if (midi < FIRST || midi > LAST) return;
+        if (midi < MIDI_MIN || midi > MIDI_MAX) return;
         vel = clamp(Math.round(vel), 1, 127);
         tRaw = tRaw || nowEpoch();
         if (active.has(id)) noteOff(id, tRaw);                         // re-trigger without release
@@ -12462,13 +12465,13 @@
           card('Active days', fmtInt(Object.keys(dayCounts).length), busy ? 'busiest ' + busy[0] + ' (' + fmtInt(busy[1]) + ')' : '') +
           card('Total time held', g.totalDur ? fmtLong(g.totalDur) : '0s', g.count ? 'avg ' + fmtDur(g.totalDur / g.count) : '') +
           card('Average velocity', g.count ? (g.totalVel / g.count).toFixed(1) : '—', g.count ? 'range ' + g.minVel + '–' + g.maxVel + ' of 127' : 'out of 127') +
-          card('Keys used', Object.keys(keyCounts).length + ' / 88', topKey ? 'most: ' + noteName(+topKey[0]) + ' (' + fmtInt(topKey[1]) + ')' : '') +
+          card('Keys used', Object.keys(keyCounts).length + ' / ' + (LAST - FIRST + 1), topKey ? 'most: ' + noteName(+topKey[0]) + ' (' + fmtInt(topKey[1]) + ')' : '') +
           card('Longest note', g.longest.dur ? fmtDur(g.longest.dur) : '—', g.longest.dur ? noteName(g.longest.midi) + ' · ' + fmtStamp(g.longest.ts) : '') +
           card('Shortest note', g.shortest ? fmtDur(g.shortest.dur) : '—', g.shortest ? noteName(g.shortest.midi) + ' · ' + fmtStamp(g.shortest.ts) : '') +
           card('Most keys at once', g.maxPoly || '—', 'held down at the same moment') +
           card('Last press', g.lastTs ? fmtStamp(g.lastTs).slice(11) : '—', g.lastTs ? fmtStamp(g.lastTs).slice(0, 10) : '') +
           card(all ? 'Presses by input' : 'Device name', '', lines || '—');
-        const per = Array.from({ length: 88 }, (_, i) => keyCounts[FIRST + i] || 0);
+        const per = Array.from({ length: LAST - FIRST + 1 }, (_, i) => keyCounts[FIRST + i] || 0);
         drawBars($('#ch1'), per, {
           color: i => { const h = hueOf(FIRST + i); return ['hsl(' + h + ',100%,65%)', 'hsl(' + h + ',100%,38%)']; },
           tip: (i, v) => noteName(FIRST + i) + ' (MIDI ' + (FIRST + i) + ')\n' + fmtInt(v) + ' presses',
@@ -12617,7 +12620,7 @@
         const midi = Math.round(+r.midi);
         let ts = Math.round(+r.startTs);
         if (!Number.isFinite(ts) && r.iso) ts = Date.parse(r.iso);
-        if (!(midi >= FIRST && midi <= LAST) || !Number.isFinite(ts) || ts <= 0) return null;
+        if (!(midi >= MIDI_MIN && midi <= MIDI_MAX) || !Number.isFinite(ts) || ts <= 0) return null;
         const p = localParts(ts), dur = Math.max(0, +r.durationMs || 0);
         return {
           midi, note: noteName(midi), velocity: clamp(Math.round(+r.velocity) || 64, 1, 127), durationMs: dur,
@@ -17376,7 +17379,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '7.4.0';
+      const APP_VERSION = '7.4.1';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -21239,7 +21242,8 @@ html.pl-tray *,html.pl-tray *::before,html.pl-tray *::after{animation-play-state
           const on = d[2] >= 64, c = d[1];
           if (c === 64) {
             BR.pedal = on;
-            if (o.sustain === 'key') { if (on) brDown('cc64', o.sustainKey, ts); else brUp('cc64', ts); }
+            // act only on the change: a repeated "down" must not press Space again, or the release would never clear it
+            if (o.sustain === 'key') { if (on) { if (!BR.notes.has('cc64')) brDown('cc64', o.sustainKey, ts); } else brUp('cc64', ts); }
             if (o.sustain === 'hold' && !on) [...BR.deferred].forEach(k2 => brUp(k2, ts));
           } else if (c === 67 && o.softKey) { if (on) brDown('cc67', o.softKey, ts); else brUp('cc67', ts); }
           else if (o.ccKeys[c]) { if (on) { if (!BR.notes.has('cc' + c)) brDown('cc' + c, o.ccKeys[c], ts); } else brUp('cc' + c, ts); }
@@ -23179,6 +23183,22 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
         ]
       });
       /* =====================================================================
+         7.4.1 — bug fixes: ST-50 octave notes (MIDI 0–127) and Roblox sustain (CC64) in the MIDI Bridge
+         ===================================================================== */
+      VERSIONS.unshift({
+        v: '7.4.1', date: '2026-11-04', title: 'MIDI octave & Roblox sustain fixes',
+        groups: [
+          ['MIDI keyboard', [
+            'Notes outside the old 88-key range are now detected: every MIDI note 0–127 is accepted and logged (C0 = MIDI 12 up to C9 = MIDI 120 are drawn on the keyboard), so the ST50 octave -2 and +2 keys work',
+            'Notes outside the drawn keyboard are still logged and counted; they are not drawn'
+          ]],
+          ['MIDI Bridge', [
+            'Sustain pedal (CC64) for Roblox: a repeated pedal-down message no longer presses Space again, so Space is released when the pedal is lifted',
+            'Nothing else changed: key mappings, profiles and the Roblox Space sustain are as before'
+          ]]
+        ]
+      });
+      /* =====================================================================
          7.4.0 — VOICE ACTIVITY TRACKING & ANALYTICS
          A session starts when Voice Studio's microphone and analysis are running (Start) and ends when it stops. It records
          only numbers: when it started and ended, how long the microphone was watched (paused time excluded), and how long a
@@ -23614,7 +23634,7 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
           .va-note{margin-top:14px}`; document.head.appendChild(st); }
 
         // ---- a small test handle (the automated tests use it; the app does not) ----
-        window.__pl74 = Object.freeze({ version: '7.4.0', engine: vaEngine, compute: vaCompute, records: vaRecords, rangeOf: vaRangeOf, sanitize: vaSanitize, import: vaImport, load: vaLoad, recover: vaRecover, put: vaPut, cache: vaCache, dbName: VA_DB, store: VA_ST, live: () => ({ on: eng.on, style: eng.style, paused: eng.paused, voiced: eng.voiced, snap: eng.peek('active') }), reset: () => { VA.list = null; VA.loading = null; VA.map.clear(); } });
+        window.__pl74 = Object.freeze({ version: '7.4.1', engine: vaEngine, compute: vaCompute, records: vaRecords, rangeOf: vaRangeOf, sanitize: vaSanitize, import: vaImport, load: vaLoad, recover: vaRecover, put: vaPut, cache: vaCache, dbName: VA_DB, store: VA_ST, live: () => ({ on: eng.on, style: eng.style, paused: eng.paused, voiced: eng.voiced, snap: eng.peek('active') }), reset: () => { VA.list = null; VA.loading = null; VA.map.clear(); } });
       }
       window.__pl73 = Object.freeze({
         vs: { open: openVoice, start: vsStart, stop: vsStop, emergency: vsEmergency, settings: () => JSON.parse(JSON.stringify(VSS)), insts: () => VS_INST.map(i => i.id), pick: vsPickInst, mode: vsMode, recStart: vsRecStart, recStop: vsRecStop, recList: () => vsRecList().then(() => VSU.recs.map(r => ({ id: r.id, name: r.name, dur: r.dur, size: r.size }))), del: vsDelRec, devices: vsDevices, route: vsRoute, yin: vsYin, stats: vsStats, player: () => VS.play ? { id: VS.play.id, pos: vsPlayPos(), dur: VS.play.dur, paused: !!VS.play.paused, ended: !!VS.play.ended, loading: !!VS.play.loading } : null,
