@@ -6,7 +6,36 @@ A single-file, browser-based piano MIDI visualizer and lifetime key logger. Plug
 
 **Windows app:** [Download Piano-Logger-Setup.exe](https://github.com/kosandra0/Piano_Logger/releases/latest/download/Piano-Logger-Setup.exe) (Windows 10 & 11, 64-bit)
 
-**Release target:** 8.0.0 (not yet released; the published version is 7.4.1) — 🎤 **Sung Note Statistics** *(Windows app)*: every stable note you sing or hum in Voice Studio is counted once, with a **Total notes sung** card, charts (most sung notes, pitch classes, octaves, activity over time) and a sortable table for each note; kept only on your PC, never as sound. 🔤 **Font library** *(Windows app)*: 88 bundled fonts plus Windows fonts. 🙂 **Profile pictures**, ⏳ **Hourly quests**, 🎚 Voice Studio EQ, compressor and presets, 🌌 livelier backgrounds, and a page now called **Statistics**. 📊 **Voice activity tracking** (how long you speak or sing, with history, statistics and a dashboard section; only times are saved). 🎙 **Voice Studio**: sing, hum or speak into a microphone and hear your own voice with effects, or turn your voice into one of 10 instruments (and, optionally, play it on your MIDI keyboard). Voice → instrument keeps up with fast singing and speaking; floating "island" controls that shrink and grow smoothly; sections slide into place when you move them; a recording player. See [CHANGELOG.md](CHANGELOG.md) for everything that changed.
+## 🆕 What's new in 8.0.0 (released 2026-11-11)
+
+Download the Windows app from the [latest release](https://github.com/kosandra0/Piano_Logger/releases/latest). The website version is at the live demo link above. Full history: [CHANGELOG.md](CHANGELOG.md).
+
+**🎤 Sung Note Statistics** *(Windows app)*
+- Each stable note you sing or hum in Voice Studio (Singing style) is counted **once**, however long you hold it. Speaking never counts.
+- The number updates **live** while you sing. You don't need to stop Voice Studio to see it.
+- **Statistics → Voice Statistics** shows a **Total notes sung** card, and a **Sung Note Statistics** section above Key Statistics with summary cards (total and distinct notes, most sung note, note lengths, sessions, lowest and highest note), four charts (most sung notes, pitch classes, octaves, activity over time by day, week or month) and a sortable table with one row per note.
+- Note names are the nearest piano note to your pitch. They are an estimate, not what you meant to sing.
+- Stored only on your PC: note information only, never sound, and nothing is uploaded. Included in backups; Clear Notes does not remove these statistics.
+
+**🎨 Look and statistics** *(website and Windows app)*
+- The page is now called **Statistics**, with separate Voice Statistics and Key Statistics sections.
+- The version chip under the Piano Logger name has a dark centre and a slowly turning, pulsing rainbow border.
+- Black keys show their note label with clearer contrast. Theme Studio favourite stars no longer overlap the card text.
+
+**🔤 Offline font library** *(Windows app)*
+- 88 bundled open-licence font families, plus Windows system fonts, with search, a category filter and live preview. The chosen font applies app-wide and survives a restart.
+- The Windows app no longer asks Google Fonts for anything, so text looks the same without an internet connection. The website still uses Google Fonts.
+
+**📖 Guidance** *(website and Windows app)*
+- What's New, Help, the complete guide and a tour step describe the new features.
+- The "Download app" panel lists the Windows-only features.
+
+**🛠 Fixes**
+- The up-down crop slider in the picture tool moves again. When a picture has no room to move on that axis, the zoom is raised automatically.
+- The sidebar no longer keeps "Live activity" highlighted on History and Statistics.
+- Voice Studio noise reduction works when the page is opened as a file in a browser.
+- What's New no longer shows "Invalid Date" for a release date that is not set.
+- More space above Key Statistics under the Sung Note help text.
 
 **Jump to:** [Features](#-features) · [System requirements](#-system-requirements) · [Privacy](#-privacy) · [How to use](#-how-to-use) · [Voice Studio](#-voice-studio) · [Windows app](#-windows-app)
 
