@@ -3,6 +3,16 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 8.0.1 — 2026-11-11 · Backup save location
+
+### Backups (website and desktop)
+- **Create backup file** now asks where to save the file (a Save dialog). Before, the file was downloaded straight to the Downloads folder.
+  - Windows app: the native Save dialog; the file is written to the folder you choose, in pieces, so large backups work.
+  - Chrome and Edge on the website: the browser's Save dialog.
+  - Other browsers keep the normal download.
+  - If you cancel the dialog, nothing is saved and the backup is not counted.
+- Automatic backups are unchanged: they still go to the backups folder chosen in the app.
+
 ## 8.0.0 — 2026-11-11 · Sung note statistics, living backgrounds, voice tools and profile pictures
 
 Released 2026-11-11 (GitHub release app-v8.0.0). Items marked *desktop* are in the Windows app only.
