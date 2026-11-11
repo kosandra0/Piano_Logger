@@ -3,9 +3,9 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
-## 8.0.0 — not yet released · Sung note statistics, living backgrounds, voice tools and profile pictures
+## 8.0.0 — 2026-11-11 · Sung note statistics, living backgrounds, voice tools and profile pictures
 
-Release target. Not published or installed; the release date is to be set when the owner approves the release. Items marked *desktop* are in the Windows app only.
+Released 2026-11-11 (GitHub release app-v8.0.0). Items marked *desktop* are in the Windows app only.
 
 ### Sung Note Statistics (desktop only)
 
