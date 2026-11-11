@@ -3,6 +3,13 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 8.0.2 — 2026-11-11 · Website backup Save dialog
+
+### Backups (website)
+- On the website, **Create backup file** opens the browser Save dialog straight away when you click it. Before, the dialog could fail after the backup was built ("Must be handling a user gesture").
+- Cancelling the dialog saves nothing.
+- The Windows app is unchanged from 8.0.1 (it has the same Save dialog).
+
 ## 8.0.1 — 2026-11-11 · Backup save location
 
 ### Backups (website and desktop)
