@@ -6,6 +6,10 @@ A single-file, browser-based piano MIDI visualizer and lifetime key logger. Plug
 
 **Windows app:** [Download Piano-Logger-Setup.exe](https://github.com/kosandra0/Piano_Logger/releases/latest/download/Piano-Logger-Setup.exe) (Windows 10 & 11, 64-bit)
 
+## 🆕 What's new in 8.0.2 (released 2026-11-11)
+
+- **Website backup Save dialog:** on the website, "Create backup file" now opens the Save dialog straight away when you click it (Chrome and Edge). Cancelling saves nothing. The Windows app is unchanged from 8.0.1.
+
 ## 🆕 What's new in 8.0.1 (released 2026-11-11)
 
 - **Backup save location:** "Create backup file" now asks where to save the backup (a Save dialog). In the Windows app the file goes to the folder you choose; in Chrome and Edge the browser shows its Save dialog. Cancelling saves nothing.
