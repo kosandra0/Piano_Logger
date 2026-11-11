@@ -3,6 +3,53 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 8.0.0 — not yet released · Sung note statistics, living backgrounds, voice tools and profile pictures
+
+Release target. Not published or installed; the release date is to be set when the owner approves the release. Items marked *desktop* are in the Windows app only.
+
+### Sung Note Statistics (desktop only)
+
+- *desktop* **Total notes sung** card in Statistics → Voice Statistics, for the period you choose (all time, today, last 7 or 30 days, a month, a year or a custom range). It counts stable detected notes, not microphone frames.
+- *desktop* A **Sung Note Statistics** section above Key Statistics: summary cards (total and distinct notes, most sung note, total and average note length, singing sessions with notes, lowest and highest note); charts for the most sung notes, pitch classes, octaves and activity over time (day, week or month); and a sortable table with one row per note (count, share, total, average and longest duration, average frequency and cents, average confidence, sessions, first and last time).
+- *desktop* Each stable note is counted once while Voice Studio is in the Singing style (speaking never counts). It uses the same detection and acceptance rules as Approximate Notes and Accumulated Notes (at least 200 ms, confidence 0.6), so the three always agree. Note names are the nearest piano note to the measured pitch, an estimate and not what was meant.
+- *desktop* Kept in its own local database (PianoLoggerSungNotes). Only note information is stored, never sound, and nothing is uploaded. Included in backups (older backups still restore and leave the data as it is; restoring twice never duplicates). Clear Notes in Voice Studio never removes it.
+- The website does not run, store or show any of this; its "Download app" panel describes the desktop features.
+
+### Statistics and look (website and desktop)
+
+- The page is now called **Statistics**, with two clearly separate sections: Voice Statistics and Key Statistics.
+- The version is shown in a small chip under the Piano Logger name (the "Aurora Glass Studio" line is removed). The chip has a dark centre and a slowly turning, pulsing rainbow border (website and desktop).
+- Sung Note Statistics: more space above Key Statistics under the "How to read this" note.
+- Pressed black keys show their note label inside the key with clearer contrast; white keys are unchanged.
+- Theme Studio favourite stars sit clear of the card text.
+
+### Font library (desktop only)
+
+- *desktop* Settings → Appearance & layout → Font: 88 bundled open-licence font families (sans, serif, display, rounded, handwriting, monospace, futuristic and pixel) plus 12 Windows system fonts, with search, category filter, live preview and Apply / Reset font. The chosen font applies app-wide and is kept after restart; it is included in backups. Font files are bundled in the app, so nothing is downloaded from the website. The website is unchanged.
+
+### Backgrounds (website and desktop)
+- Cloud drift, rain, raindrops on glass, snow, cherry blossom, meteor shower, synthwave grid, ocean waves, fireflies and nebula move with more natural variation and no fixed repeating cycle.
+- Every Roll background fades in when chosen. Saved settings (intensity, speed, palette, opacity, density, quality) are unchanged. Reduced motion still stops the animation.
+
+### Fixes (website and desktop)
+- Voice Studio noise reduction also works when the page is opened as a file in the browser (it had no effect there).
+- History and Statistics no longer keep "Live activity" highlighted in the sidebar.
+- What's New showed "Invalid Date" for a build whose release date was not set yet; it now shows the text as written.
+
+### Voice Studio (desktop)
+- Noise reduction: Off, Light, Balanced and Strong, with a gate hold control.
+- Accumulated Notes: stable notes are kept in order until cleared, with an on/off switch, and JSON, text and Markdown export (note information only). The Save dialog lets you choose the folder.
+- Five-band EQ, a compressor, five presets (Natural, Clean, Warm, Clear Speech, Studio Vocal) and a reset to recommended settings. Presets change nothing until pressed.
+- Output protection (limiter and soft clipper) is always on. A timing check shows the audio clock difference; it does not resynchronise the audio yet.
+
+### Profile and quests (desktop)
+- 50 built-in profile pictures, and your own PNG or JPG picture with cropping.
+- Hourly quests, and category icons on the quest-period tabs.
+
+### Offline fonts (desktop)
+- The Windows app no longer asks Google Fonts for anything. The weights its own typography used (Plus Jakarta Sans, JetBrains Mono, Inter, Manrope, Space Grotesk) are built in as files, and the app's security policy no longer allows the Google font hosts. The website keeps using Google Fonts.
+- 165 font files are built into the app in total; the font licences are listed in `font-licenses/INDEX.md`.
+
 ## 7.4.1 — 2026-11-04 · MIDI octave & Roblox sustain fixes
 
 ### MIDI keyboard
