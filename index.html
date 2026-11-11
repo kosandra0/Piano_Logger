@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 8.0.0: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="8.0.0">
+  <meta name="description" content="Piano Logger 8.0.1: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="8.0.1">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12767,6 +12767,26 @@
         try {
           const { blob, n } = await logBlob(f, fmt, label, k => tp.set('Preparing… ' + fmtInt(k) + (total ? ' of ' + fmtInt(total) : '') + ' presses', total ? k / total : null));
           if (!n) return tp.done('Nothing to export for these filters.', 'bad');
+          if (label === 'backup') {                  // v8.0.1: "Create backup file" asks where the file goes (Save dialog)
+            const name = 'piano-log-backup-' + stampName() + '.json', desk = window.pianoApp && window.pianoApp.isApp ? window.pianoApp : null;
+            if (desk && desk.backup && desk.backup.pick) {          // Windows app: native Save dialog, then written in pieces
+              const id = await desk.backup.pick(name);
+              if (!id) return tp.done('Backup cancelled: nothing was saved.');
+              let path;
+              try { for (let o = 0; o < blob.size; o += 8388608) await desk.backup.write(id, new Uint8Array(await blob.slice(o, o + 8388608).arrayBuffer())); path = await desk.backup.end(id); }
+              catch (e) { desk.backup.abort(id).catch(() => { }); throw e; }
+              tp.done('Backup saved (' + fmtInt(n) + ' presses, ' + fmtBytes(blob.size) + '): ' + path, 'ok');
+              return n;
+            }
+            if (window.showSaveFilePicker) {                        // website in Chrome or Edge: the browser's Save dialog
+              let fh;
+              try { fh = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'Piano Logger backup', accept: { 'application/json': ['.json'] } }] }); }
+              catch (e) { if (e && e.name === 'AbortError') return tp.done('Backup cancelled: nothing was saved.'); throw e; }
+              const w = await fh.createWritable(); await w.write(blob); await w.close();
+              tp.done('Backup saved (' + fmtInt(n) + ' presses, ' + fmtBytes(blob.size) + ').', 'ok');
+              return n;
+            }
+          }
           download('piano-log-' + label + '-' + stampName() + '.' + fmt, [blob], blob.type);
           tp.done('Exported ' + fmtInt(n) + ' presses (' + fmtBytes(blob.size) + ').', 'ok');
           return n;
@@ -17585,7 +17605,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '8.0.0';
+      const APP_VERSION = '8.0.1';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -24083,6 +24103,18 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
             ]]
           ] : [])
         });
+        /* 8.0.1: a fix release, shown only once the version number is 8.0.1 or newer */
+        if (!vsVerLt(APP_VERSION, '8.0.1')) {
+          VERSIONS.unshift({
+            v: '8.0.1', date: '2026-11-11', title: 'Backup save location',
+            groups: [
+              ['Backups (website and desktop)', [
+                'Create backup file now asks where to save the file (a Save dialog). In the Windows app the file is written to the folder you choose; in Chrome and Edge the browser shows its Save dialog. If you cancel, nothing is saved',
+                'Automatic backups are unchanged: they still go to the backups folder you chose in the app'
+              ]]
+            ]
+          });
+        }
         sortVersions();
         // the matching Help note (also only from 8.0.0 on; desktop-only features are left out of the website)
         const hp = document.getElementById('p-help');
