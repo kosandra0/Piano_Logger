@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 8.1.1: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="8.1.1">
+  <meta name="description" content="Piano Logger 8.1.2: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="8.1.2">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -8583,11 +8583,14 @@
 
     html.ds.doc-hidden *,
     html.ds.doc-hidden *::before,
-    html.ds.doc-hidden *::after {
+    html.ds.doc-hidden *::after,
+    html.ds.doc-hidden .orbs::before {
       animation-play-state: paused !important
     }
 
     html.ds:is(.anim-off, .anim-red, .lite) .orbs::before,
+    html.ds:is(.anim-off, .anim-red, .lite) .orbs::after,
+    html.ds.calm .orbs::after,
     html.ds:is(.anim-off, .lite) .glass {
       animation: none !important
     }
@@ -17732,7 +17735,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '8.1.1';
+      const APP_VERSION = '8.1.2';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -19030,6 +19033,20 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
         st.s.forEach(s => { const a = .15 + .6 * Math.max(0, Math.sin(now * s.f + s.ph)); c.fillStyle = hexA('#ffffff', a); c.fillRect(s.x, s.y, s.r * 1.6, s.r * 1.6); });   // twinkling stars
         c.restore();
       };
+      // v8.1.2: the white stars of the Meteor shower, Synthwave grid and Fireflies backgrounds were still dots; now a few of them brighten and dim slowly
+      // (each with its own period of about 3 to 10 seconds; the Nebula already did this). Drawn only while animations are allowed.
+      const TWK = {};
+      function cosTwinkle(c, now, k) {
+        const key = RW + 'x' + RH; let t = TWK[k];
+        if (!t || t.key !== key) {
+          let seed = k.length * 131 + 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+          t = TWK[k] = { key, s: Array.from({ length: Math.max(12, Math.round(RW * RH / 7000)) }, () => ({ x: rnd() * RW, y: rnd() * RH * .97, r: .5 + rnd() * 1.1, ph: rnd() * 6.283, f: 2 * Math.PI / (3000 + rnd() * 7000) })) };
+        }
+        c.save();
+        for (const q of t.s) { const a = .06 + .6 * (.5 + .5 * Math.sin(now * q.f + q.ph)); c.fillStyle = 'rgba(255,255,255,' + a.toFixed(3) + ')'; c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.283); c.fill(); }
+        c.restore();
+      }
+      ['meteors', 'synthgrid', 'fireflies'].forEach(k => { const f = VIZ_ANIM[k]; VIZ_ANIM[k] = (c, now) => { cosTwinkle(c, now, k); return f(c, now); }; });
       function cosmosSync(on) {
         const ids = COSMOS.map(x => x[0]);
         for (let i = GFX_OPT.bg.length - 1; i >= 0; i--) if (ids.includes(GFX_OPT.bg[i][0])) GFX_OPT.bg.splice(i, 1);
@@ -19952,7 +19969,7 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
          shape: S sharp · s soft · r round · p pill      motion: calm · smooth · snappy · bouncy */
       const V7_CATS = {
         A: 'Glass & Liquid', B: 'Futuristic & Sci-Fi', C: 'Natural & Soothing', D: 'Luxury & Premium', E: 'Minimal & Professional',
-        F: 'Retro & Digital', G: 'Vibrant & Colourful', H: 'Monochrome', I: 'Cinematic & Atmospheric', J: 'Artistic & Creative', K: 'Pastel & Soft'
+        F: 'Retro & Digital', G: 'Vibrant & Colourful', H: 'Monochrome', I: 'Cinematic & Atmospheric', J: 'Artistic & Creative', K: 'Pastel & Soft', L: 'Carbon & Steel'
       };
       const V7_ROWS = [
         ['Aurora Glass', 'A', 0, '#050816', '#22d3ee', '#8b5cf6', '#3b82f6', 'r', 'liquid', 'jakarta', 'aurora', 'smooth', .75, 'The signature look: dark liquid glass with cyan, violet and blue aurora light'],
@@ -20033,7 +20050,7 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
         ['Lime Energy', 'G', 0, '#0a1000', '#c6ff00', '#00e676', '#ffea00', 's', 'neon', 'grotesk', 'grid', 'snappy', .85, 'Acid lime on black, full speed'],
 
         ['True AMOLED', 'H', 0, '#000000', '#ffffff', '#a3a3a3', '#737373', 's', 'outline', 'inter', 'none', 'snappy', 0, 'Pure black for OLED screens: every unlit pixel is off'],
-        ['Carbon Black', 'H', 0, '#0b0b0c', '#d4d4d8', '#71717a', '#a1a1aa', 's', 'solid', 'grotesk', 'dots', 'snappy', 0, 'Carbon-fibre texture and steel greys'],
+        ['Carbon Black', 'H', 0, '#0b0b0c', '#d4d4d8', '#71717a', '#a1a1aa', 's', 'solid', 'grotesk', 'cb-drift', 'snappy', 0, 'Carbon-fibre texture and steel greys'],
         ['Graphite Studio', 'H', 0, '#18181b', '#e4e4e7', '#a1a1aa', '#52525b', 'r', 'glass', 'manrope', 'mesh', 'calm', .05, 'Smoky graphite glass'],
         ['Titanium', 'H', 0, '#1c1f23', '#cfd6de', '#8a96a3', '#e9edf1', 's', 'liquid', 'grotesk', 'lines', 'calm', .1, 'Brushed titanium with a cold sheen'],
         ['Silverline', 'H', 1, '#f4f5f7', '#374151', '#9ca3af', '#111827', 's', 'outline', 'inter', 'lines', 'snappy', 0, 'Hairline silver borders on white'],
@@ -20074,7 +20091,41 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
         ['Lilac Haze', 'K', 1, '#f5f0fb', '#7e22ce', '#d8b4fe', '#0e7490', 'r', 'glass', 'manrope', 'mesh', 'calm', .15, 'Lilac haze through light glass'],
         ['Vanilla Cream', 'K', 1, '#fdf8ee', '#94600f', '#f3d9a4', '#4d7c5a', 'r', 'paper', 'serif', 'grain', 'calm', 0, 'Vanilla cream and toasted sugar'],
         ['Pastel Confetti', 'K', 1, '#fdf6ff', '#c026d3', '#60a5fa', '#d97706', 'p', 'solid', 'rounded', 'confetti', 'bouncy', .1, 'Pastel confetti for a good mood'],
-        ['Soft Coral', 'K', 1, '#fff3f1', '#c2410c', '#fca5a5', '#0f766e', 'r', 'solid', 'manrope', 'mesh', 'calm', .05, 'Coral and seafoam, gentle']
+        ['Soft Coral', 'K', 1, '#fff3f1', '#c2410c', '#fca5a5', '#0f766e', 'r', 'solid', 'manrope', 'mesh', 'calm', .05, 'Coral and seafoam, gentle'],
+        ['Carbon Noir', 'L', 0, '#09090a', '#d8dadf', '#777b84', '#a9adb6', 's', 'solid', 'grotesk', 'cb-twin', 'snappy', .05, 'Carbon black with steel spots that twinkle in turn'],
+        ['Carbon Crimson', 'L', 0, '#0c0809', '#e5484d', '#7a2e32', '#d4a0a2', 's', 'solid', 'grotesk', 'cb-drift', 'snappy', .1, 'Carbon black with a single crimson signal'],
+        ['Carbon Cobalt', 'L', 0, '#080b10', '#5b8def', '#35508a', '#a9c1f2', 's', 'solid', 'grotesk', 'cb-pulse', 'snappy', .1, 'Carbon black and cobalt, spots breathing slowly'],
+        ['Carbon Emerald', 'L', 0, '#07100c', '#3ecf8e', '#2b6b50', '#a3e6c9', 's', 'solid', 'grotesk', 'cb-twin', 'snappy', .1, 'Carbon black with emerald light'],
+        ['Carbon Amber', 'L', 0, '#0e0b06', '#f2a93b', '#8a6122', '#f5d9a0', 's', 'solid', 'grotesk', 'cb-drift', 'snappy', .1, 'Carbon black with warm amber dots'],
+        ['Carbon Violet', 'L', 0, '#0b0912', '#a78bfa', '#5b4a99', '#d4c8fb', 's', 'solid', 'grotesk', 'cb-pulse', 'snappy', .12, 'Carbon black with soft violet spots'],
+        ['Carbon Teal', 'L', 0, '#06100f', '#2dd4bf', '#1d6f66', '#a5f0e6', 's', 'solid', 'grotesk', 'cb-hex', 'snappy', .1, 'Carbon black with a teal honeycomb of dots'],
+        ['Carbon Rose', 'L', 0, '#100a0d', '#f472b6', '#8b3a62', '#f8c1de', 's', 'solid', 'grotesk', 'cb-twin', 'snappy', .12, 'Carbon black with rose spots twinkling in turn'],
+        ['Gunmetal', 'L', 0, '#101215', '#aeb7c4', '#5d6673', '#d7dde6', 'S', 'solid', 'inter', 'cb-hex', 'snappy', .05, 'Blue-grey gunmetal with a staggered grid of dots'],
+        ['Anthracite', 'L', 0, '#121314', '#c9ccd1', '#6c7078', '#9fa3ab', 's', 'solid', 'inter', 'cb-micro', 'snappy', 0, 'Fine anthracite grain, breathing very gently'],
+        ['Jet Black', 'L', 0, '#050505', '#e5e5e5', '#737373', '#a3a3a3', 'S', 'solid', 'grotesk', 'cb-sparse', 'snappy', 0, 'The deepest black with a few bright spots'],
+        ['Charcoal Smoke', 'L', 0, '#17181a', '#cfd2d6', '#7a7e85', '#b4b8be', 'r', 'glass', 'manrope', 'cb-dust', 'calm', .1, 'Smoky charcoal glass with drifting specks'],
+        ['Shadow Steel', 'L', 0, '#0d1014', '#94a3b8', '#475569', '#cbd5e1', 's', 'solid', 'inter', 'cb-dust', 'calm', .05, 'Steel in shadow with slowly rising dust'],
+        ['Midnight Carbon', 'L', 0, '#070a14', '#8ea2ff', '#3d4a8a', '#c3cdff', 's', 'solid', 'grotesk', 'cb-twin', 'snappy', .15, 'Carbon black under a midnight-blue sky of dots'],
+        ['Obsidian Dots', 'L', 0, '#080808', '#d4d4d8', '#52525b', '#a1a1aa', 'S', 'solid', 'mono', 'cb-sparse', 'snappy', 0, 'Volcanic black, monospace type, spaced dots'],
+        ['Graphite Pulse', 'L', 0, '#141416', '#e4e4e7', '#71717a', '#a1a1aa', 'r', 'solid', 'manrope', 'cb-pulse', 'smooth', .05, 'Round graphite panels, dots pulsing softly'],
+        ['Titanium Night', 'L', 0, '#0f1216', '#b8c4d2', '#6b7b8c', '#e2e8f0', 's', 'liquid', 'grotesk', 'cb-ring', 'calm', .1, 'Cold titanium with tiny rings glowing in turn'],
+        ['Smoked Chrome', 'L', 0, '#101113', '#d9dce1', '#868b94', '#f1f3f5', 's', 'solid', 'display', 'cb-weave', 'snappy', .05, 'Smoked chrome over a carbon-fibre twill'],
+        ['Cold Iron', 'L', 0, '#0b0f14', '#7dd3fc', '#38607a', '#bae6fd', 's', 'solid', 'grotesk', 'cb-plus', 'snappy', .12, 'Cold iron with ice-blue crosses'],
+        ['Rust Steel', 'L', 0, '#120d0a', '#d97742', '#7a4a30', '#f0b896', 's', 'solid', 'grotesk', 'cb-weave', 'snappy', .1, 'Weathered steel and rust on a carbon weave'],
+        ['Ember Carbon', 'L', 0, '#110907', '#ff6a3d', '#8a3a22', '#ffc0a8', 's', 'solid', 'grotesk', 'cb-pulse', 'smooth', .25, 'Carbon black with embers breathing'],
+        ['Lime Carbon', 'L', 0, '#090c07', '#b8f400', '#5b7a14', '#e2ff8a', 'S', 'solid', 'mono', 'cb-plus', 'snappy', .3, 'Acid lime crosses on carbon black'],
+        ['Ultraviolet Carbon', 'L', 0, '#0a0612', '#c084fc', '#6b3fa0', '#e9d5ff', 's', 'solid', 'display', 'cb-ring', 'smooth', .3, 'Ultraviolet rings over carbon black'],
+        ['Ice Carbon', 'L', 0, '#080d12', '#a5f3fc', '#3d7a85', '#ecfeff', 's', 'solid', 'inter', 'cb-hex', 'calm', .15, 'Ice-white dots on a cold carbon surface'],
+        ['Bronze Carbon', 'L', 0, '#100c07', '#cd9b5b', '#7a5a30', '#ecd3a8', 's', 'solid', 'serif', 'cb-micro', 'calm', .1, 'Bronze grain on carbon black, serif type'],
+        ['Sapphire Carbon', 'L', 0, '#060b16', '#60a5fa', '#2c4f8c', '#bfdbfe', 'r', 'solid', 'jakarta', 'cb-twin', 'smooth', .2, 'Sapphire spots twinkling over carbon'],
+        ['Blood Moon Carbon', 'L', 0, '#0e0506', '#ef4444', '#7a2224', '#fecaca', 'S', 'solid', 'display', 'cb-sparse', 'snappy', .2, 'A few red spots on the blackest red-black'],
+        ['Nightshade', 'L', 0, '#0b0810', '#d8b4fe', '#5b4a7a', '#f3e8ff', 'r', 'frost', 'manrope', 'cb-dust', 'calm', .15, 'Frosted violet-black with floating specks'],
+        ['Carbon Ghost', 'L', 0, '#0a0a0b', '#ffffff', '#8a8a90', '#c8c8cc', 'S', 'outline', 'grotesk', 'cb-ring', 'snappy', .05, 'Hairline outlines and ghostly white rings'],
+        ['Black Pearl', 'L', 0, '#060607', '#cfd8e3', '#5f6b7a', '#e6edf5', 's', 'solid', 'grotesk', 'cb-dust', 'calm', .05, 'Black pearl with a faint drifting shimmer'],
+        ['Carbon White', 'L', 1, '#f4f4f5', '#27272a', '#71717a', '#52525b', 's', 'solid', 'grotesk', 'cb-twin', 'snappy', 0, 'The carbon look in white: dark spots twinkling on light grey'],
+        ['Ceramic Grey', 'L', 1, '#ececee', '#3f3f46', '#8e8e96', '#18181b', 's', 'solid', 'inter', 'cb-drift', 'calm', 0, 'Matte ceramic grey with slowly drifting dots'],
+        ['Frost Steel', 'L', 1, '#eef1f5', '#334155', '#7b8aa0', '#0f172a', 'S', 'outline', 'grotesk', 'cb-hex', 'snappy', 0, 'Light steel with fine outlines and a hex of dots'],
+        ['Pearl Carbon', 'L', 1, '#f6f4f1', '#44403c', '#8a8279', '#1c1917', 'r', 'paper', 'serif', 'cb-micro', 'calm', 0, 'Warm pearl paper with a fine breathing grain']
       ];
       const SANS = ', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
       const SERIF = '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif';
@@ -20153,6 +20204,7 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
           case 'nebula': return 'inset:-15%;opacity:.9;background:radial-gradient(35% 30% at 30% 35%,' + A(c1, .3) + ',transparent 70%),radial-gradient(30% 35% at 70% 55%,' + A(c2, .26) + ',transparent 70%),radial-gradient(25% 20% at 45% 75%,' + A(c3, .22) + ',transparent 70%),' + [[12, 18, 1.4], [27, 64, 1], [41, 12, 1.2], [56, 40, 1.5], [68, 22, 1], [81, 70, 1.3], [92, 16, 1], [8, 82, 1.2], [36, 88, 1], [62, 84, 1.2], [74, 48, .9], [18, 44, 1]].map(([x, y, s]) => 'radial-gradient(' + s + 'px ' + s + 'px at ' + x + '% ' + y + '%,rgba(255,255,255,.85),transparent)').join(',') + ';filter:blur(.4px);animation:v7drift 60s ease-in-out infinite alternate';
           case 'grain': return 'background:radial-gradient(120% 90% at 50% 40%,transparent 55%,' + (light ? 'rgba(80,60,30,.12)' : 'rgba(0,0,0,.5)') + ')';
           case 'canvas': return 'filter:blur(14px);opacity:.7;background:' + [[12, 20, 220, 120, c1], [30, 70, 260, 140, c2], [58, 30, 240, 120, c3], [80, 75, 220, 130, c1], [92, 22, 200, 110, c2], [45, 92, 260, 120, c3], [5, 85, 200, 120, c2]].map(([x, y, w, h, c]) => 'radial-gradient(' + w + 'px ' + h + 'px at ' + x + '% ' + y + '%,' + A(c, .28) + ',transparent 70%)').join(',');
+          case 'cb-drift': case 'cb-pulse': case 'cb-twin': case 'cb-hex': case 'cb-dust': case 'cb-plus': case 'cb-ring': case 'cb-weave': case 'cb-sparse': case 'cb-micro': return cbDeco(d, c1, light, false);
           case 'dots': return 'opacity:.8;background:radial-gradient(' + A(c1, .32) + ' 1.3px,transparent 1.7px) 0 0/22px 22px;' + fadeMask('radial-gradient(ellipse at 70% 10%,#000 10%,transparent 65%)');
           case 'bauhaus': return 'opacity:' + (light ? .5 : .55) + ';background:' + svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice"><circle cx="1330" cy="180" r="170" fill="' + A(c1, .45) + '"/><rect x="80" y="640" width="260" height="260" fill="' + A(c2, .4) + '"/><path d="M1180 1000 1420 600 1660 1000Z" fill="' + A(c3, .5) + '"/><path d="M420 120a160 160 0 0 1 320 0Z" fill="' + A(c3, .4) + '"/><path d="M0 470h560" stroke="' + A(c2, .4) + '" stroke-width="14"/></svg>') + ' center/cover no-repeat';
           case 'memphis': return 'opacity:.55;background:' + svg(200, 200, '<path d="M10 40q15-20 30 0t30 0 30 0" fill="none" stroke="' + A(c1, .6) + '" stroke-width="4" stroke-linecap="round"/><path d="M140 20l20 34h-40Z" fill="' + A(c3, .6) + '"/><circle cx="160" cy="150" r="12" fill="none" stroke="' + A(c2, .7) + '" stroke-width="4"/><g fill="' + A(c2, .5) + '"><circle cx="40" cy="140" r="3"/><circle cx="55" cy="140" r="3"/><circle cx="70" cy="140" r="3"/><circle cx="40" cy="155" r="3"/><circle cx="55" cy="155" r="3"/><circle cx="70" cy="155" r="3"/></g><rect x="95" y="85" width="22" height="22" fill="none" stroke="' + A(c1, .5) + '" stroke-width="4" transform="rotate(20 106 96)"/>') + ' 0 0/200px 200px';
@@ -20172,7 +20224,43 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
           default: return THEME_DECO(d, c1, c2, c3, light);
         }
       }
-      const V7_KF = '@keyframes v7grid{to{background-position:0 36px,50% 0}}@keyframes v7rot{to{transform:rotate(360deg)}}@keyframes v7petal{to{background-position:240px 720px}}';
+      /* ---------- 8.1.2: Carbon & Steel backgrounds ("cb-*"): dots, rings, crosses, a honeycomb, dust and a carbon twill, each moving very little ----------
+         drift = the whole pattern slides one tile over about 9 s and repeats (transform only, so it costs almost nothing);
+         pulse = the layer breathes between 35% and 100% over 9 s; twin = two staggered layers breathe in turn (spots seem to twinkle);
+         dust = a speckle tile rising slowly. Calm mode, Lite effects, reduced animations and "Page animations: Off" stop all of it. */
+      const CB_KIND = {
+        'cb-drift': { s: 22, r: 1.6, a: .50, t: 'drift', m: 'ellipse at 70% 10%' },
+        'cb-pulse': { s: 24, r: 1.7, a: .55, t: 'pulse', m: 'ellipse at 50% 0%' },
+        'cb-twin': { s: 26, r: 1.7, a: .60, t: 'twin', m: 'ellipse at 30% 8%' },
+        'cb-hex': { s: 28, r: 1.6, a: .55, t: 'drift', hex: 1, m: 'ellipse at 60% 15%' },
+        'cb-dust': { s: 360, a: .75, t: 'dust', m: 'ellipse at 50% 30%' },
+        'cb-plus': { s: 30, a: .55, t: 'pulse', plus: 1, m: 'ellipse at 80% 5%' },
+        'cb-ring': { s: 32, r: 3, a: .55, t: 'twin', ring: 1, m: 'ellipse at 40% 10%' },
+        'cb-weave': { s: 16, r: 1.3, a: .50, t: 'drift', weave: 1, m: 'ellipse at 65% 12%' },
+        'cb-sparse': { s: 46, r: 2.4, a: .65, t: 'twin', m: 'ellipse at 55% 10%' },
+        'cb-micro': { s: 12, r: 1, a: .45, t: 'pulse', m: 'ellipse at 50% 5%' }
+      };
+      const CB_DUST = (() => { let seed = 29; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647; return Array.from({ length: 46 }, () => [Math.round(r() * 360), Math.round(r() * 360), +(.8 + r() * 1.3).toFixed(1), +(.45 + r() * .55).toFixed(2)]); })();
+      function cbDeco(d, c, light, second) {
+        const K = CB_KIND[d]; if (!K) return '';
+        if (second && K.t !== 'twin') return '';
+        const a = rgbaC(c, light ? K.a * .75 : K.a), s = K.s, r = K.r || 1.3, off = second ? s / 2 + 'px ' + s / 2 + 'px' : '0 0';
+        const dot = col => 'radial-gradient(' + col + ' ' + r + 'px,transparent ' + (r + .4) + 'px)';
+        let bg, extra = '';
+        if (K.t === 'dust') bg = svgU('<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360">' + CB_DUST.map(q => '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + q[2] + '" fill="' + rgbaC(c, (light ? .75 : 1) * q[3]) + '"/>').join('') + '</svg>') + ' 0 0/360px 360px';
+        else if (K.plus) bg = svgU('<svg xmlns="http://www.w3.org/2000/svg" width="' + s + '" height="' + s + '"><path d="M' + s / 2 + ' ' + (s / 2 - 4) + 'v8M' + (s / 2 - 4) + ' ' + s / 2 + 'h8" stroke="' + a + '" stroke-width="1.2" stroke-linecap="round"/></svg>') + ' 0 0/' + s + 'px ' + s + 'px';
+        else if (K.ring) bg = 'radial-gradient(circle,transparent ' + (r - 1) + 'px,' + a + ' ' + (r - .5) + 'px,' + a + ' ' + (r + .5) + 'px,transparent ' + (r + 1) + 'px) ' + off + '/' + s + 'px ' + s + 'px';
+        else if (K.hex) bg = dot(a) + ' 0 0/' + s + 'px ' + s + 'px,' + dot(a) + ' ' + s / 2 + 'px ' + s / 2 + 'px/' + s + 'px ' + s + 'px';
+        else if (K.weave) { const w = light ? 'rgba(0,0,0,.05)' : 'rgba(255,255,255,.045)'; bg = 'repeating-linear-gradient(45deg,' + w + ' 0 2px,transparent 2px 8px),repeating-linear-gradient(-45deg,' + w + ' 0 2px,transparent 2px 8px),' + dot(a) + ' 0 0/' + s + 'px ' + s + 'px'; }
+        else bg = dot(a) + ' ' + off + '/' + s + 'px ' + s + 'px';
+        const mask = 'radial-gradient(' + K.m + ',#000 10%,transparent 68%)';
+        let css = 'background:' + bg + ';-webkit-mask-image:' + mask + ';mask-image:' + mask + ';will-change:transform,opacity;--cb-o:.9;';
+        if (K.t === 'drift') css += 'inset:-' + 2 * s + 'px;--cb-s:' + s + 'px;opacity:calc(.9 * var(--u-bg,1));animation:v7cbT ' + Math.round(s * .4) + 's linear infinite';
+        else if (K.t === 'dust') css += 'inset:0 0 -360px 0;--cb-s:360px;opacity:calc(.9 * var(--u-bg,1));animation:v7cbUp 90s linear infinite';
+        else css += 'opacity:calc(.9 * var(--u-bg,1));animation:v7cbP ' + (K.t === 'twin' ? 8 : 9) + 's ease-in-out infinite' + (second ? ' -4s' : '');
+        return css;
+      }
+      const V7_KF = '@keyframes v7cbT{to{transform:translate3d(var(--cb-s,22px),var(--cb-s,22px),0)}}@keyframes v7cbUp{to{transform:translate3d(0,calc(var(--cb-s,360px) * -1),0)}}@keyframes v7cbP{0%,100%{opacity:calc(var(--cb-o,.9)*var(--u-bg,1)*.35)}50%{opacity:calc(var(--cb-o,.9)*var(--u-bg,1))}}@keyframes v7grid{to{background-position:0 36px,50% 0}}@keyframes v7rot{to{transform:rotate(360deg)}}@keyframes v7petal{to{background-position:240px 720px}}';
 
       // register the 110 themes next to the existing ones (old ids are untouched, so a saved choice keeps working)
       const V7 = {};                    // id -> row tokens (only for the new themes)
@@ -20243,7 +20331,8 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
         if (dsShown !== t.id) {
           const k = v7Tokens(row), sel = 'html[data-skin=' + t.id + ']';
           dsStyle.textContent = sel + '{' + Object.entries(k.v).map(([n, x]) => n + ':' + x).join(';') + '}\n' +
-            'html.ds:not(.hc):not(#_)' + '[data-skin=' + t.id + '] .orbs::before{' + v7Deco(k.deco, k.c1, k.c2, k.c3, k.light).replace(/opacity:([\d.]+)/, 'opacity:calc($1 * var(--u-bg))') + '}\n' + V7_KF;
+            'html.ds:not(.hc):not(#_)' + '[data-skin=' + t.id + '] .orbs::before{' + v7Deco(k.deco, k.c1, k.c2, k.c3, k.light).replace(/opacity:([\d.]+)/, 'opacity:calc($1 * var(--u-bg))') + '}\n' +
+            (cbDeco(k.deco, k.c1, k.light, true) ? 'html.ds:not(.hc):not(#_)[data-skin=' + t.id + '] .orbs::after{' + cbDeco(k.deco, k.c1, k.light, true) + '}\n' : '') + V7_KF;
           HTML.classList.add('ds');
           Object.assign(HTML.dataset, { surface: k.surf, mode: k.light ? 'light' : 'dark', deco: k.deco, motion: k.motion, shape: row[7] });
           const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = row[3];
@@ -20547,7 +20636,7 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
           '<input type="color" id="tsAccC" value="' + (TUNE.accent || t.sw[1]) + '" aria-label="Custom accent colour"></div>' +
           '<h4>Glass &amp; light</h4><div class="ts-dials">' + dial('glass', 'Glass opacity', 0.2, 1.6) + dial('blur', 'Background blur', 0, 1.6) + dial('spec', 'Reflections', 0, 2) + dial('border', 'Border brightness', 0.2, 2) + dial('glow', 'Glow', 0, 2) + dial('bg', 'Background intensity', 0, 1.5) +
             (HAS_WIN ? '<label class="ts-dial">Window corners <output id="tsO_winR">' + winRadius() + ' px</output><input type="range" min="0" max="24" step="1" value="' + winRadius() + '" id="tsWinR" aria-label="Window corner roundness in pixels"></label>' : '') +
-          (row ? '' : '<p class="sub">These dials shape the 110 new themes. Classic themes keep their original glass.</p>') + '</div>' +
+          (row ? '' : '<p class="sub">These dials shape the new themes. Classic themes keep their original glass.</p>') + '</div>' +
           '<h4>Motion</h4><div class="seg" id="tsMotion" role="group" aria-label="Motion">' + [['off', 'Off'], ['reduced', 'Reduced'], ['balanced', 'Balanced'], ['expressive', 'Expressive']].map(([v, l]) => '<button type="button" data-m="' + v + '" class="' + (TUNE.motion === v ? 'on' : '') + '" aria-pressed="' + (TUNE.motion === v) + '">' + l + '</button>').join('') + '</div>' +
           '<p class="sub">Expressive adds magnetic buttons, card tilt and light sweeps.</p>' + osMotionRow('tsOverOS') +
           '<label class="sub"><input type="checkbox" id="tsNotes"' + (LOOK.themeNotes ? ' checked' : '') + '> Colour notes and keys to match the theme</label>';
@@ -20899,7 +20988,7 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
         v: '7.0', date: '2026-10-31', title: 'Aurora Glass Studio: a complete redesign',
         groups: [
           ['New features', [
-            'Theme Studio: ' + V7_IDS.length + ' new themes in 11 collections (Glass & Liquid, Futuristic, Natural, Luxury, Minimal, Retro, Vibrant, Monochrome, Cinematic, Artistic, Pastel), plus every classic theme',
+            'Theme Studio: 110 new themes in 11 collections (Glass & Liquid, Futuristic, Natural, Luxury, Minimal, Retro, Vibrant, Monochrome, Cinematic, Artistic, Pastel), plus every classic theme',
             'Each new theme is its own design language: shape (sharp to pill), surface (liquid glass, frost, solid, paper, outline, neon, brutalist, CRT, velvet, holographic), typeface, background artwork and motion style',
             'Search, collections, light / dark filter, favourites, recently used, live preview of the whole app before you apply, “Surprise me” and Reset',
             'Your own accent colour and dials for glass opacity, background blur, reflections, border brightness, glow and background intensity',
@@ -21082,7 +21171,7 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
           ['Navigation: compact rail on / off', 'View', () => $('#nvCollapse').click()], ['Default theme (Aurora Glass)', 'Theme', () => setTheme(V7_DEFAULT)]);
         return C;
       };
-      { const t = TOUR.find(x => x[0] === '#btnThemes'); if (t) { t[1] = '🎨 Theme Studio'; t[2] = V7_IDS.length + ' new themes in 11 collections plus the classic ones. Preview any theme on the whole app, keep favourites, and tune glass, glow, accent colour and motion.'; } }
+      { const t = TOUR.find(x => x[0] === '#btnThemes'); if (t) { t[1] = '🎨 Theme Studio'; t[2] = V7_IDS.length + ' new themes in 12 collections plus the classic ones. Preview any theme on the whole app, keep favourites, and tune glass, glow, accent colour and motion.'; } }
       window.addEventListener('resize', () => { navMark(); tabInd(); if (innerWidth >= 1100) navClose(); });
 
       // debugging / automated checks only: read-only facts about the theme registry
@@ -24379,6 +24468,23 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
             ]
           });
         }
+        /* 8.1.2: shown only once the version number is 8.1.2 or newer */
+        if (!vsVerLt(APP_VERSION, '8.1.2')) {
+          VERSIONS.unshift({
+            v: '8.1.2', date: '2026-11-13', title: '34 new Carbon & Steel themes and gently animated backgrounds',
+            groups: [
+              ['New themes: Carbon & Steel (34)', [
+                'A new collection in Theme Studio, Carbon & Steel, with 34 themes in the style of Carbon Black: Carbon Noir, Carbon Crimson, Cobalt, Emerald, Amber, Violet, Teal and Rose, Gunmetal, Anthracite, Jet Black, Charcoal Smoke, Shadow Steel, Midnight Carbon, Obsidian Dots, Graphite Pulse, Titanium Night, Smoked Chrome, Cold Iron, Rust Steel, Ember Carbon, Lime Carbon, Ultraviolet Carbon, Ice Carbon, Bronze Carbon, Sapphire Carbon, Blood Moon Carbon, Nightshade, Carbon Ghost, Black Pearl and four light ones (Carbon White, Ceramic Grey, Frost Steel, Pearl Carbon)',
+                'Each has its own colours, panel shape, type and background pattern: dots, a honeycomb of dots, tiny rings, crosses, fine dust, a carbon-fibre twill or a few bright spots',
+                'The background pattern moves very little: it drifts slowly, breathes, or twinkles in turn. Calm mode, Lite effects, Reduced motion and “Page animations: Off” stop it',
+                'Carbon Black itself now has the same slowly drifting dots'
+              ]],
+              ['Piano-roll backgrounds', [
+                'The white stars of the Meteor shower, Synthwave grid and Fireflies roll backgrounds now twinkle softly (each star brightens and dims on its own slow cycle)'
+              ]]
+            ]
+          });
+        }
         sortVersions();
         // the matching Help note (also only from 8.0.0 on; desktop-only features are left out of the website)
         const hp = document.getElementById('p-help');
@@ -24400,6 +24506,9 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
           '<li><b>Sung Note Statistics:</b> the numbers slide when they grow.</li>' +
           (D75 ? '<li><b>Voice Studio → Studio:</b> Accumulated Notes keep up with fast singing (notes from 70 ms), repeated notes count separately and the tiles glow. Choose how many seconds the pitch chart shows (1 to 60) in the drop-down above it.</li>' +
             '<li><b>Settings → Graphics → Cursor light:</b> size and strength are in the desktop app only; the website uses the default light.</li>' : '') + '</ul></div>');
+        if (hp && !vsVerLt(APP_VERSION, '8.1.2')) hp.insertAdjacentHTML('beforeend', '<div class="v71card" id="help812" style="margin-top:14px"><h3 style="margin:0 0 8px">New in 8.1.2</h3><ul style="margin:0;padding-left:20px">' +
+          '<li><b>Carbon &amp; Steel themes:</b> open Theme Studio and choose the <b>Carbon &amp; Steel</b> collection for 34 themes in the style of Carbon Black. Their background patterns move very little; Calm mode and Reduced motion keep them still.</li>' +
+          '<li><b>Twinkling stars:</b> the stars in the Meteor shower, Synthwave grid and Fireflies piano-roll backgrounds now twinkle softly.</li></ul></div>');
         // the tour: one focused step on the Statistics tab (the Windows app only, where the feature exists)
         if (D75) TOUR.splice(Math.max(0, TOUR.length - 1), 0, ['.tab[data-tab=keys]', '🎤 Sung Note Statistics', 'Statistics shows how many notes you have sung: a Total notes sung card, then charts and a table for each note. Pick the period at the top. Notes are nearest-note estimates from Voice Studio’s Singing style.']);
       }

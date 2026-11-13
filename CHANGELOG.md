@@ -3,6 +3,17 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 8.1.2 — 2026-11-13 · 34 new Carbon & Steel themes and gently animated backgrounds
+
+### Themes
+- **New collection: Carbon & Steel (34 themes)** in the style of Carbon Black: Carbon Noir, Carbon Crimson, Carbon Cobalt, Carbon Emerald, Carbon Amber, Carbon Violet, Carbon Teal, Carbon Rose, Gunmetal, Anthracite, Jet Black, Charcoal Smoke, Shadow Steel, Midnight Carbon, Obsidian Dots, Graphite Pulse, Titanium Night, Smoked Chrome, Cold Iron, Rust Steel, Ember Carbon, Lime Carbon, Ultraviolet Carbon, Ice Carbon, Bronze Carbon, Sapphire Carbon, Blood Moon Carbon, Nightshade, Carbon Ghost, Black Pearl, and four light themes (Carbon White, Ceramic Grey, Frost Steel, Pearl Carbon).
+- Ten new background patterns (`cb-drift`, `cb-pulse`, `cb-twin`, `cb-hex`, `cb-dust`, `cb-plus`, `cb-ring`, `cb-weave`, `cb-sparse`, `cb-micro`): dots, a honeycomb of dots, tiny rings, crosses, dust, a carbon twill and a few bright spots. They move very little (slow drift, breathing, or two layers twinkling in turn), use only transform and opacity, and stop in Calm mode, Lite effects, Reduced motion and Page animations Off.
+- Carbon Black now uses the same slowly drifting dots (same look as before, now with a little life).
+- Theme Studio now shows 144 new themes in 12 collections, plus the classic ones (216 in all).
+
+### Piano roll
+- The white stars in the Meteor shower, Synthwave grid and Fireflies backgrounds now twinkle softly; each star has its own cycle of 3 to 10 seconds.
+
 ## 8.1.1 — 2026-11-13 · Profile picture in the header, faster note capture, pitch window
 
 ### Start-up and exit screens (desktop app)
