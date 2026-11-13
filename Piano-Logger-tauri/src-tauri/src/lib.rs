@@ -523,6 +523,8 @@ fn win_close(window: tauri::WebviewWindow, b: State<bridge::Bridge>, st: State<A
    · the MIDI Keyboard Bridge never presses keys (refused here, and the page switches the bridge off).
    A tray icon brings the window back (click, or "Open Piano Logger") or quits; starting Piano Logger again also brings it back. */
 const TRAY_ID: &str = "piano-logger-tray";
+// 8.1.1: set once the exit screen has been asked for (see on_window_event)
+static EXITING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 #[cfg(windows)]
 fn webview_awake(w: &tauri::WebviewWindow, on: bool) {
     let _ = w.with_webview(move |pw| unsafe {
@@ -725,6 +727,19 @@ pub fn run() {
                 if app.state::<AppState>().settings.lock().unwrap().close_to_tray {
                     api.prevent_close();
                     let _ = to_tray(app);
+                } else if !EXITING.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                    // 8.1.1: not running in the tray, so the page first shows its "Exiting Piano Logger" screen (about 2.5 s) and then
+                    // asks to quit (app_quit). If the page does not answer, Piano Logger quits by itself after 4.5 s. A second close request
+                    // while this is showing (clicking close again) closes the window at once.
+                    api.prevent_close();
+                    if let Some(win) = app.get_webview_window("main") {
+                        let _ = win.eval("window.dispatchEvent(new CustomEvent('pianoapp-exit'))");
+                    }
+                    let h = app.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(4500));
+                        quit_app(&h);
+                    });
                 }
             }
         })

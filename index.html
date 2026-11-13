@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 8.1.0: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="8.1.0">
+  <meta name="description" content="Piano Logger 8.1.1: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="8.1.1">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10642,6 +10642,61 @@
 </head>
 
 <body>
+  <!-- v8.1.1 desktop start-up and exit screens. Shown only in the desktop app (window.pianoApp.isApp); the website never shows them.
+       The start-up screen covers the page until its layout is built (no flash of the unstyled page) and stays at least 4 s. -->
+  <style id="bootCss">
+    #bootSplash, #exitSplash { display: none }
+    html.boot-on #bootSplash, #exitSplash.on { display: grid }
+    .bs { position: fixed; inset: 0; z-index: 2147483000; place-items: center; align-content: center; text-align: center; color: #e8eefc; font-family: 'Comic Sans MS', 'Segoe UI', system-ui, sans-serif; overflow: hidden;
+      background: radial-gradient(ellipse at 50% 38%, #1b2550 0%, #0b1024 55%, #05070f 100%); opacity: 1; transition: opacity .5s ease }
+    .bs::before, .bs::after { content: ''; position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(70px); opacity: .35; pointer-events: none }
+    .bs::before { left: -20vmax; top: -22vmax; background: #5b7cff; animation: bsDrift 9s ease-in-out infinite alternate }
+    .bs::after { right: -22vmax; bottom: -24vmax; background: #e056c1; animation: bsDrift 11s ease-in-out infinite alternate-reverse }
+    @keyframes bsDrift { to { transform: translate(6vmax, 4vmax) scale(1.12) } }
+    .bs.out { opacity: 0; pointer-events: none }
+    .bs-logo { position: relative; width: 132px; height: 132px; display: grid; place-items: center; margin-bottom: 22px; animation: bsPop .7s cubic-bezier(.2, .9, .25, 1.2) both }
+    .bs-logo::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, #5b7cff, #22d3ee, #e056c1, #5b7cff); -webkit-mask: radial-gradient(circle, transparent 58%, #000 60%); mask: radial-gradient(circle, transparent 58%, #000 60%); animation: bsSpin 2.4s linear infinite }
+    .bs-logo::after { content: ''; position: absolute; inset: 8px; border-radius: 50%; background: rgba(255, 255, 255, .05); box-shadow: 0 0 40px 4px rgba(91, 124, 255, .45), inset 0 0 24px rgba(255, 255, 255, .08); animation: bsGlow 2.2s ease-in-out infinite }
+    .bs-logo svg { position: relative; z-index: 1; width: 66px; height: 66px }
+    @keyframes bsSpin { to { transform: rotate(360deg) } }
+    @keyframes bsGlow { 50% { box-shadow: 0 0 60px 10px rgba(224, 86, 193, .5), inset 0 0 24px rgba(255, 255, 255, .12) } }
+    @keyframes bsPop { from { opacity: 0; transform: scale(.6) } to { opacity: 1; transform: none } }
+    .bs h1 { margin: 0; font-size: 32px; letter-spacing: .02em; font-weight: 700; animation: bsUp .7s .15s both }
+    .bs h1 small { font-size: 13px; opacity: .6; font-weight: 400; margin-left: 8px; letter-spacing: .06em }
+    .bs p { margin: 8px 0 0; min-height: 22px; font-size: 15px; opacity: .8; animation: bsUp .7s .3s both }
+    @keyframes bsUp { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+    .bs-eq { display: flex; gap: 5px; align-items: flex-end; height: 34px; margin: 22px 0 16px; animation: bsUp .7s .4s both }
+    .bs-eq i { width: 6px; height: 100%; border-radius: 3px; background: linear-gradient(#22d3ee, #5b7cff 60%, #e056c1); transform-origin: bottom; animation: bsBar 1s ease-in-out infinite }
+    .bs-eq i:nth-child(1) { animation-delay: -.9s } .bs-eq i:nth-child(2) { animation-delay: -.7s } .bs-eq i:nth-child(3) { animation-delay: -.5s } .bs-eq i:nth-child(4) { animation-delay: -.3s }
+    .bs-eq i:nth-child(5) { animation-delay: -.6s } .bs-eq i:nth-child(6) { animation-delay: -.2s } .bs-eq i:nth-child(7) { animation-delay: -.8s } .bs-eq i:nth-child(8) { animation-delay: -.4s } .bs-eq i:nth-child(9) { animation-delay: -.1s }
+    @keyframes bsBar { 0%, 100% { transform: scaleY(.18) } 50% { transform: scaleY(1) } }
+    .bs-track { width: min(320px, 70vw); height: 5px; border-radius: 4px; background: rgba(255, 255, 255, .12); overflow: hidden; animation: bsUp .7s .5s both }
+    .bs-fill { height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, #22d3ee, #5b7cff, #e056c1); box-shadow: 0 0 12px #5b7cff }
+    #bootSplash .bs-fill { animation: bsFill 4s cubic-bezier(.45, .05, .3, 1) forwards }
+    #exitSplash .bs-fill { width: 100%; transform-origin: right; animation: bsDrain 2.4s cubic-bezier(.45, .05, .3, 1) forwards }
+    @keyframes bsFill { to { width: 100% } }
+    @keyframes bsDrain { to { transform: scaleX(0) } }
+    #exitSplash { opacity: 0; animation: bsIn .45s ease forwards }
+    @keyframes bsIn { to { opacity: 1 } }
+    @media (prefers-reduced-motion: reduce) {
+      .bs *, .bs::before, .bs::after, .bs-logo::before { animation-duration: .01s !important; animation-iteration-count: 1 !important }
+      #bootSplash .bs-fill { animation: none; width: 100% }
+    }
+  </style>
+  <script>
+    (function () {
+      var a = window.pianoApp; if (!(a && a.isApp)) return;
+      document.documentElement.classList.add('boot-on');
+      setTimeout(function () { document.documentElement.classList.remove('boot-on'); }, 20000);   // safety: never stay on screen
+    })();
+  </script>
+  <div id="bootSplash" class="bs" role="status" aria-live="polite" aria-label="Starting Piano Logger">
+    <div class="bs-logo"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="bsg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#5b7cff"/><stop offset="1" stop-color="#e056c1"/></linearGradient></defs><rect x="6" y="14" width="52" height="36" rx="7" fill="none" stroke="url(#bsg)" stroke-width="3.5"/><path d="M17 14v22M27 14v22M37 14v22M47 14v22" stroke="url(#bsg)" stroke-width="3" stroke-linecap="round"/><path d="M12 56c5-8 9-8 14 0s9 8 14 0 9-8 12 0" fill="none" stroke="url(#bsg)" stroke-width="3" stroke-linecap="round"/></svg></div>
+    <h1>Piano Logger<small id="bsVer"></small></h1>
+    <p id="bsMsg">Starting up…</p>
+    <div class="bs-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="bs-track" aria-hidden="true"><div class="bs-fill"></div></div>
+  </div>
   <a class="skip" href="#stage">Skip to the piano</a>
   <div class="orbs"><i></i><i></i><i></i></div>
   <div class="app">
@@ -13187,7 +13242,7 @@
 <ol>
 <li>Open <b>⚙ Settings</b> and choose the <b>🖥 Graphics</b> tab (or press <kbd>Ctrl</kbd>+<kbd>K</kbd> and type “graphics”).</li>
 <li>Pick a <b>quality</b>: <b>Low</b> (fastest, for older laptops), <b>Medium</b>, <b>High</b> (recommended) or <b>Ultra</b> (everything on, sharpest). Changing any single option switches to <b>Custom</b>.</li>
-<li><b>Cursor light</b> (8.1.0): a soft colour light follows your mouse. Set its <b>size</b> and <b>strength</b> under <b>Cursor light</b> in this tab (0% turns it off). <b>Lite effects</b> in the piano toolbar overrides every quality preset, so picking Medium, High or Ultra switches it off.</li>
+<li><b>Cursor light</b> (8.1.0): a soft colour light follows your mouse. In the desktop app you can set its <b>size</b> and <b>strength</b> under <b>Cursor light</b> in this tab (0% turns it off). <b>Lite effects</b> in the piano toolbar overrides every quality preset, so picking Medium, High or Ultra switches it off.</li>
 <li><b>Visualizer</b> options: note style (Glow, Neon outline, Crystal glass or the Classic original), glow strength, hit particles, roll background (octave lines, glowing horizon, starfield, animated aurora or none), light beams from pressed keys, sparks rising from held keys, glowing pressed keys and a frames-per-second meter.</li>
 <li><b>Performance</b> options: sharpness of the piano roll, frame rate (30, 60 or match your screen), the frosted-glass blur on panels, and how much the page animates (full, reduced or off).</li>
 <li><b>▶ Preview on the piano roll</b> plays a short light show so you can see your settings. Preview notes are never saved to your log.</li>
@@ -16690,7 +16745,7 @@ PianoLogger.on('noteon', e => {
       function pfChip() {
         const p = PF.p, xp = pfXpNow(), info = pfLevelInfo(xp), rk = pfRank(info.level), chip = $('#lvlChip'); if (!chip) return;
         chip.style.setProperty('--rk', rk.color);
-        $('#lcEm').textContent = p.emblem; rollTo($('#lcLv'), 'Lv ' + info.level); $('#lcRank').textContent = pfTitleText(p);
+        { const em = $('#lcEm'); if (!em.classList.contains('has-av')) em.textContent = p.emblem; } rollTo($('#lcLv'), 'Lv ' + info.level); $('#lcRank').textContent = pfTitleText(p);
         $('#lcBar').style.width = (info.pct * 100).toFixed(1) + '%';
         rollTo($('#lcXp'), info.max ? fmtInt(xp) + ' XP' : fmtInt(info.into) + ' / ' + fmtInt(info.need) + ' XP');
         chip.title = p.name + ' · ' + rk.name + ' · ' + fmtInt(xp) + ' XP' + (info.max ? ' (max level)' : ' · ' + fmtInt(info.toNext) + ' XP to level ' + (info.level + 1));
@@ -17354,6 +17409,7 @@ PianoLogger.on('noteon', e => {
         const paint = () => {
           const sel = (id, label, opts, cur, tip) => '<label' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + label + ' <select id="' + id + '">' + opts.map(([v, l]) => '<option value="' + v + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>';
           const chk = (id, label, on, tip) => '<label' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + label + ' <input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '></label>';
+          const deskApp = !!(window.pianoApp && window.pianoApp.isApp && window.pianoApp.runtime === 'tauri');   // cursor light size/strength: desktop app only
           gfx.innerHTML = (S.lite ? '<p class="sub" style="border:1px solid var(--c4,#f59e0b);border-radius:10px;padding:8px 10px;margin:0 0 10px"><b>Lite effects is ON</b>: it overrides the quality preset (flat panels, no glass blur, no cursor light, simpler piano roll). <button type="button" class="btn small" id="gfLiteOff">Turn off Lite effects</button></p>' : '') + '<h3>Quality</h3><div class="gfx-pre" role="group" aria-label="Graphics quality">' +
             [['low', '🔋 Low', 'Fastest. For older laptops'], ['medium', '⚖ Medium', 'Balanced'], ['high', '✨ High', 'Recommended'], ['ultra', '💎 Ultra', 'Everything on, sharpest'], ['custom', '🛠 Custom', 'Your own mix']]
               .map(([v, l, d]) => '<button type="button" data-pre="' + v + '" aria-pressed="' + (GFX.preset === v) + '"' + (v === 'custom' ? ' disabled' : '') + '><b>' + l + '</b><small>' + d + '</small></button>').join('') + '</div>' +
@@ -17364,11 +17420,11 @@ PianoLogger.on('noteon', e => {
             sel('gfBg', 'Roll background', GFX_OPT.bg, GFX.bg) + gfxExtra(sel) +
             chk('gfBeams', 'Light beams from pressed keys', GFX.beams) + chk('gfEmbers', 'Sparks rising from held keys', GFX.embers) +
             chk('gfKey', 'Glowing pressed keys', GFX.keyGlow) + chk('gfMeter', 'Show frames per second', GFX.meter) +
-            '</div><h3>Cursor light</h3><div class="set-grid">' +
+            '</div>' + (deskApp ? '<h3>Cursor light</h3><div class="set-grid">' +
             '<label>Light size <input type="range" id="gfAmbD" min="200" max="900" step="20" value="' + (+GFX.ambSize || 520) + '"> <b id="gfAmbDv">' + (+GFX.ambSize || 520) + ' px</b></label>' +
             '<label>Light strength <input type="range" id="gfAmbK" min="0" max="150" step="5" value="' + Math.round(GFX.ambStr == null ? 100 : +GFX.ambStr) + '"> <b id="gfAmbKv">' + Math.round(GFX.ambStr == null ? 100 : +GFX.ambStr) + '%</b></label>' +
             '<button type="button" class="btn small" id="gfAmbR">Reset light</button>' +
-            '</div><p class="sub">The soft colour light that follows your mouse. 0% turns it off. It also follows the quality preset and is off in Lite effects, Calm mode and Reduced motion.</p>' +
+            '</div><p class="sub">The soft colour light that follows your mouse. 0% turns it off. It also follows the quality preset and is off in Lite effects, Calm mode and Reduced motion.</p>' : '') +
             '<h3>Performance</h3><div class="set-grid">' +
             sel('gfRes', 'Sharpness', [['low', 'Low (fastest)'], ['auto', 'Auto (up to 2×)'], ['max', 'Maximum (up to 3×)']], GFX.res, 'How many pixels the piano roll draws') +
             sel('gfFps', 'Frame rate', [[30, '30 fps (saves battery)'], [60, '60 fps'], [0, 'Match my screen']], GFX.fps) +
@@ -17386,10 +17442,12 @@ PianoLogger.on('noteon', e => {
           $('#gfFps').onchange = e => set('fps', +e.target.value);
           $('#gfGlow').oninput = e => set('glow', +e.target.value);
           // cursor light size / strength: their own saved values; they do not switch the quality preset to Custom
-          $('#gfAmbD').oninput = e => { GFX.ambSize = +e.target.value; $('#gfAmbDv').textContent = GFX.ambSize + ' px'; saveGfx(); ambSync(); };
-          $('#gfAmbK').oninput = e => { GFX.ambStr = +e.target.value; $('#gfAmbKv').textContent = GFX.ambStr + '%'; saveGfx(); ambSync(); };
+          if (deskApp) {
+            $('#gfAmbD').oninput = e => { GFX.ambSize = +e.target.value; $('#gfAmbDv').textContent = GFX.ambSize + ' px'; saveGfx(); ambSync(); };
+            $('#gfAmbK').oninput = e => { GFX.ambStr = +e.target.value; $('#gfAmbKv').textContent = GFX.ambStr + '%'; saveGfx(); ambSync(); };
+          }
           { const lo = $('#gfLiteOff'); if (lo) lo.onclick = () => { S.lite = false; saveSettings(); applySettings(); resizeRoll(); refreshAll(); applyGfx(); paint(); toast('Lite effects turned off', 'ok'); }; }
-          $('#gfAmbR').onclick = () => { delete GFX.ambSize; delete GFX.ambStr; saveGfx(); ambSync(); paint(); };
+          { const ar = $('#gfAmbR'); if (ar) ar.onclick = () => { delete GFX.ambSize; delete GFX.ambStr; saveGfx(); ambSync(); paint(); }; }
           [['gfBeams', 'beams'], ['gfEmbers', 'embers'], ['gfKey', 'keyGlow'], ['gfMeter', 'meter'], ['gfBlur', 'blur']].forEach(([id, k]) => $('#' + id).onchange = e => set(k, e.target.checked));
           gfxExtraWire(set);
           $('#gfDemo').onclick = () => { $('#gm').hidden = true; $('#stage') ? $('#stage').scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'center' }) : 0; setTimeout(vizDemo, 350); };
@@ -17674,7 +17732,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '8.1.0';
+      const APP_VERSION = '8.1.1';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -20614,8 +20672,10 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
          "Glow strength"). Off with Lite effects, Calm mode, Motion Off / Reduced, high contrast and the system's reduce-motion (unless overridden).
          Only transform and opacity change; one rAF runs only while the light is still catching up; it reuses the single pointermove listener below. */
       const AMB = { el: null, on: false, live: false, key: '', x: 0, y: 0, tx: 0, ty: 0, raf: 0 };
-      const ambSize = () => Math.max(200, Math.min(900, Math.round(+GFX.ambSize) || 520));
-      const ambK = () => GFX.ambStr == null || GFX.ambStr === '' || !isFinite(+GFX.ambStr) ? 1 : Math.max(0, Math.min(150, +GFX.ambStr)) / 100;
+      // the size / strength controls exist only in the desktop app; the website always uses the defaults (520 px, 100 %)
+      const AMB_DESK = !!(window.pianoApp && window.pianoApp.isApp && window.pianoApp.runtime === 'tauri');
+      const ambSize = () => AMB_DESK ? Math.max(200, Math.min(900, Math.round(+GFX.ambSize) || 520)) : 520;
+      const ambK = () => !AMB_DESK || GFX.ambStr == null || GFX.ambStr === '' || !isFinite(+GFX.ambStr) ? 1 : Math.max(0, Math.min(150, +GFX.ambStr)) / 100;
       const ambStrength = () => GFX_PRESETS[GFX.preset] ? ({ low: 0, medium: 0.45, high: 0.75, ultra: 1 }[GFX.preset] || 0) : Math.max(0, Math.min(1, +GFX.glow || 0));
       function ambHide() { AMB.live = false; HTML.classList.remove('amb-live'); }
       function ambSync() {
@@ -22490,7 +22550,7 @@ registerProcessor('pl-voice', PLVoice);`;
         v: 1, mode: 'pass', inId: 'default', outId: 'default', lat: 'interactive', inGain: 1, outVol: 0.5, ec: false, nr: D75 ? 'balanced' : 'gate', holdMs: D75 ? 150 : 120, gateDb: -52,
         fx: { pass: { rev: 0.12, size: 0.4, echo: 0, echoMs: 260, echoFb: 0.3, bypass: false }, inst: { rev: 0.25, size: 0.6, echo: 0, echoMs: 320, echoFb: 0.3, bypass: false } },
         inst: 'violin', engine: 'synth', ip: {}, style: 'sing', sensSing: 70, sensSpeak: 40, smooth: 15, stable: 30, conf: 80, noiseDb: -48, resp: 'fast',
-        sustain: 50, octave: 0, transpose: 0, snap: 'note', dyn: true, monLvl: 0, monDelay: 0,
+        sustain: 50, octave: 0, transpose: 0, snap: 'note', dyn: true, monLvl: 0, monDelay: 0, win: 6,
         midi: { on: false, port: '', ch: 1, prog: true }, route: {}, recSrc: 'out', strict: true,
         eq: { lo: 0, lm: 0, mid: 0, hm: 0, hi: 0 }, comp: { on: false, thr: -24, ratio: 3, att: 10, rel: 200, mk: 0 }, preset: ''
       });
@@ -22508,6 +22568,7 @@ registerProcessor('pl-voice', PLVoice);`;
         if (!s || typeof s !== 'object') return d;
         const n = (v, a, b, def) => Number.isFinite(+v) ? clamp(+v, a, b) : def, o = Object.assign(d, {});
         o.mode = s.mode === 'inst' ? 'inst' : 'pass';
+        o.win = Math.round(n(s.win, 1, 60, 6));   // v8.2: how many seconds the pitch chart shows (1 to 60)
         ['inId', 'outId'].forEach(k => { if (typeof s[k] === 'string' && s[k].length < 300) o[k] = s[k]; });
         if (VS_LAT.some(x => x[0] === s.lat)) o.lat = s.lat;
         o.inGain = n(s.inGain, 0, 4, 1); o.outVol = n(s.outVol, 0, 1, .5); o.ec = !!s.ec; o.nr = ['off', 'gate', 'light', 'balanced', 'strong'].includes(s.nr) ? s.nr : (D75 ? 'balanced' : 'gate'); if (s.nr === 'gate' && D75) o.nr = 'balanced'; if (!D75 && (o.nr === 'light' || o.nr === 'balanced')) o.nr = 'gate'; o.holdMs = n(s.holdMs, 20, 1000, D75 ? 150 : 120); o.gateDb = n(s.gateDb, -80, -20, -52);
@@ -22853,32 +22914,48 @@ registerProcessor('pl-voice', PLVoice);`;
       const vsMed = a => { const s = a.slice().sort((x, y) => x - y); return s[s.length >> 1]; };
       const vsHzToMidi = hz => 69 + 12 * Math.log2(hz / 440);   // frequency → fractional MIDI pitch (A4 = 440 Hz = 69); the one conversion every note path uses
       // approximate notes: a note starts only after the same rounded note is heard for 120 ms with enough confidence, and ends after 200 ms of silence
-      const VS_NOTE_MIN = 120, VS_NOTE_GAP = 200, VS_NOTE_CONF = 0.6, VS_NOTE_KEEP = 60000;
-      function vsNoteStep(S, t, m, c) {                 // S = {cur, cand, segs}; m = pitch in semitones (fractional) or null when not voiced
+      // v8.2: a note needs 70 ms (and 3 frames) instead of 120 ms, so quick runs are kept; a note shows in the list as soon as it is established
+      // (not when the next one starts); a pitch must move 0.65 of a semitone away from the current note before it counts as another note (no flicker
+      // between neighbours when a note sits near a boundary); a new syllable or a pause of 80 ms+ on the same pitch starts a new note ("la-la-la").
+      const VS_NOTE_MIN = 70, VS_NOTE_GAP = 200, VS_NOTE_CONF = 0.6, VS_NOTE_KEEP = 60000, VS_NOTE_HYS = 0.65, VS_NOTE_DROP = 60, VS_NOTE_REGAP = 80;
+      function vsNoteShow(S) {                          // the note is long enough: put it in the Accumulated Notes list now
+        const c = S.cur; if (!c || c.shown || c.t1 - c.t0 < VS_NOTE_MIN) return;
+        c.shown = true; try { c.acc = anOnOpen(c); } catch (e) { }
+      }
+      function vsNoteStep(S, t, m, c, sy) {             // S = {cur, cand, segs}; m = pitch in semitones (fractional) or null when not voiced; sy = syllable counter
         const ok = m != null && isFinite(m) && c >= VS_NOTE_CONF;
-        if (ok) {
-          const k = Math.round(m);
-          if (S.cur && k === S.cur.midi) { S.cur.t1 = t; S.cur.dev += m - k; S.cur.n++; S.cur.conf += c; S.cand = null; return; }
-          if (!S.cand || S.cand.midi !== k) S.cand = { midi: k, t0: t, t1: t, n: 0, dev: 0, conf: 0 };
-          const K = S.cand; K.t1 = t; K.n++; K.dev += m - k; K.conf += c;
-          if (t - K.t0 >= VS_NOTE_MIN) {
-            if (S.cur) vsNoteClose(S, K.t0);
-            S.cur = { midi: k, t0: K.t0, t1: t, dev: K.dev, conf: K.conf, n: K.n }; S.cand = null;
-          }
+        if (!ok) {
+          if (S.cand && t - S.cand.t1 > VS_NOTE_DROP) S.cand = null;        // a very short dropout does not restart the candidate note
+          if (S.cur && t - S.cur.t1 > VS_NOTE_GAP) vsNoteClose(S, S.cur.t1);
           return;
         }
-        S.cand = null;
-        if (S.cur && t - S.cur.t1 > VS_NOTE_GAP) vsNoteClose(S, S.cur.t1);
+        const quiet = S.lastOk == null ? 0 : t - S.lastOk; S.lastOk = t;     // how long since the last clearly voiced frame (of any pitch)
+        let k = Math.round(m);
+        if (S.cur && Math.abs(m - S.cur.midi) < VS_NOTE_HYS) k = S.cur.midi;
+        else if (S.cand && Math.abs(m - S.cand.midi) < VS_NOTE_HYS) k = S.cand.midi;
+        if (S.cur && k === S.cur.midi) {
+          const U = S.cur, resyl = sy != null && U.sy != null && sy !== U.sy && U.t1 - U.t0 >= VS_NOTE_MIN;
+          if (resyl) { vsNoteClose(S, t); S.cur = { midi: k, t0: t, t1: t, dev: m - k, conf: c, n: 1, sy: sy, shown: false }; S.cand = null; return; }
+          if (quiet <= VS_NOTE_REGAP) { U.t1 = t; U.dev += m - k; U.conf += c; U.n++; S.cand = null; vsNoteShow(S); return; }
+          vsNoteClose(S, U.t1);                         // same pitch after a pause: the next note; it goes through the normal start below
+        }
+        if (!S.cand || S.cand.midi !== k) S.cand = { midi: k, t0: t, t1: t, n: 0, dev: 0, conf: 0 };
+        const K = S.cand; K.t1 = t; K.n++; K.dev += m - k; K.conf += c;
+        // a change of note inside one breath (no new syllable) still needs 120 ms, so a wobble is not taken for a note; a new syllable needs only 70 ms
+        if (t - K.t0 >= (S.cur && sy === S.cur.sy ? 120 : VS_NOTE_MIN) && K.n >= 3) {
+          if (S.cur) vsNoteClose(S, K.t0);
+          S.cur = { midi: k, t0: K.t0, t1: t, dev: K.dev, conf: K.conf, n: K.n, sy: sy, shown: false }; S.cand = null; vsNoteShow(S);
+        }
       }
       function vsNoteClose(S, t1) {
         const c = S.cur; if (!c) return;
         S.segs.push({ midi: c.midi, t0: c.t0, t1: t1 != null ? t1 : c.t1, cents: Math.round(c.dev / c.n * 100), conf: c.conf / c.n });
-        anOnSegment(S.segs[S.segs.length - 1]);
+        anOnSegment(S.segs[S.segs.length - 1], c.acc);
         S.cur = null;
         const end = S.segs[S.segs.length - 1].t1; while (S.segs.length && end - S.segs[0].t1 > VS_NOTE_KEEP) S.segs.shift();
       }
       // ---- Accumulated Notes (desktop only): every stable note is kept, in order, until the user clears it ----
-      const ACC_KEY = 'pll.notes75', ACC_ON_KEY = 'pll.notes75.on', ACC_MIN = 200, ACC_CONF = 0.6, ACC = { list: [] };
+      const ACC_KEY = 'pll.notes75', ACC_ON_KEY = 'pll.notes75.on', ACC_MIN = 70, ACC_CONF = 0.6, ACC = { list: [] };
       const ACC_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
       const ACC_PAL = ['#22d3ee', '#2dd4bf', '#8b5cf6', '#e879f9', '#4ade80'];   // cyan, turquoise, violet, magenta, green
       function accNote(midi, cents) {                  // note name, octave and frequency (A4 = 440 Hz = MIDI 69)
@@ -22906,10 +22983,24 @@ registerProcessor('pl-voice', PLVoice);`;
       // the on/off switch: Off records nothing and hides the list; stored notes are kept (never deleted by switching off)
       function anIsOn() { try { return localStorage.getItem(ACC_ON_KEY) !== '0'; } catch (e) { return true; } }
       function anSetOn(on) { try { localStorage.setItem(ACC_ON_KEY, on ? '1' : '0'); } catch (e) { } }
-      function anOnSegment(seg) {                     // a note segment has ended (see vsNoteClose); only the desktop app keeps notes
+      function anOnOpen(c) {                          // v8.2: a note has become stable: add it to the list now (finished at the end by anOnSegment)
+        if (typeof D75 === 'undefined' || !D75 || !anIsOn()) return null;
+        const seg = { midi: c.midi, t0: c.t0, t1: c.t1, cents: Math.round(c.dev / c.n * 100), conf: c.conf / c.n };
+        const before = ACC.list.length; ACC.list = anAdd(ACC.list, seg, new Date().toISOString());
+        if (ACC.list.length === before) return null;
+        const r = ACC.list[ACC.list.length - 1]; anAppend(r); return r;
+      }
+      function anOnSegment(seg, ref) {                // a note segment has ended (see vsNoteClose); only the desktop app keeps notes
         if (typeof D75 === 'undefined' || !D75 || !seg) return;
         // v8.0.0: the same accepted note also feeds the persistent Sung Note Statistics (desktop only; its own store, independent of this list and its switch)
         try { if (window.__sungHook) window.__sungHook(seg); } catch (e) { }
+        if (ref) {                                    // already in the list: write its final length and tuning
+          if (ACC.list.lastIndexOf(ref) < 0) return;  // cleared while it was sounding
+          const nn = accNote(seg.midi, seg.cents);
+          ref.cents = seg.cents; ref.confidence = Math.round(seg.conf * 100) / 100; ref.durationMs = Math.round(seg.t1 - seg.t0); ref.hz = nn.hz;
+          if (!anSave()) vsMsg('This note could not be saved (browser storage is full). Export your notes.', 'bad');
+          return;
+        }
         if (!anIsOn()) return;
         const before = ACC.list.length; ACC.list = anAdd(ACC.list, seg, new Date().toISOString());
         if (ACC.list.length === before) return;
@@ -22925,6 +23016,10 @@ registerProcessor('pl-voice', PLVoice);`;
         const st = document.createElement('style'); st.id = 'anCss';
         st.textContent = `.an-tiles{display:flex;flex-wrap:wrap;gap:10px;max-height:260px;overflow-y:auto;padding:6px 4px;align-items:flex-start}
 .an-tile{--c:#22d3ee;min-width:64px;padding:7px 12px 6px;border-radius:16px;display:flex;flex-direction:column;align-items:center;position:relative;background:linear-gradient(150deg,color-mix(in srgb,var(--c) 30%,transparent),rgba(255,255,255,.04));border:1px solid color-mix(in srgb,var(--c) 75%,transparent);box-shadow:0 0 12px -3px color-mix(in srgb,var(--c) 70%,transparent),inset 0 0 10px -6px var(--c)}
+.an-tile::after{content:'';position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;box-shadow:0 0 18px 3px var(--c),inset 0 0 12px -2px var(--c);opacity:.18;animation:anPulse 2.6s ease-in-out infinite;animation-delay:calc(var(--i,0) * -.33s)}
+@keyframes anPulse{0%,100%{opacity:.16}50%{opacity:.95}}
+html.calm .an-tile::after,html.lite .an-tile::after,html.anim-off .an-tile::after{animation:none;opacity:.45}
+@media (prefers-reduced-motion:reduce){.an-tile::after{animation:none;opacity:.45}}
 .an-tile b{font-size:20px;line-height:1.1;color:#fff;text-shadow:0 0 8px var(--c)}
 .an-tile sup{position:absolute;top:4px;right:7px;font-size:10px;font-weight:700;color:var(--c)}
 .an-tile small{font-size:9px;opacity:.6;letter-spacing:.04em}
@@ -22942,7 +23037,7 @@ registerProcessor('pl-voice', PLVoice);`;
       }
       function anTileHtml(r, i, isNew) {
         const c = ACC_PAL[((r.midi % 12) + 12) % 12 % 5];
-        return '<div class="an-tile' + (isNew ? ' an-new' : '') + '" role="listitem" style="--c:' + c + '" aria-label="' + esc(r.label) + ', ' + (+r.hz || 0) + ' Hz"><small>#' + (i + 1) + '</small><b>' + esc(r.name) + '</b><sup>' + (r.octave | 0) + '</sup></div>';
+        return '<div class="an-tile' + (isNew ? ' an-new' : '') + '" role="listitem" style="--c:' + c + ';--i:' + (i % 8) + '" aria-label="' + esc(r.label) + ', ' + (+r.hz || 0) + ' Hz"><small>#' + (i + 1) + '</small><b>' + esc(r.name) + '</b><sup>' + (r.octave | 0) + '</sup></div>';
       }
       function anCount() {
         const n = ACC.list.length, c = $('#anCount'), e = $('#anEmpty'), cf = $('#anConfirm');
@@ -22991,7 +23086,7 @@ registerProcessor('pl-voice', PLVoice);`;
       }
       function vsDrawNotes() {                          // the notes timeline under the pitch chart: newest on the right, last 6 s
         const C = vsCanvas('vsNotes'); if (!C || !VS.nseg) return;
-        const [g, W, H, dpr] = C, now = VS.last && VS.last.t ? VS.last.t : 0, S = VS.nseg, win = 6000;
+        const [g, W, H, dpr] = C, now = VS.last && VS.last.t ? VS.last.t : 0, S = VS.nseg, win = (VSS.win || 6) * 1000;
         g.clearRect(0, 0, W, H);
         const segs = S.segs.slice(); if (S.cur) segs.push(S.cur);
         g.font = (10 * dpr) + 'px system-ui,sans-serif'; g.textBaseline = 'middle';
@@ -23018,7 +23113,7 @@ registerProcessor('pl-voice', PLVoice);`;
         if (d.db > VSS.noiseDb - 6) {
           T.pk = T.pk == null ? d.db : Math.max(d.db, T.pk - 0.06 * dt);
           if (d.db < T.pk - 9) T.dip = T.dip == null ? d.db : Math.min(T.dip, d.db);
-          else if (T.dip != null && d.db > T.dip + 7) { T.dip = null; T.pk = d.db; T.syl = now; }
+          else if (T.dip != null && d.db > T.dip + 7) { T.dip = null; T.pk = d.db; T.syl = now; T.sylN = (T.sylN | 0) + 1; }
         } else { T.dip = T.dip == null ? d.db : Math.min(T.dip, d.db); T.pk = null; }
         let m = null;
         if (voiced) {
@@ -23035,8 +23130,8 @@ registerProcessor('pl-voice', PLVoice);`;
           T.vf = (T.vf || 0) + 1; T.voiced = true; T.last = now;
         } else if (T.voiced && now - T.last > R.hang[sing ? 0 : 1]) { T.voiced = false; T.hist.length = 0; T.cand = null; T.vf = 0; T.md = null; }
         VS.trail.push([now, voiced ? m : null, VS.note != null ? VS.note + VSS.octave * 12 + VSS.transpose : (VS.cont != null ? VS.cont : null), d.c]);
-        while (VS.trail.length && now - VS.trail[0][0] > 6000) VS.trail.shift();
-        if (VS.nseg) vsNoteStep(VS.nseg, now, voiced ? m : null, d.c);
+        { const keep = (VSS.win || 6) * 1000; let cut = 0; while (cut < VS.trail.length && now - VS.trail[cut][0] > keep) cut++; if (cut) VS.trail.splice(0, cut); }
+        if (VS.nseg) vsNoteStep(VS.nseg, now, voiced ? m : null, d.c, T.sylN | 0);
         if (VSS.mode !== 'inst') { if (VS.cur || VS.voices.length) vsAllOff(false); return; }
         if (T.voiced && m != null) vsPlay(m, d.db, now);
         else if (!T.voiced && (VS.cur || VS.note != null || VS.midiOn.size)) vsRelease(now);
@@ -23433,7 +23528,7 @@ registerProcessor('pl-voice', PLVoice);`;
             (VSS.mode === 'inst' ? '<p class="v71muted" style="margin:10px 0 0">Pitch tracking follows the <b>melody</b> of your voice — the note you sing or hum, or the rise and fall of speech. It cannot turn the words themselves into music: consonants, whispers and breaths have no pitch and are skipped. Singing or humming steady notes works best.</p>' :
               '<p class="v71muted" style="margin:10px 0 0">Use <b>headphones</b>, or keep the microphone away from the speakers: a microphone near a loudspeaker can howl. Voice Studio mutes the output by itself if it hears feedback.</p>') +
             '</div></div>' +
-            '<div class="v71card" style="margin-top:14px"><h4>Pitch over the last 6 seconds <small class="v71muted">· dots = your voice (brighter = more confident) · bar = the note being played</small></h4><canvas id="vsTrail" class="vs-trail" aria-label="Detected pitch over time"></canvas></div>' +
+            '<div class="v71card" style="margin-top:14px"><h4 id="vsTrailH">Pitch over the last ' + (VSS.win || 6) + ' second' + ((VSS.win || 6) === 1 ? '' : 's') + ' <small class="v71muted">· dots = your voice (brighter = more confident) · bar = the note being played</small></h4><label class="v71row sub" style="margin:0 0 6px">Show the last <select id="vsWin" aria-label="How many seconds of pitch to show">' + Array.from({ length: 60 }, (_, i) => '<option value="' + (i + 1) + '"' + (i + 1 === (VSS.win || 6) ? ' selected' : '') + '>' + (i + 1) + ' second' + (i ? 's' : '') + '</option>').join('') + '</select></label><canvas id="vsTrail" class="vs-trail" aria-label="Detected pitch over time"></canvas></div>' +
             (D75 ? '<div class="v71card an-card" id="anCard" style="margin-top:14px"><h4>Accumulated Notes <small class="v71muted" id="anCount"></small></h4><label class="an-switch"><input type="checkbox" id="anOn" role="switch"> <span id="anOnTxt">On</span></label><div id="anBody"><p class="v71muted">Each stable note you sing or hum is added in order and kept until you clear it. Notes stay on this computer.</p><div id="anTiles" class="an-tiles" role="list" aria-label="Accumulated notes"></div><p id="anEmpty" class="v71muted">No notes yet. Start Voice Studio and sing or hum.</p><div class="an-bar"><span class="seg" role="group" aria-label="Export notes">' + [['json', 'JSON (.json)'], ['txt', 'Text (.txt)'], ['md', 'Markdown (.md)']].map(([v, l]) => '<button type="button" class="v71chip" data-exp="' + v + '">' + l + '</button>').join('') + '</span> <button type="button" class="v71chip" id="anClear">Clear Notes</button></div><div id="anConfirm" class="an-bar" hidden><span>Clear all accumulated notes? This cannot be undone.</span> <button type="button" class="v71chip" id="anYes">Yes, clear permanently</button> <button type="button" class="v71chip" id="anNo">Cancel</button></div></div></div>' : '') +
             (D75 ? '<div class="v71card" style="margin-top:14px"><h4>Approximate notes <small class="v71muted">· rounded to the nearest semitone, in the order you played them (newest on the right). Not a tuner: the pitch chart above is the exact reading</small></h4><canvas id="vsNotes" class="vs-trail" aria-label="Approximate notes over time" style="height:64px"></canvas></div>' : '') +
             '<p class="v71muted vs-info" id="vsInfo" role="status"></p>';
@@ -23443,6 +23538,7 @@ registerProcessor('pl-voice', PLVoice);`;
           $('#vsMic').onclick = () => { VS.micMute = !VS.micMute; vsApply(); if (VS.micMute) vsAllOff(false); vsPaintLive(true); vsChip(); };
           $('#vsOut').onclick = () => { VS.outMute = !VS.outMute; vsApply(); vsPaintLive(true); vsChip(); };
           $('#vsRecB').onclick = () => VS.rec ? vsRecStop() : vsRecStart();
+          { const w = $('#vsWin'); if (w) w.onchange = () => { VSS.win = Math.max(1, Math.min(60, Math.round(+w.value) || 6)); vsSave(); const h = $('#vsTrailH'); if (h) h.firstChild.textContent = 'Pitch over the last ' + VSS.win + ' second' + (VSS.win === 1 ? '' : 's') + ' '; }; }
           if ($('#vsCfSt')) { $('#vsCfSt').onclick = () => { VSS.route[VSS.outId] = 'st50'; vsSave(); vsStart(true); }; $('#vsCfPc').onclick = () => { VSS.route[VSS.outId] = 'pc'; vsSave(); vsStart(true); }; $('#vsCfTone').onclick = () => vsTone(); }
         } else if (VSU.tab === 'inst') {
           box.innerHTML = '<div class="v71row" style="justify-content:space-between;margin-bottom:10px"><span class="seg" role="group" aria-label="Sound engine"><button type="button" class="v71chip" data-eng="synth" aria-pressed="' + (VSS.engine === 'synth') + '">Synthesiser (works offline, smooth glides)</button><button type="button" class="v71chip" data-eng="sample" aria-pressed="' + (VSS.engine === 'sample') + '">Sampled instruments (General MIDI SoundFont)</button></span>' +
@@ -23672,7 +23768,7 @@ registerProcessor('pl-voice', PLVoice);`;
           g.font = (10 * dpr) + 'px system-ui,sans-serif'; g.fillStyle = mut;
           for (let m = lo; m <= hi; m++) { if (m % 12 === 0) { g.globalAlpha = 0.35; g.fillRect(0, y(m), W, Math.max(1, dpr)); g.globalAlpha = 0.8; g.fillText(nName(m), 4 * dpr, y(m) - 3 * dpr); } else if (!isBlack(m)) { g.globalAlpha = 0.08; g.fillRect(0, y(m), W, 1); } }
           g.globalAlpha = 1;
-          const x = t => W - (tn - t) / 6000 * W;
+          const x = t => W - (tn - t) / ((VSS.win || 6) * 1000) * W;
           g.fillStyle = c2; g.globalAlpha = 0.85;
           for (let i = 1; i < tr.length; i++) { const p = tr[i], q = tr[i - 1]; if (p[2] != null && q[2] != null) g.fillRect(x(q[0]), y(p[2]) - 3 * dpr, Math.max(1, x(p[0]) - x(q[0]) + 0.5), 6 * dpr); }
           g.fillStyle = c1;
@@ -23686,7 +23782,7 @@ registerProcessor('pl-voice', PLVoice);`;
       if (D75) {
         ACC.list = accLoad();
         window.__an75 = Object.freeze({                 // test hooks (desktop only)
-          feed: frames => frames.forEach(f => vsNoteStep(VS.nseg, f[0], f[1], f[2])),   // [time ms, pitch in semitones or null, confidence]
+          feed: frames => frames.forEach(f => vsNoteStep(VS.nseg, f[0], f[1], f[2], f[3])),   // [time ms, pitch in semitones or null, confidence, optional syllable counter]
           flush: () => anFlush(),
           list: () => ACC.list.slice(),
           storedCount: () => { const s = JSON.parse(localStorage.getItem(ACC_KEY) || 'null'); return s && Array.isArray(s.notes) ? s.notes.length : 0; }
@@ -24254,6 +24350,35 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
             ]
           });
         }
+        /* 8.1.1: shown only once the version number is 8.1.1 or newer */
+        if (!vsVerLt(APP_VERSION, '8.1.1')) {
+          VERSIONS.unshift({
+            v: '8.1.1', date: '2026-11-13', title: 'Profile picture in the header, faster note capture, pitch window',
+            groups: [
+              ['Start and exit (desktop app)', [
+                'New start-up screen: Piano Logger now opens with an animated start-up screen (about 4 seconds) instead of briefly showing the old, unstyled page while it loads. This fixes the old-looking layout that flashed when the app opened',
+                'New exit screen: when you close the app it first shows an animated “Exiting Piano Logger” screen for about 2.5 seconds, then closes. It is skipped when “keep running in the tray” is on, because then closing only hides the window',
+                'The website does not show either screen'
+              ]],
+              ['Profile', [
+                'Your profile picture now shows beside your level at the top right, instead of the emblem (the emblem still shows if you have not chosen a picture)'
+              ]],
+              ['Statistics', [
+                'The numbers in Sung Note Statistics now slide when they grow, like the key-press numbers'
+              ]],
+              ['Voice Studio (desktop app)', [
+                'Accumulated Notes: each note now appears as soon as it is steady, so the list keeps up with your singing. Notes as short as 70 ms are kept (before: 200 ms), and the same note sung again after a new syllable or a short pause counts as a new note',
+                'Fewer wrong notes: a pitch near the edge between two notes no longer flickers to the neighbouring note, and a short wobble inside one breath is not counted as a note',
+                'The note tiles now have a soft pulsing glow (off in Calm mode, Lite effects and reduced motion)',
+                'New: choose how many seconds the pitch chart shows, from 1 to 60, in the new drop-down above the chart',
+                'The sung-note statistics use the same 70 ms rule, so very short sung notes are now counted'
+              ]],
+              ['Graphics', [
+                'The Cursor light size and strength sliders now exist only in the desktop app. The website always uses the default light (520 px, 100%)'
+              ]]
+            ]
+          });
+        }
         sortVersions();
         // the matching Help note (also only from 8.0.0 on; desktop-only features are left out of the website)
         const hp = document.getElementById('p-help');
@@ -24269,6 +24394,12 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
           '<li><b>Cursor light:</b> a soft colour light follows your mouse. Choose its <b>size</b> and <b>strength</b> in <b>Settings → Graphics → Cursor light</b> (0% turns it off; Reset light restores the defaults).</li>' +
           '<li><b>Lite effects:</b> this switch in the piano toolbar overrides every quality preset (flat panels, no glow, no cursor light). Picking Medium, High or Ultra now switches it off for you, and Settings → Graphics warns you while it is on.</li>' +
           '<li><b>Low then Ultra:</b> your Expressive motion setting is remembered and comes back when you choose a higher quality.</li></ul></div>');
+        if (hp && !vsVerLt(APP_VERSION, '8.1.1')) hp.insertAdjacentHTML('beforeend', '<div class="v71card" id="help811" style="margin-top:14px"><h3 style="margin:0 0 8px">New in 8.1.1</h3><ul style="margin:0;padding-left:20px">' +
+          (D75 ? '<li><b>Start-up and exit screens:</b> the app opens with a short animated start-up screen (this also fixes the old layout that used to flash for a moment) and shows an “Exiting Piano Logger” screen when you close it. The exit screen is skipped when “keep running in the tray” is on.</li>' : '') +
+          '<li><b>Profile picture:</b> it now shows beside your level at the top right.</li>' +
+          '<li><b>Sung Note Statistics:</b> the numbers slide when they grow.</li>' +
+          (D75 ? '<li><b>Voice Studio → Studio:</b> Accumulated Notes keep up with fast singing (notes from 70 ms), repeated notes count separately and the tiles glow. Choose how many seconds the pitch chart shows (1 to 60) in the drop-down above it.</li>' +
+            '<li><b>Settings → Graphics → Cursor light:</b> size and strength are in the desktop app only; the website uses the default light.</li>' : '') + '</ul></div>');
         // the tour: one focused step on the Statistics tab (the Windows app only, where the feature exists)
         if (D75) TOUR.splice(Math.max(0, TOUR.length - 1), 0, ['.tab[data-tab=keys]', '🎤 Sung Note Statistics', 'Statistics shows how many notes you have sung: a Total notes sung card, then charts and a table for each note. Pick the period at the top. Notes are nearest-note estimates from Voice Studio’s Singing style.']);
       }
@@ -24856,6 +24987,15 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
                 '</td><td class="num">' + sec(x.avg) + '</td><td class="num">' + sec(x.long) + '</td><td class="num">' + (x.hz == null ? '—' : x.hz.toFixed(1) + ' Hz') + '</td><td class="num">' + sgn(x.cents) + '</td><td class="num">' + (x.conf == null ? '—' : x.conf.toFixed(2)) +
                 '</td><td class="num">' + x.sessions + '</td><td class="num">' + stamp(x.first) + '</td><td class="num">' + stamp(x.last) + '</td></tr>').join('') : '<tr><td colspan="' + COLS.length + '" class="sub">No sung notes in this period yet.</td></tr>') + '</tbody></table></div>' +
               '<p class="sub sung-help">How to read this: the app listens to your voice on this computer, finds its pitch and picks the nearest piano note. Singing drifts a little, so a note name is a best estimate, not what you meant to sing. Each stable note counts once, however long you hold it. These figures are separate from the piano Key Statistics below, and clearing Accumulated Notes never removes them. Only note information is saved, never sound.</p>';
+            // v8.2.0: the numbers slide like the key-press numbers (the section is rebuilt on every refresh, so values are remembered by card label)
+            try {
+              if (typeof rollCore === 'function' && typeof ROLL !== 'undefined') el.querySelectorAll('.cards .card').forEach(cd => {
+                const b = cd.querySelector('b'), l = cd.querySelector('span'); if (!b || !l) return;
+                const text = b.textContent; if (!text.trim()) return;
+                const key = 'sung|' + l.textContent; let st = ROLL.key.get(key); if (!st) ROLL.key.set(key, st = {});
+                rollCore(b, st, text);
+              });
+            } catch (e) { }
             el.querySelectorAll('th.sort').forEach(th => th.onclick = () => { const k = th.dataset.c; if (UI.col === k) UI.dir = -UI.dir; else { UI.col = k; UI.dir = k === 'note' || k === 'midi' ? 1 : -1; } paint(el, r); });
             const g = el.querySelector('#sungGran'); if (g) g.onchange = () => { UI.gran = g.value; paint(el, r); };
           }
@@ -25116,6 +25256,8 @@ html.d75 .av-tabi img{width:100%;height:100%;object-fit:cover;display:block}
 html.d75 .av-tabi svg{width:14px;height:14px}
 html.d75 .av-nvi{width:20px;height:20px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 0 0 1px rgba(255,255,255,.3),0 0 8px -3px var(--rk,#7dd3fc)}
 html.d75 .av-nvi[hidden]{display:none}
+html.d75 .lc-em.has-av{padding:0;overflow:hidden;font-size:0}
+html.d75 .av-chipi{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit}
 html.calm .av-aura{animation:none!important}
 @media (prefers-reduced-motion:reduce){html.d75 .av-aura{animation:none!important}}
 .av-modal{position:fixed;inset:0;z-index:9500;display:grid;place-items:center;padding:16px;background:rgba(3,6,12,.62)}
@@ -25233,7 +25375,21 @@ html.calm .av-aura{animation:none!important}
           im.hidden = !u; if (u && im.getAttribute('src') !== u) im.src = u;
           const svg = b.querySelector(':scope > svg'); if (svg) svg.style.display = u ? 'none' : '';
         }
-        function paintAll() { return Promise.all([paintHero(), paintTab(), paintNav()]).catch(() => { }); }
+        // ---- the header level chip: the picture replaces the emblem (the emblem stays only when there is no picture) ----
+        async function paintChip() {
+          const e = $('#lcEm'); if (!e) return;
+          const a = cur(), u = a ? await urlFor(a) : null;
+          let im = e.querySelector(':scope > img.av-chipi');
+          if (u) {
+            if (!im) { im = document.createElement('img'); im.className = 'av-chipi'; im.alt = ''; e.textContent = ''; e.appendChild(im); }
+            if (im.getAttribute('src') !== u) im.src = u;
+            e.classList.add('has-av');
+          } else {
+            e.classList.remove('has-av');
+            if (im) { im.remove(); e.textContent = PF.p.emblem || '🎹'; }
+          }
+        }
+        function paintAll() { return Promise.all([paintHero(), paintTab(), paintNav(), paintChip()]).catch(() => { }); }
         // ---- editor ----
         let modal = null, pend = null;
         const msg = (t, bad) => { const m = $('#avMsg'); if (m) { m.textContent = t || ''; m.classList.toggle('bad', !!bad); } };
@@ -25443,6 +25599,35 @@ html.calm .av-aura{animation:none!important}
         br: { parse: brParse, fromEvent: brFromEvent, noteOf: brNoteOf, midi: brMidi, arm: brArm, stop: brStop, releaseAll: brReleaseAll, state: () => ({ armed: BR.armed, held: [...BR.cnt.entries()], notes: [...BR.notes.keys()], deferred: [...BR.deferred], st: Object.assign({}, BR.st), typed: BR.typed, live: brLive(), fgOk: BR.fgOk, lat: BR.lat.slice() }), settings: () => JSON.parse(JSON.stringify(BRS)), clean: brClean, open: openBridge, flush: brFlush }
       });
 
+    })();
+  </script>
+  <script>
+    /* v8.1.1 start-up and exit screens (desktop app only). Independent of the main script, so an error there can never leave the screen up. */
+    (function () {
+      var root = document.documentElement, MIN = 4000;
+      var meta = document.querySelector('meta[name="application-version"]'), ver = meta ? meta.getAttribute('content') : '';
+      var v = document.getElementById('bsVer'); if (v && ver) v.textContent = 'v' + ver;
+      var s = document.getElementById('bootSplash');
+      if (s && root.classList.contains('boot-on')) {
+        var msgs = ['Starting up…', 'Getting your piano ready…', 'Almost ready…'], m = document.getElementById('bsMsg'), i = 0;
+        var t = setInterval(function () { i = Math.min(i + 1, msgs.length - 1); if (m) m.textContent = msgs[i]; }, 1400);
+        setTimeout(function () {
+          clearInterval(t); s.classList.add('out');
+          setTimeout(function () { root.classList.remove('boot-on'); s.remove(); }, 550);
+        }, Math.max(300, MIN - (window.performance && performance.now ? performance.now() : 0)));
+      }
+      // exit screen: the app asks for it (only when "keep running in the tray" is off), shows it ~2.5 s, then quits
+      var exiting = false;
+      window.addEventListener('pianoapp-exit', function () {
+        if (exiting) return; exiting = true;
+        try { if (window.__an75) window.__an75.flush(); } catch (e) { }
+        var o = document.createElement('div'); o.id = 'exitSplash'; o.className = 'bs on'; o.setAttribute('role', 'status'); o.setAttribute('aria-label', 'Exiting Piano Logger');
+        o.innerHTML = '<div class="bs-logo"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="14" width="52" height="36" rx="7" fill="none" stroke="#9db4ff" stroke-width="3.5"/><path d="M17 14v22M27 14v22M37 14v22M47 14v22" stroke="#9db4ff" stroke-width="3" stroke-linecap="round"/><path d="M12 56c5-8 9-8 14 0s9 8 14 0 9-8 12 0" fill="none" stroke="#e056c1" stroke-width="3" stroke-linecap="round"/></svg></div>' +
+          '<h1>Exiting Piano Logger</h1><p>Saving your session… see you next time ♪</p>' +
+          '<div class="bs-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="bs-track" aria-hidden="true"><div class="bs-fill"></div></div>';
+        document.body.appendChild(o);
+        setTimeout(function () { try { window.pianoApp.quit(); } catch (e) { } }, 2500);
+      });
     })();
   </script>
 </body>

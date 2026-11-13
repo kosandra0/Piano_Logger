@@ -3,6 +3,28 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 8.1.1 — 2026-11-13 · Profile picture in the header, faster note capture, pitch window
+
+### Start-up and exit screens (desktop app)
+- **Fix:** when the app opened it briefly showed the old, unstyled page ("Piano Lifetime Logger", Lv 1 Beginner) before the real layout was built. The cause is that the layout is built by the page's script after the page markup is first drawn. A start-up screen now covers the page until it is ready.
+- **New start-up screen:** an animated logo, version and progress bar for about 4 seconds (counted from when the page starts loading).
+- **New exit screen:** closing the app shows an animated "Exiting Piano Logger" screen for about 2.5 seconds, then the app closes. It is not shown when *keep running in the tray* is on (closing then only hides the window). If the screen cannot be shown, the app closes itself after 4.5 seconds; closing a second time closes it at once.
+- The website does not show these screens. Reduced-motion settings stop the animations.
+
+### Profile and statistics
+- Your profile picture now shows beside your level in the top-right chip, instead of the rank emblem. The emblem still shows when no picture is chosen.
+- The numbers in **Sung Note Statistics** now slide when they grow, like the key-press numbers.
+
+### Voice Studio (desktop app)
+- **Accumulated Notes keep up with your singing.** A note appears in the list as soon as it is steady (it used to appear only after it ended). Notes as short as 70 ms are kept (before: 200 ms), and the same note sung again after a new syllable or a pause of 80 ms or more counts as a new note.
+- **Fewer wrong notes.** A pitch must move clearly past the halfway point between two notes before it becomes the neighbouring note, short dropouts no longer restart a note, and a short wobble inside one breath (under 120 ms, no new syllable) is not counted as a note.
+- The note tiles have a soft pulsing glow (off in Calm mode, Lite effects, Page animations Off and reduced motion).
+- **New setting: pitch window.** Choose how many seconds the pitch chart shows, from 1 to 60 (default 6), in the drop-down above the chart. It is saved in the voice settings (`win` in `pll.voice`) and also sets the span of the Approximate notes strip.
+- The Sung Note Statistics use the same 70 ms rule (their gate is shared with the list), so very short sung notes are now counted.
+
+### Graphics
+- The **Cursor light** size and strength controls now exist only in the desktop app. The website always uses the default light (520 px, 100%), even if other values were saved earlier. Saved values are not deleted.
+
 ## 8.1.0 — 2026-11-13 · Cursor light, quality fixes and Lite effects
 
 ### Cursor light (website and desktop)
