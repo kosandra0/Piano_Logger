@@ -43,9 +43,13 @@
       write: function (id, bytes) { return inv('bk_write', bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), { headers: { 'x-backup-id': String(id) } }); },
       end: function (id) { return inv('bk_end', { id: String(id) }); },
       abort: function (id) { return inv('bk_abort', { id: String(id) }); },
+      // v8.0.1: Save dialog for "Create backup file"; resolves to an id for write/end, or '' when cancelled
+      pick: function (name) { return inv('bk_pick', { name: String(name) }); },
       list: function () { return inv('bk_list'); },
       openFolder: function () { return inv('bk_open'); }
     }),
+    // v7.5.0: Save dialog for the Accumulated Notes export; resolves to the saved path, or '' if cancelled
+    saveExport: function (name, text) { return inv('save_export', { name: String(name), text: String(text) }); },
     setOnTop: function (on) { return inv('win_ontop', { on: !!on }); },
     setStartup: function (on) { return inv('app_startup', { on: !!on }); },
     // 7.2: closing the window keeps Piano Logger running in the system tray (logging only, no key presses)

@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 8.0.2: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="8.0.2">
+  <meta name="description" content="Piano Logger 8.1.0: a MIDI visualizer that saves every key press on your own device, with statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="8.1.0">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -202,6 +202,57 @@
       to {
         transform: translate(-8vw, -8vh) scale(1.08)
       }
+    }
+
+    /* ---------- 8.0.3 cursor ambient light: a soft multi-colour light that follows the mouse (behind the panels, never blocks clicks) ---------- */
+    .orbs .amb {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: var(--amb-d, 520px);
+      height: var(--amb-d, 520px);
+      margin: calc(var(--amb-d, 520px) / -2) 0 0 calc(var(--amb-d, 520px) / -2);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .7s ease;
+      will-change: transform, opacity;
+      contain: layout paint style
+    }
+
+    .orbs .amb span {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 36% 40%, color-mix(in srgb, var(--c1, #22d3ee) 55%, transparent) 0, transparent 42%),
+        radial-gradient(circle at 66% 38%, color-mix(in srgb, var(--c2, #e879f9) 48%, transparent) 0, transparent 40%),
+        radial-gradient(circle at 52% 68%, color-mix(in srgb, var(--c3, #a3e635) 40%, transparent) 0, transparent 42%),
+        radial-gradient(circle, color-mix(in srgb, var(--c1, #22d3ee) 14%, transparent) 0, transparent 66%);
+      animation: ambSpin 22s linear infinite
+    }
+
+    @keyframes ambSpin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    html[data-theme=light],
+    html[data-mode=light] {
+      --amb-l: .6
+    }
+
+    html.amb-on.amb-live .orbs .amb {
+      opacity: calc(var(--amb-a, 0) * .32 * var(--amb-k, 1) * var(--amb-l, 1) * min(1, var(--u-bg, 1)))
+    }
+
+    html:not(.amb-live) .orbs .amb span,
+    html.hc .orbs .amb {
+      animation-play-state: paused
+    }
+
+    html.hc .orbs .amb {
+      display: none
     }
 
     .app {
@@ -8182,7 +8233,7 @@
       border-radius: var(--r);
       border: var(--bw, 1px) solid color-mix(in srgb, var(--bd) calc(min(1, var(--u-border)) * 100%), transparent);
       background:
-        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c1) calc(var(--spot, 0) * 12%), transparent), transparent 62%),
+        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c1) calc(var(--spot, 0) * 12% * var(--spot-k, 1)), transparent), transparent 62%),
         linear-gradient(180deg, rgba(255, 255, 255, calc(var(--spec-a) * var(--u-spec))), rgba(255, 255, 255, 0) 130px),
         color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), transparent);
       -webkit-backdrop-filter: blur(calc(var(--blur-b) * var(--u-blur) * 1px)) saturate(165%);
@@ -8193,7 +8244,7 @@
 
     html.ds:not(.hc):not(#_)[data-surface=liquid] .glass {
       background:
-        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c1) calc(var(--spot, 0) * 14%), transparent), transparent 62%),
+        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c1) calc(var(--spot, 0) * 14% * var(--spot-k, 1)), transparent), transparent 62%),
         linear-gradient(115deg, rgba(255, 255, 255, calc(.11 * var(--u-spec))) 0%, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, calc(.05 * var(--u-spec))) 100%),
         radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--c1) 9%, transparent), transparent 55%),
         radial-gradient(100% 90% at 100% 100%, color-mix(in srgb, var(--c2) 8%, transparent), transparent 55%),
@@ -8205,7 +8256,7 @@
 
     html.ds:not(.hc):not(#_)[data-surface=frost] .glass {
       background:
-        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c1) calc(var(--spot, 0) * 10%), transparent), transparent 62%),
+        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c1) calc(var(--spot, 0) * 10% * var(--spot-k, 1)), transparent), transparent 62%),
         var(--noise),
         linear-gradient(180deg, rgba(255, 255, 255, calc(var(--spec-a) * var(--u-spec) * 1.4)), rgba(255, 255, 255, 0) 160px),
         color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), transparent)
@@ -8245,7 +8296,7 @@
 
     html.ds:not(.hc):not(#_)[data-surface=velvet] .glass {
       background:
-        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c3) calc(var(--spot, 0) * 10%), transparent), transparent 62%),
+        radial-gradient(560px circle at var(--mx, 50%) var(--my, -60%), color-mix(in srgb, var(--c3) calc(var(--spot, 0) * 10% * var(--spot-k, 1)), transparent), transparent 62%),
         linear-gradient(160deg, color-mix(in srgb, var(--c1) 12%, transparent), transparent 45%),
         linear-gradient(180deg, rgba(255, 255, 255, calc(var(--spec-a) * var(--u-spec))), rgba(255, 255, 255, 0) 120px),
         color-mix(in srgb, var(--s-c) calc(min(1, var(--s-a) * var(--u-glass)) * 100%), transparent);
@@ -13136,6 +13187,7 @@
 <ol>
 <li>Open <b>⚙ Settings</b> and choose the <b>🖥 Graphics</b> tab (or press <kbd>Ctrl</kbd>+<kbd>K</kbd> and type “graphics”).</li>
 <li>Pick a <b>quality</b>: <b>Low</b> (fastest, for older laptops), <b>Medium</b>, <b>High</b> (recommended) or <b>Ultra</b> (everything on, sharpest). Changing any single option switches to <b>Custom</b>.</li>
+<li><b>Cursor light</b> (8.1.0): a soft colour light follows your mouse. Set its <b>size</b> and <b>strength</b> under <b>Cursor light</b> in this tab (0% turns it off). <b>Lite effects</b> in the piano toolbar overrides every quality preset, so picking Medium, High or Ultra switches it off.</li>
 <li><b>Visualizer</b> options: note style (Glow, Neon outline, Crystal glass or the Classic original), glow strength, hit particles, roll background (octave lines, glowing horizon, starfield, animated aurora or none), light beams from pressed keys, sparks rising from held keys, glowing pressed keys and a frames-per-second meter.</li>
 <li><b>Performance</b> options: sharpness of the piano roll, frame rate (30, 60 or match your screen), the frosted-glass blur on panels, and how much the page animates (full, reduced or off).</li>
 <li><b>▶ Preview on the piano roll</b> plays a short light show so you can see your settings. Preview notes are never saved to your log.</li>
@@ -17302,7 +17354,7 @@ PianoLogger.on('noteon', e => {
         const paint = () => {
           const sel = (id, label, opts, cur, tip) => '<label' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + label + ' <select id="' + id + '">' + opts.map(([v, l]) => '<option value="' + v + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>';
           const chk = (id, label, on, tip) => '<label' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + label + ' <input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '></label>';
-          gfx.innerHTML = '<h3>Quality</h3><div class="gfx-pre" role="group" aria-label="Graphics quality">' +
+          gfx.innerHTML = (S.lite ? '<p class="sub" style="border:1px solid var(--c4,#f59e0b);border-radius:10px;padding:8px 10px;margin:0 0 10px"><b>Lite effects is ON</b>: it overrides the quality preset (flat panels, no glass blur, no cursor light, simpler piano roll). <button type="button" class="btn small" id="gfLiteOff">Turn off Lite effects</button></p>' : '') + '<h3>Quality</h3><div class="gfx-pre" role="group" aria-label="Graphics quality">' +
             [['low', '🔋 Low', 'Fastest. For older laptops'], ['medium', '⚖ Medium', 'Balanced'], ['high', '✨ High', 'Recommended'], ['ultra', '💎 Ultra', 'Everything on, sharpest'], ['custom', '🛠 Custom', 'Your own mix']]
               .map(([v, l, d]) => '<button type="button" data-pre="' + v + '" aria-pressed="' + (GFX.preset === v) + '"' + (v === 'custom' ? ' disabled' : '') + '><b>' + l + '</b><small>' + d + '</small></button>').join('') + '</div>' +
             '<h3>Visualizer</h3><div class="set-grid">' +
@@ -17312,7 +17364,12 @@ PianoLogger.on('noteon', e => {
             sel('gfBg', 'Roll background', GFX_OPT.bg, GFX.bg) + gfxExtra(sel) +
             chk('gfBeams', 'Light beams from pressed keys', GFX.beams) + chk('gfEmbers', 'Sparks rising from held keys', GFX.embers) +
             chk('gfKey', 'Glowing pressed keys', GFX.keyGlow) + chk('gfMeter', 'Show frames per second', GFX.meter) +
-            '</div><h3>Performance</h3><div class="set-grid">' +
+            '</div><h3>Cursor light</h3><div class="set-grid">' +
+            '<label>Light size <input type="range" id="gfAmbD" min="200" max="900" step="20" value="' + (+GFX.ambSize || 520) + '"> <b id="gfAmbDv">' + (+GFX.ambSize || 520) + ' px</b></label>' +
+            '<label>Light strength <input type="range" id="gfAmbK" min="0" max="150" step="5" value="' + Math.round(GFX.ambStr == null ? 100 : +GFX.ambStr) + '"> <b id="gfAmbKv">' + Math.round(GFX.ambStr == null ? 100 : +GFX.ambStr) + '%</b></label>' +
+            '<button type="button" class="btn small" id="gfAmbR">Reset light</button>' +
+            '</div><p class="sub">The soft colour light that follows your mouse. 0% turns it off. It also follows the quality preset and is off in Lite effects, Calm mode and Reduced motion.</p>' +
+            '<h3>Performance</h3><div class="set-grid">' +
             sel('gfRes', 'Sharpness', [['low', 'Low (fastest)'], ['auto', 'Auto (up to 2×)'], ['max', 'Maximum (up to 3×)']], GFX.res, 'How many pixels the piano roll draws') +
             sel('gfFps', 'Frame rate', [[30, '30 fps (saves battery)'], [60, '60 fps'], [0, 'Match my screen']], GFX.fps) +
             chk('gfBlur', 'Frosted-glass blur on panels', GFX.blur, 'Turn off on slow computers') +
@@ -17321,10 +17378,18 @@ PianoLogger.on('noteon', e => {
             '</div><p class="sub">“Lite effects” in the Tools bar, Calm mode and your system’s “reduce motion” setting still turn heavy effects off. Graphics never change what is logged.</p>' +
             '<div class="row" style="margin-top:10px"><button type="button" class="btn" id="gfDemo">▶ Preview on the piano roll</button></div>';
           const set = (k, v) => { GFX[k] = v; GFX.preset = 'custom'; saveGfx(); applyGfx(); gfx.querySelectorAll('[data-pre]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pre === 'custom')); };
-          gfx.querySelectorAll('[data-pre]').forEach(b => b.onclick = () => { if (!GFX_PRESETS[b.dataset.pre]) return; Object.assign(GFX, GFX_PRESETS[b.dataset.pre], { preset: b.dataset.pre }); saveGfx(); applyGfx(); paint(); });
+          gfx.querySelectorAll('[data-pre]').forEach(b => b.onclick = () => { if (!GFX_PRESETS[b.dataset.pre]) return; Object.assign(GFX, GFX_PRESETS[b.dataset.pre], { preset: b.dataset.pre });
+            // 8.0.2+: Lite effects is a separate switch that overrides every quality preset; choosing Medium / High / Ultra means "I want the effects", so it is switched off
+            if (S.lite && b.dataset.pre !== 'low') { S.lite = false; saveSettings(); applySettings(); resizeRoll(); refreshAll(); toast('Lite effects turned off so the ' + b.dataset.pre + ' quality takes effect', 'ok'); }
+            saveGfx(); applyGfx(); paint(); });
           [['gfStyle', 'style'], ['gfParts', 'particles'], ['gfBg', 'bg'], ['gfRes', 'res'], ['gfAnim', 'anim']].forEach(([id, k]) => $('#' + id).onchange = e => set(k, e.target.value));
           $('#gfFps').onchange = e => set('fps', +e.target.value);
           $('#gfGlow').oninput = e => set('glow', +e.target.value);
+          // cursor light size / strength: their own saved values; they do not switch the quality preset to Custom
+          $('#gfAmbD').oninput = e => { GFX.ambSize = +e.target.value; $('#gfAmbDv').textContent = GFX.ambSize + ' px'; saveGfx(); ambSync(); };
+          $('#gfAmbK').oninput = e => { GFX.ambStr = +e.target.value; $('#gfAmbKv').textContent = GFX.ambStr + '%'; saveGfx(); ambSync(); };
+          { const lo = $('#gfLiteOff'); if (lo) lo.onclick = () => { S.lite = false; saveSettings(); applySettings(); resizeRoll(); refreshAll(); applyGfx(); paint(); toast('Lite effects turned off', 'ok'); }; }
+          $('#gfAmbR').onclick = () => { delete GFX.ambSize; delete GFX.ambStr; saveGfx(); ambSync(); paint(); };
           [['gfBeams', 'beams'], ['gfEmbers', 'embers'], ['gfKey', 'keyGlow'], ['gfMeter', 'meter'], ['gfBlur', 'blur']].forEach(([id, k]) => $('#' + id).onchange = e => set(k, e.target.checked));
           gfxExtraWire(set);
           $('#gfDemo').onclick = () => { $('#gm').hidden = true; $('#stage') ? $('#stage').scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'center' }) : 0; setTimeout(vizDemo, 350); };
@@ -17609,7 +17674,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '8.0.2';
+      const APP_VERSION = '8.1.0';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -20103,7 +20168,7 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
         toast(osReduce() && !TUNE.overOS ? 'Animated backgrounds are paused because Windows animations are switched off. Turn on “Play animations even when Windows animations are switched off” in Settings → Motion & themes.' : 'Animated backgrounds are paused because Motion is Off or Calm mode is on (Settings → Motion & themes).', 'bad');
       });
       function setMotion(m) {
-        TUNE.motion = m; saveTune();
+        TUNE.motion = m; delete TUNE.motionPref; saveTune();      // an explicit choice replaces any remembered level
         GFX.anim = m === 'off' ? 'off' : m === 'reduced' ? 'reduced' : 'full'; GFX.preset = GFX_PRESETS[GFX.preset] && GFX_PRESETS[GFX.preset].anim === GFX.anim ? GFX.preset : 'custom';
         saveGfx(); applyGfx(); applyTune();
       }
@@ -20543,16 +20608,55 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
         const c = t.closest('.hx-stat, #p-dash .cards > .card'); if (c !== tiltEl) unTilt();
         if (c) { const r = c.getBoundingClientRect(), px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5; c.classList.add('v7tilt'); c.style.setProperty('--ry', (px * 7).toFixed(2) + 'deg'); c.style.setProperty('--rx', (-py * 7).toFixed(2) + 'deg'); tiltEl = c; }
       }
-      document.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; ptrEv = e; if (!ptrRaf) ptrRaf = requestAnimationFrame(ptrFrame); }, { passive: true });
-      HTML.addEventListener('mouseleave', () => { unMag(); unSpot(); unTilt(); });
+      /* ---------- 8.0.3 cursor ambient light ----------
+         A soft multi-colour light (theme colours c1/c2/c3) that eases after the mouse, drawn inside the fixed .orbs background so it shows through
+         and around the glass panels, on every page. Strength follows the Graphics quality (Low off, Medium .45, High .75, Ultra 1; Custom follows
+         "Glow strength"). Off with Lite effects, Calm mode, Motion Off / Reduced, high contrast and the system's reduce-motion (unless overridden).
+         Only transform and opacity change; one rAF runs only while the light is still catching up; it reuses the single pointermove listener below. */
+      const AMB = { el: null, on: false, live: false, key: '', x: 0, y: 0, tx: 0, ty: 0, raf: 0 };
+      const ambSize = () => Math.max(200, Math.min(900, Math.round(+GFX.ambSize) || 520));
+      const ambK = () => GFX.ambStr == null || GFX.ambStr === '' || !isFinite(+GFX.ambStr) ? 1 : Math.max(0, Math.min(150, +GFX.ambStr)) / 100;
+      const ambStrength = () => GFX_PRESETS[GFX.preset] ? ({ low: 0, medium: 0.45, high: 0.75, ultra: 1 }[GFX.preset] || 0) : Math.max(0, Math.min(1, +GFX.glow || 0));
+      function ambHide() { AMB.live = false; HTML.classList.remove('amb-live'); }
+      function ambSync() {
+        const s = ambStrength(), k = ambK(), lv = mLevel(), on = s > 0 && k > 0 && !S.lite && lv !== 'off' && lv !== 'reduced' && !HTML.classList.contains('hc');
+        const key = on + ':' + s + ':' + k + ':' + ambSize(); if (key === AMB.key) return; AMB.key = key; AMB.on = on;
+        HTML.classList.toggle('amb-on', on);
+        HTML.style.setProperty('--amb-a', on ? s : 0); HTML.style.setProperty('--amb-k', k); HTML.style.setProperty('--amb-d', ambSize() + 'px');
+        HTML.style.setProperty('--spot-k', on ? (s >= 1 ? 1.5 : s >= 0.75 ? 1.2 : 1) : 1);           // the per-panel spotlight is stronger at High / Ultra
+        if (on && !AMB.el) { const o = $('.orbs'); if (!o) return; AMB.el = document.createElement('b'); AMB.el.className = 'amb'; AMB.el.setAttribute('aria-hidden', 'true'); AMB.el.innerHTML = '<span></span>'; o.appendChild(AMB.el); }
+        if (!on) ambHide();
+      }
+      function ambFrame() {
+        AMB.raf = 0; if (!AMB.on || !AMB.live || !AMB.el) return;
+        const dx = AMB.tx - AMB.x, dy = AMB.ty - AMB.y; AMB.x += dx * 0.14; AMB.y += dy * 0.14;
+        AMB.el.style.transform = 'translate3d(' + AMB.x.toFixed(1) + 'px,' + AMB.y.toFixed(1) + 'px,0)';
+        if (Math.abs(dx) > 0.4 || Math.abs(dy) > 0.4) AMB.raf = requestAnimationFrame(ambFrame);
+      }
+      function ambMove(e) {
+        AMB.tx = e.clientX; AMB.ty = e.clientY;
+        if (!AMB.live) { AMB.x = AMB.tx; AMB.y = AMB.ty; AMB.live = true; HTML.classList.add('amb-live'); }
+        if (!AMB.raf) AMB.raf = requestAnimationFrame(ambFrame);
+      }
+      document.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; ptrEv = e; if (AMB.on) ambMove(e); if (!ptrRaf) ptrRaf = requestAnimationFrame(ptrFrame); }, { passive: true });
+      HTML.addEventListener('mouseleave', () => { unMag(); unSpot(); unTilt(); ambHide(); });
+      window.addEventListener('blur', ambHide);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) ambHide(); });
+      if (window.matchMedia) { const mq = matchMedia('(prefers-reduced-motion: reduce)'); (mq.addEventListener ? mq.addEventListener.bind(mq, 'change') : mq.addListener.bind(mq))(ambSync); }
+      new MutationObserver(ambSync).observe(HTML, { attributes: true, attributeFilter: ['class'] });   // Lite effects, Calm, Motion and contrast toggles all change a class on <html>
+      ambSync();
       document.addEventListener('visibilitychange', () => HTML.classList.toggle('doc-hidden', document.hidden));
       // the motion level also follows changes made in Settings → Graphics → Page animations
       const _agV7 = applyGfx;
       applyGfx = function () {
         _agV7();
-        const m = GFX.anim === 'off' ? 'off' : GFX.anim === 'reduced' ? 'reduced' : (TUNE.motion === 'expressive' ? 'expressive' : 'balanced');
+        // 8.0.3: a preset that lowers the motion (Low = Reduced) remembers an Expressive choice, so picking High / Ultra again brings it back
+        let m;
+        if (GFX.anim === 'off' || GFX.anim === 'reduced') { m = GFX.anim; if (TUNE.motion === 'expressive') TUNE.motionPref = 'expressive'; }
+        else { m = (TUNE.motion === 'expressive' || TUNE.motionPref === 'expressive') ? 'expressive' : 'balanced'; if (m === 'expressive') delete TUNE.motionPref; }
         if (m !== TUNE.motion) { TUNE.motion = m; saveTune(); }
         applyTune();
+        ambSync();
       };
 
       /* ---------- 7.0.2: glass title bar with macOS-style controls ----------
@@ -24131,6 +24235,25 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
             ]
           });
         }
+        /* 8.1.0: shown only once the version number is 8.1.0 or newer */
+        if (!vsVerLt(APP_VERSION, '8.1.0')) {
+          VERSIONS.unshift({
+            v: '8.1.0', date: '2026-11-13', title: 'Cursor light, quality fixes and Lite effects',
+            groups: [
+              ['Cursor light (website and desktop)', [
+                'A soft multi-colour light now follows your mouse, behind the panels, on every page. It uses your theme colours and never blocks clicks or the piano',
+                'Settings → Graphics → Cursor light: choose the light’s size (200–900 px) and strength (0–150%). 0% turns it off, and Reset light brings back the defaults',
+                'It follows the quality preset: off on Low, gentle on Medium, fuller on High and Ultra. It is also off in Lite effects, Calm mode, Motion Off or Reduced, and high contrast',
+                'The soft light inside each panel is stronger on High and Ultra'
+              ]],
+              ['Quality and motion fixes', [
+                'Choosing Medium, High or Ultra now switches Lite effects off. Lite effects overrides every quality preset, so Ultra used to look unchanged while it was on',
+                'Settings → Graphics shows a warning, with a Turn off Lite effects button, whenever Lite effects is on',
+                'Choosing Low no longer loses your Expressive motion setting: choosing High or Ultra again brings Expressive back instead of Balanced'
+              ]]
+            ]
+          });
+        }
         sortVersions();
         // the matching Help note (also only from 8.0.0 on; desktop-only features are left out of the website)
         const hp = document.getElementById('p-help');
@@ -24142,6 +24265,10 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
             '<li><b>Statistics → Sung Note Statistics:</b> every stable note you sing or hum is counted once (Voice Studio, Singing style; speaking is never counted). Find the <b>Total notes sung</b> card with the other Voice Statistics cards, then the Sung Note Statistics section just above Key Statistics: charts for the most sung notes, pitch classes, octaves and activity over time, and a table you can sort by any column. The period box at the top applies to all of it. Note names are the nearest piano note to your pitch, an estimate and not what you meant to sing. These figures are separate from the piano Key Statistics, are included in backups, and Clear Notes in Voice Studio never removes them.</li>' +
             '<li><b>Settings → Appearance &amp; layout → Font:</b> search 88 bundled fonts and 12 Windows fonts, preview one in the sample line, then press Apply font. Reset font brings back the app’s own font.</li>' : '') +
             '<li><b>Statistics:</b> the page has two separate sections, Voice Statistics and Key Statistics.</li></ul></div>');
+        if (hp && !vsVerLt(APP_VERSION, '8.1.0')) hp.insertAdjacentHTML('beforeend', '<div class="v71card" id="help810" style="margin-top:14px"><h3 style="margin:0 0 8px">New in 8.1.0</h3><ul style="margin:0;padding-left:20px">' +
+          '<li><b>Cursor light:</b> a soft colour light follows your mouse. Choose its <b>size</b> and <b>strength</b> in <b>Settings → Graphics → Cursor light</b> (0% turns it off; Reset light restores the defaults).</li>' +
+          '<li><b>Lite effects:</b> this switch in the piano toolbar overrides every quality preset (flat panels, no glow, no cursor light). Picking Medium, High or Ultra now switches it off for you, and Settings → Graphics warns you while it is on.</li>' +
+          '<li><b>Low then Ultra:</b> your Expressive motion setting is remembered and comes back when you choose a higher quality.</li></ul></div>');
         // the tour: one focused step on the Statistics tab (the Windows app only, where the feature exists)
         if (D75) TOUR.splice(Math.max(0, TOUR.length - 1), 0, ['.tab[data-tab=keys]', '🎤 Sung Note Statistics', 'Statistics shows how many notes you have sung: a Total notes sung card, then charts and a table for each note. Pick the period at the top. Notes are nearest-note estimates from Voice Studio’s Singing style.']);
       }

@@ -1,0 +1,36 @@
+# Builds the Tauri 2 version of Piano Logger on GitHub's Windows computer and publishes the installer as a release.
+# Put the "Piano-Logger-tauri" folder at the top of the Piano_Logger repository and this file in .github/workflows/.
+# Run it from the repository's Actions tab: "Build Windows app (Tauri)" -> "Run workflow".
+# The installer is uploaded as Piano-Logger-Setup.exe, the name the website's "Download app" button links to.
+name: Build Windows app (Tauri)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: Piano-Logger-tauri
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install the build tools
+        run: npm ci || npm install
+      - name: Build the app and the installer (the newest index.html is copied in first)
+        run: npx tauri build
+      - name: Publish it as a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          P=$(grep -o "const APP_VERSION = '[0-9.]*'" web/index.html | grep -o "[0-9.]*'" | tr -d "'")
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe Piano-Logger-Setup.exe
+          NOTES="Piano Logger $V for Windows 10 and 11 (64-bit), built with Tauri 2. Download Piano-Logger-Setup.exe and open it. Page version $P."
+          gh release create "app-v$V" Piano-Logger-Setup.exe --title "Piano Logger $V for Windows" --notes "$NOTES" --latest \
+            || gh release upload "app-v$V" Piano-Logger-Setup.exe --clobber

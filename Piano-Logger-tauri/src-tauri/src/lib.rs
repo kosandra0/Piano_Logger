@@ -23,6 +23,7 @@ use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
 const SITE: &str = "https://kosandra0.github.io/Piano_Logger/"; // the website the app updates its page from
+mod bundled; // v7.5.0: the 50 profile pictures and 6 quest icons, built into the app
 const SCHEME: &str = "pianologger";
 const BRIDGE: &str = include_str!("bridge.js");
 const KEEP_BACKUPS: usize = 30;
@@ -332,6 +333,37 @@ fn sf_open(app: AppHandle, st: State<AppState>) -> Res<()> {
     app.opener().open_path(st.p.sf.display().to_string(), None::<&str>).map_err(err)
 }
 
+// v7.5.0: Accumulated Notes export — the user picks the folder and file name in a Save dialog (only the
+// notes export names are accepted; the file is written only to the path the user picked)
+#[tauri::command]
+async fn save_export(name: String, text: String, app: AppHandle) -> Res<String> {
+    let ok = name.starts_with("piano-logger-notes-")
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.')
+        && (name.ends_with(".json") || name.ends_with(".txt") || name.ends_with(".md"));
+    if !ok {
+        return Err("Bad export name".into());
+    }
+    let (label, exts): (&str, &[&str]) = if name.ends_with(".json") {
+        ("JSON", &["json"])
+    } else if name.ends_with(".txt") {
+        ("Text", &["txt"])
+    } else {
+        ("Markdown", &["md"])
+    };
+    let picked = app
+        .dialog()
+        .file()
+        .set_title("Save accumulated notes")
+        .set_file_name(&name)
+        .add_filter(label, exts)
+        .blocking_save_file();
+    let Some(picked) = picked else {
+        return Ok(String::new()); // cancelled
+    };
+    let path = picked.into_path().map_err(err)?;
+    fs::write(&path, text.as_bytes()).map_err(err)?;
+    Ok(path.display().to_string())
+}
 #[tauri::command]
 fn bk_save(name: String, text: String, st: State<AppState>) -> Res<String> {
     bk_name(&name)?;
@@ -377,6 +409,29 @@ fn bk_abort(id: String, st: State<AppState>) -> bool {
     drop(b.fh);
     let _ = fs::remove_file(&b.part);
     true
+}
+// v8.0.1: "Create backup file" — the user picks where the file is saved (Save dialog). Returns the id of the
+// piece-by-piece write (bk_write, then bk_end, which returns the chosen path), or "" if the dialog was cancelled.
+#[tauri::command]
+async fn bk_pick(name: String, app: AppHandle) -> Res<String> {
+    bk_name(&name)?;
+    let picked = app
+        .dialog()
+        .file()
+        .set_title("Save backup")
+        .set_file_name(&name)
+        .add_filter("Piano Logger backup", &["json"])
+        .blocking_save_file();
+    let Some(picked) = picked else {
+        return Ok(String::new()); // cancelled
+    };
+    let file = picked.into_path().map_err(err)?;
+    let part = std::path::PathBuf::from(format!("{}.part", file.display()));
+    let fh = fs::File::create(&part).map_err(err)?;
+    let id = format!("{:x}{:x}", now_ms(), std::process::id() ^ (now_ms() as u32));
+    let st = app.state::<AppState>();
+    st.bk.lock().unwrap().insert(id.clone(), Backup { file, part, fh });
+    Ok(id)
 }
 #[derive(Serialize)]
 struct BkList {
@@ -607,10 +662,12 @@ fn repair_storage(app: AppHandle, st: State<AppState>) -> Res<()> {
 // No frames, plugins, forms or <base>: remote websites cannot be embedded in the app window.
 // 7.3: blob: scripts for Voice Studio's audio-thread module (an AudioWorklet the page builds from its own inline code;
 // worklets follow script-src). This adds nothing the page could not already do with 'unsafe-inline'/'unsafe-eval'.
+// 8.0.0: no font service is allowed any more. Every font the app uses is built in (bundled/fonts, served by this same
+// handler), so the Google Fonts hosts were removed from style-src and font-src.
 const CSP: &str = "default-src 'self'; \
 script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; \
-style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
-font-src 'self' data: https://fonts.gstatic.com; \
+style-src 'self' 'unsafe-inline'; \
+font-src 'self' data:; \
 img-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; \
 connect-src 'self' ipc: http://ipc.localhost data: blob: https://tonejs.github.io https://gleitz.github.io https://kosandra0.github.io; \
 frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
@@ -623,6 +680,14 @@ fn page_response(st: &AppState, path: &str) -> http::Response<Vec<u8>> {
             .header(http::header::CACHE_CONTROL, "no-store")
             .header("Content-Security-Policy", CSP)
             .body(html)
+            .unwrap();
+    }
+    if let Some(bytes) = bundled::get(path) {
+        let mime = if path.ends_with(".woff2") { "font/woff2" } else if path.ends_with(".webp") { "image/webp" } else { "image/png" };
+        return http::Response::builder()
+            .header(http::header::CONTENT_TYPE, mime)
+            .header(http::header::CACHE_CONTROL, "max-age=86400")
+            .body(bytes.to_vec())
             .unwrap();
     }
     http::Response::builder().status(404).header(http::header::CONTENT_TYPE, "text/plain").body(b"Not found".to_vec()).unwrap()
@@ -647,7 +712,7 @@ pub fn run() {
             page_response(&st, req.uri().path())
         })
         .invoke_handler(tauri::generate_handler![
-            app_info, sf_list, sf_add, sf_read, sf_remove, sf_open, bk_save, bk_begin, bk_write, bk_end, bk_abort, bk_list, bk_open,
+            app_info, sf_list, sf_add, sf_read, sf_remove, sf_open, save_export, bk_save, bk_begin, bk_pick, bk_write, bk_end, bk_abort, bk_list, bk_open,
             win_ontop, app_startup, upd_store, app_restart, open_data_dir, repair_storage,
             win_state, win_minimize, win_toggle_max, win_close, win_drag, app_close_to_tray, app_quit,
             bridge_send, bridge_release_all, bridge_foreground, bridge_focus_target, bridge_status

@@ -3,12 +3,22 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 8.1.0 — 2026-11-13 · Cursor light, quality fixes and Lite effects
+
+### Cursor light (website and desktop)
+- A soft multi-colour light now follows your mouse, behind the panels, on every page. It uses your theme colours, moves smoothly, and never blocks clicks, the piano or MIDI.
+- **Settings → Graphics → Cursor light:** choose the light's **size** (200–900 px) and **strength** (0–150%). 0% turns it off; **Reset light** restores the defaults (520 px, 100%). Both values are kept in the existing graphics settings (new optional keys `ambSize` and `ambStr`); no existing data or setting is changed.
+- It follows the quality preset: off on Low, gentle on Medium, fuller on High and Ultra (Custom follows Glow strength). It is also off with Lite effects, Calm mode, Motion Off or Reduced, high contrast, and the system's reduce-motion setting (unless you chose to play animations anyway). Changing quality applies it at once, no restart.
+- The soft light inside each panel is stronger on High and Ultra.
+
+### Quality and motion fixes
+- **Lite effects** (the switch in the piano toolbar) overrides every quality preset: flat panels, no glass blur, no glow, no cursor light. Choosing Medium, High or Ultra now switches it off and tells you; before, Ultra looked unchanged while Lite effects was on. Low leaves it as it was.
+- Settings → Graphics shows a warning with a **Turn off Lite effects** button while it is on.
+- Choosing Low no longer loses your **Expressive** motion setting. It is remembered (new optional key `motionPref` in the existing Theme Studio settings) and comes back when you choose Medium, High or Ultra, instead of becoming Balanced. Picking a Motion level yourself clears the memory.
+
 ## 8.0.2 — 2026-11-11 · Website backup Save dialog
 
-### Backups (website)
-- On the website, **Create backup file** opens the browser Save dialog straight away when you click it. Before, the dialog could fail after the backup was built ("Must be handling a user gesture").
-- Cancelling the dialog saves nothing.
-- The Windows app is unchanged from 8.0.1 (it has the same Save dialog).
+- On the website, **Create backup file** opens the Save dialog straight away, when you click it. Cancelling saves nothing. The Windows app is unchanged from 8.0.1.
 
 ## 8.0.1 — 2026-11-11 · Backup save location
 
