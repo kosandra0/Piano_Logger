@@ -433,6 +433,60 @@ async fn bk_pick(name: String, app: AppHandle) -> Res<String> {
     st.bk.lock().unwrap().insert(id.clone(), Backup { file, part, fh });
     Ok(id)
 }
+// v9.0.0: Sheet Music — "Save MIDI…" and "Export PDF…" open a Save dialog where the user picks the folder and file
+// name. Step 1 (music_pick) shows the dialog and remembers only the path the user picked; step 2 (music_write) writes
+// the bytes to that path (and nowhere else). The page cannot name a folder: the suggested name is checked here.
+static MUSIC: std::sync::OnceLock<Mutex<HashMap<String, PathBuf>>> = std::sync::OnceLock::new();
+fn music_name(name: &str, kind: &str) -> Res<()> {
+    let n = name.chars().count();
+    let bad = |c: char| c.is_control() || matches!(c, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|');
+    let ext_ok = match kind {
+        "mid" => name.to_ascii_lowercase().ends_with(".mid") || name.to_ascii_lowercase().ends_with(".midi"),
+        "pdf" => name.to_ascii_lowercase().ends_with(".pdf"),
+        _ => false,
+    };
+    if n < 5 || n > 150 || name.starts_with('.') || name.contains("..") || name.chars().any(bad) || !ext_ok {
+        return Err("Bad file name".into());
+    }
+    Ok(())
+}
+#[tauri::command]
+async fn music_pick(name: String, kind: String, app: AppHandle) -> Res<String> {
+    music_name(&name, &kind)?;
+    let (title, label, exts): (&str, &str, &[&str]) =
+        if kind == "pdf" { ("Export sheet music as PDF", "PDF document", &["pdf"]) } else { ("Save MIDI file", "MIDI file", &["mid", "midi"]) };
+    let picked = app.dialog().file().set_title(title).set_file_name(&name).add_filter(label, exts).blocking_save_file();
+    let Some(picked) = picked else {
+        return Ok(String::new()); // cancelled
+    };
+    let mut file = picked.into_path().map_err(err)?;
+    let ext = file.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
+    let want_ok = if kind == "pdf" { ext == "pdf" } else { ext == "mid" || ext == "midi" };
+    if !want_ok {
+        let mut s = file.into_os_string();
+        s.push(if kind == "pdf" { ".pdf" } else { ".mid" });
+        file = PathBuf::from(s);
+    }
+    let id = format!("m{:x}{:x}", now_ms(), std::process::id() ^ (now_ms() as u32));
+    MUSIC.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap().insert(id.clone(), file);
+    Ok(id)
+}
+#[tauri::command]
+fn music_write(request: Request<'_>) -> Res<String> {
+    let id = request.headers().get("x-music-id").and_then(|v| v.to_str().ok()).ok_or("Missing id")?.to_string();
+    let InvokeBody::Raw(bytes) = request.body() else { return Err("Expected raw bytes".into()) };
+    if bytes.len() > 200 * 1024 * 1024 {
+        return Err("File too large".into());
+    }
+    let file = MUSIC.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap().remove(&id).ok_or("This save was already finished")?;
+    let part = PathBuf::from(format!("{}.part", file.display()));
+    fs::write(&part, bytes).map_err(err)?;
+    if let Err(e) = fs::rename(&part, &file) {
+        let _ = fs::remove_file(&part);
+        return Err(err(e));
+    }
+    Ok(file.display().to_string())
+}
 #[derive(Serialize)]
 struct BkList {
     count: usize,
@@ -714,7 +768,7 @@ pub fn run() {
             page_response(&st, req.uri().path())
         })
         .invoke_handler(tauri::generate_handler![
-            app_info, sf_list, sf_add, sf_read, sf_remove, sf_open, save_export, bk_save, bk_begin, bk_pick, bk_write, bk_end, bk_abort, bk_list, bk_open,
+            app_info, sf_list, sf_add, sf_read, sf_remove, sf_open, save_export, bk_save, bk_begin, bk_pick, bk_write, bk_end, bk_abort, bk_list, bk_open, music_pick, music_write,
             win_ontop, app_startup, upd_store, app_restart, open_data_dir, repair_storage,
             win_state, win_minimize, win_toggle_max, win_close, win_drag, app_close_to_tray, app_quit,
             bridge_send, bridge_release_all, bridge_foreground, bridge_focus_target, bridge_status

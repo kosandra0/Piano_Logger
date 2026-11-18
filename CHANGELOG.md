@@ -3,6 +3,29 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 9.0.0 — 2026-11-18 · Sheet Music: score, PDF, falling notes and a sight-reading course
+
+Released 2026-11-18 as the Windows app `app-v9.0.0` and on the website.
+
+### New: Sheet Music workspace (menu → Create → Sheet Music)
+- Five sections: **Library**, **Recorder**, **Score**, **MIDI → PDF** and **Sight reading**. A transport bar (Play/Pause, Stop, position, speed 50–150%, loop, sound, falling notes) stays at the top while a piece is open.
+- **Recorder** (moved from Studio, same take editor with timeline, loop, trim, saved takes and “Practice this take”):
+  - **Save MIDI…** opens a Save dialog to choose the folder and file name. In the Windows app this is a native dialog; in Chrome/Edge the browser's file picker; other browsers fall back to the Downloads folder and say so. Cancelling keeps the take. File names are cleaned (no `\ / : * ? " < > |`, at most 120 characters, Unicode kept).
+  - Takes now keep the sustain pedal (CC64) and program changes, and note times come from the MIDI event's own timestamp, so chord notes stay together even when the page is busy.
+  - **Import MIDI…**, **Open as a score**, **Save to library**, **Falling notes** and **Convert to PDF** for the take.
+- **MIDI files:** a new reader and writer. Reads formats 0 and 1 (and 2), running status, note-on with velocity 0, tempo changes, time and key signatures, program changes, controllers, track names; damaged or cut-off files open as far as they can be read with a message; random bytes are refused with a clear message. Writes format 1 (a tempo/time/key track plus one track per part) with programs and the sustain pedal. A written file reads back with the same notes, velocities and timing.
+- **Playback:** the file's own instruments (General MIDI programs) or **one instrument for all**, chosen from a searchable, grouped list of every sound the app can play (built-in sounds, grand pianos, the 128 General MIDI instruments, your SoundFonts and Synth Lab sounds). Choosing one plays a short preview. The sustain pedal in a file holds notes as it should. Percussion (channel 10) is not played. Stop, pause, seek, speed changes, leaving the page and closing the app release every note. **Playing a file never adds key presses to your statistics.**
+- **Score:** a grand staff drawn as sharp vector graphics: treble and bass clefs, brace, key and time signatures, bar lines and numbers, ledger lines, sharps/flats/naturals (remembered within a bar), notes from whole to 32nd, dots, ties across bar lines, beams, flags, rests, triplets, optional chord names (C, Am, G7, …) and note names. Controls: rhythm grid (automatic, quarter … 32nd, triplets, finest), tempo for free recordings, hand split, layout (grand staff, one staff per track, a single track), key (automatic or chosen), sharps or flats, zoom/fit width, follow playback. The note being played is highlighted. These settings change only how the music is written, never the sound or the MIDI file.
+- **MIDI → PDF:** a real vector PDF (text stays text) with as many pages as needed; A4 or Letter, portrait or landscape, small/normal/large staff, title and composer line, page numbers and title on every page; whole systems never split across pages. Page previews (first six pages).
+- **Falling notes:** a full-window view with a keyboard at the bottom and falling bars that land on their keys at the right moment, in hand or track colours, with play/pause, seek, speed, key range and look-ahead. It shares one clock with the sound and the score cursor. Esc closes it.
+- **Sight reading:** a course in six stages (first contact with the staff, rhythm, moving around the keyboard, two hands, intermediate, advanced) with 29 lessons. Each lesson explains one idea, shows a sheet and asks you to play it on your MIDI keyboard. Every sheet is newly written by rules (key, scale, chord progression, a two-bar motif repeated with variation, phrase endings on the home note, allowed rhythms and range) and checked so it is valid and not a recent repeat. Modes: **at my own pace** (waits for each note or chord) and **with the beat** (count-in, timing window, timing offset for slow devices). Kind, specific hints (“That note is one step too high…”), a hint button that lights the key, Listen, Easier, Harder, Same again, New exercise, First phrase only, Keep this sheet, and a summary with what to review. Progress is saved.
+- **Storage:** a new separate database `PianoLoggerSheetMusic` (library and learning progress) and the setting `pll.sheetMusic`. The lifetime log and its database are not changed. Library and progress can be exported and imported as one `.json` file (importing adds, never replaces).
+
+### Moved and improved
+- The **calendar heatmap** moved from Studio to the top of **Statistics** as “Practice activity”, with a legend and a read-out of the day under the pointer, tapped, or chosen with the arrow keys. Same data and colours as before.
+- The small **staff** moved from Studio to Sheet Music → Recorder (“Live staff”) and only draws while it is visible (it used to redraw for every note even when hidden).
+- **Version chip:** a filled inside in the theme's own colours with a calm accent edge instead of the pulsing rainbow ring with a black centre; the edge turns slowly only when motion is allowed (not in Calm, Lite, reduced motion or animations off); high-contrast themes get a plain chip.
+
 ## 8.1.2 — 2026-11-13 · 34 new Carbon & Steel themes and gently animated backgrounds
 
 ### Themes
@@ -473,14 +496,15 @@ Measured in Chrome on this PC (GeForce GT 710), Aurora Glass theme, glow notes, 
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
+| 9.0.0 | 2026-11-18 | Tauri 2.12.5 (WebView2) | Page 9.0.0 (Sheet Music). New Rust commands `music_pick` / `music_write`: a native Save dialog for `.mid` and `.pdf` files (the page only suggests a checked file name; the file is written only to the path you pick). Released 2026-11-18 (`app-v9.0.0`). |
 | 7.4.1 | 2026-11-04 | Tauri 2.12.5 (WebView2) | MIDI octave range (MIDI 0–127) and Roblox sustain (CC64) fixes (page 7.4.1). No change to the app's Rust code. Built locally, not published yet. |
 | 7.4.0 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Voice activity tracking and analytics (page 7.4.0). No change to the app's Rust code. Built locally, not published yet. |
 | 7.3.5 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Release-history ordering fixed; branding kept. Built locally, not published yet. |
 | 7.3.4 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Branding & maintenance: new logo in the sidebar and app icons. Page 7.3.4. Built locally, not published yet. |
 | 7.3.3 | 2026-11-02 | Tauri 2.12.5 (WebView2) | No code change. Page 7.3.3 (animated islands, sliding sections). Built locally, Published 2026-11-02 as `app-v7.3.3`. |
 | 7.3.2 | 2026-11-02 | Tauri 2.12.5 (WebView2) | HTML5 drag and drop in the page works (`disable_drag_drop_handler`). Page 7.3.2. Published 2026-11-02 as `app-v7.3.2`. |
-| 7.3.1 | 2026-11-02 | Tauri 2.12.5 (WebView2) | Page 7.3.1 (recording player, Stop fix). No change to the app's code. Built locally, not published. |
-| 7.3.0 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Voice Studio support: `PermissionKind::Microphone` allowed for the app's own page (other sites still get WebView2's prompt); CSP `script-src` adds `blob:` for the AudioWorklet. Page 7.3. Built locally, not published. |
+| 7.3.1 | 2026-11-02 | Tauri 2.12.5 (WebView2) | Page 7.3.1 (recording player, Stop fix). No change to the app's code. Released 2026-11-18 (`app-v9.0.0`). |
+| 7.3.0 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Voice Studio support: `PermissionKind::Microphone` allowed for the app's own page (other sites still get WebView2's prompt); CSP `script-src` adds `blob:` for the AudioWorklet. Page 7.3. Released 2026-11-18 (`app-v9.0.0`). |
 | 7.2.2 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Page 7.2.2 (glass drop-down menus). No change to the app itself. |
 | 7.2.1 | 2026-11-01 | Tauri 2.12.5 (WebView2) | "Go to Roblox": `bridge_focus_target` brings the target program's window to the front. Page 7.2.1. |
 | 7.2.0 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Optional close-to-tray: the window hides, a tray icon (Open / Quit) appears, WebView2 is set invisible with a low memory target, and the bridge refuses key presses (`app-in-tray`). Alt+F4 / taskbar close follow the setting; a second start brings the window back. Page 7.2. |

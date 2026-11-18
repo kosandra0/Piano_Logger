@@ -6,9 +6,11 @@ A single-file, browser-based piano MIDI visualizer and lifetime key logger. Plug
 
 **Windows app:** [Download Piano-Logger-Setup.exe](https://github.com/kosandra0/Piano_Logger/releases/latest/download/Piano-Logger-Setup.exe) (Windows 10 & 11, 64-bit)
 
-## 🆕 What's new in 8.0.2 (released 2026-11-11)
+## 🆕 What's new in 9.0.0 (released 2026-11-18)
 
-- **Website backup Save dialog:** on the website, "Create backup file" now opens the Save dialog straight away when you click it (Chrome and Edge). Cancelling saves nothing. The Windows app is unchanged from 8.0.1.
+- **🎼 Sheet Music** (menu → Create): record or import MIDI files, read them as a proper grand-staff score (chord names and note names optional), export a multi-page vector **PDF**, save `.mid` files where you choose, play them back with their own instruments or any sound the app has, and watch them as **falling notes**.
+- **🎓 Sight reading:** a 29-lesson course from the first notes on the staff to two-hand reading. Every practice sheet is new and musical, and your MIDI keyboard is checked note by note, at your own pace or with the beat, with friendly hints.
+- The calendar heatmap moved to **Statistics → Practice activity**; the version chip got a cleaner look.
 
 ## 🆕 What's new in 8.0.1 (released 2026-11-11)
 
@@ -60,7 +62,8 @@ Download the Windows app from the [latest release](https://github.com/kosandra0/
 - **🗕 System tray** *(Windows app)* — optionally keep Piano Logger running in the tray when you close the window: it keeps logging with very little memory and no graphics (the bridge does not press keys while in the tray)
 - **26 calm animated roll backgrounds** (rain, snow, blossoms, a moonlit lake, lanterns, aurora-like light and more) with a background studio to preview and customise them
 - **Dashboards & analytics** — lifetime stats, per-key breakdowns, speed graphs, dynamics and velocity analysis, hand-balance insights, and a "Year in Review" image
-- **Chord & key detection**, **practice mode** with `.mid` files, **ear training**, **recorder & MIDI export**, **metronome with timing analysis**
+- **🎼 Sheet Music** *(new in 9.0.0)* — MIDI recorder with Save As, MIDI import/export, a readable grand-staff score, multi-page PDF export, a falling-note visualizer for any file, and a sight-reading course with generated exercises checked through your MIDI keyboard
+- **Chord & key detection**, **practice mode** with `.mid` files, **ear training**, **metronome with timing analysis**
 - **Sound routing** to an external synth or VST host through a virtual MIDI cable (e.g. loopMIDI)
 - **Full data ownership** — export your whole log as CSV or JSON, backups that also carry your settings, themes and profile, restore, automatic daily backups (Windows app)
 - **Theme Studio** — 182 themes with live preview, favourites, your own accent colour, glass/blur/glow/motion dials; frosted-glass drop-down menus in every theme

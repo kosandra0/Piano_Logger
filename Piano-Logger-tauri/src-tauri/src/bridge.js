@@ -50,6 +50,14 @@
     }),
     // v7.5.0: Save dialog for the Accumulated Notes export; resolves to the saved path, or '' if cancelled
     saveExport: function (name, text) { return inv('save_export', { name: String(name), text: String(text) }); },
+    // v9.0.0: Sheet Music — Save dialog for .mid / .pdf; resolves to the saved path, or '' when cancelled
+    music: Object.freeze({
+      save: async function (name, kind, bytes) {
+        var id = await inv('music_pick', { name: String(name), kind: kind === 'pdf' ? 'pdf' : 'mid' });
+        if (!id) return '';
+        return inv('music_write', bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), { headers: { 'x-music-id': String(id) } });
+      }
+    }),
     setOnTop: function (on) { return inv('win_ontop', { on: !!on }); },
     setStartup: function (on) { return inv('app_startup', { on: !!on }); },
     // 7.2: closing the window keeps Piano Logger running in the system tray (logging only, no key presses)
