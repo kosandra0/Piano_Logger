@@ -443,6 +443,10 @@ fn music_name(name: &str, kind: &str) -> Res<()> {
     let ext_ok = match kind {
         "mid" => name.to_ascii_lowercase().ends_with(".mid") || name.to_ascii_lowercase().ends_with(".midi"),
         "pdf" => name.to_ascii_lowercase().ends_with(".pdf"),
+        // v9.1.0: piano-cover videos from the falling-notes view
+        "mp4" => name.to_ascii_lowercase().ends_with(".mp4"),
+        "webm" => name.to_ascii_lowercase().ends_with(".webm"),
+        "md" => name.to_ascii_lowercase().ends_with(".md"),
         _ => false,
     };
     if n < 5 || n > 150 || name.starts_with('.') || name.contains("..") || name.chars().any(bad) || !ext_ok {
@@ -453,18 +457,23 @@ fn music_name(name: &str, kind: &str) -> Res<()> {
 #[tauri::command]
 async fn music_pick(name: String, kind: String, app: AppHandle) -> Res<String> {
     music_name(&name, &kind)?;
-    let (title, label, exts): (&str, &str, &[&str]) =
-        if kind == "pdf" { ("Export sheet music as PDF", "PDF document", &["pdf"]) } else { ("Save MIDI file", "MIDI file", &["mid", "midi"]) };
+    let (title, label, exts): (&str, &str, &[&str]) = match kind.as_str() {
+        "pdf" => ("Export sheet music as PDF", "PDF document", &["pdf"]),
+        "mp4" => ("Save piano video", "MP4 video", &["mp4"]),
+        "webm" => ("Save piano video", "WebM video", &["webm"]),
+        "md" => ("Save Markdown file", "Markdown text", &["md"]),
+        _ => ("Save MIDI file", "MIDI file", &["mid", "midi"]),
+    };
     let picked = app.dialog().file().set_title(title).set_file_name(&name).add_filter(label, exts).blocking_save_file();
     let Some(picked) = picked else {
         return Ok(String::new()); // cancelled
     };
     let mut file = picked.into_path().map_err(err)?;
     let ext = file.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
-    let want_ok = if kind == "pdf" { ext == "pdf" } else { ext == "mid" || ext == "midi" };
+    let want_ok = match kind.as_str() { "pdf" => ext == "pdf", "mp4" => ext == "mp4", "webm" => ext == "webm", "md" => ext == "md", _ => ext == "mid" || ext == "midi" };
     if !want_ok {
         let mut s = file.into_os_string();
-        s.push(if kind == "pdf" { ".pdf" } else { ".mid" });
+        s.push(match kind.as_str() { "pdf" => ".pdf", "mp4" => ".mp4", "webm" => ".webm", "md" => ".md", _ => ".mid" });
         file = PathBuf::from(s);
     }
     let id = format!("m{:x}{:x}", now_ms(), std::process::id() ^ (now_ms() as u32));
@@ -475,7 +484,7 @@ async fn music_pick(name: String, kind: String, app: AppHandle) -> Res<String> {
 fn music_write(request: Request<'_>) -> Res<String> {
     let id = request.headers().get("x-music-id").and_then(|v| v.to_str().ok()).ok_or("Missing id")?.to_string();
     let InvokeBody::Raw(bytes) = request.body() else { return Err("Expected raw bytes".into()) };
-    if bytes.len() > 200 * 1024 * 1024 {
+    if bytes.len() > 600 * 1024 * 1024 {
         return Err("File too large".into());
     }
     let file = MUSIC.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap().remove(&id).ok_or("This save was already finished")?;

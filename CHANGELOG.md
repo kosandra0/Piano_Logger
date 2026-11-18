@@ -3,9 +3,69 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## 9.1.0 — 2026-11-18 · Light and dark sheet music, 3D hands, piano videos and a bigger heatmap
+
+Released 2026-11-18 as the Windows app `app-v9.1.0` and on the website (the earlier "not published" wording was correct until the owner approved publishing on 2026-11-18).
+
+### Sheet music and PDF
+- **Light or Dark score** (Sheet Music → Score → Appearance, and MIDI → PDF → Appearance). Dark is a real charcoal page with ivory notes in the saved PDF (not a viewer setting); Light is white paper with black notes. The choice is saved for Sheet Music only and never changes the app theme. Staff lines, chord names and the footer have their own softer tones in both looks.
+- **Rests are engraved properly:** every rest starts on a multiple of its own length and never crosses a beat; no dotted rests between beats. *Cause of the old look (verified):* v9.0.0 allowed dotted rests to start off the beat, which produced strings like “𝄿· 𝄿 𝄿· 𝄿” (the owner's reference page 4).
+- **Combine empty bars** (on by default): bars that are silent in every staff are written as one bar with the number of bars above it (the silent lead-in of a recording becomes one “2” bar). No bar is removed; bar numbers and timing stay exact. Turn it off to show every bar.
+- **Balanced pages:** systems are shared out evenly between pages, and a slightly tighter line spacing (never under 88 %) is used if it saves a whole page. The owner's 15-bar reference went from 4 pages (last page two lines) to 3 balanced pages (5 / 5 / 4 lines).
+- **Chord names never touch the music:** each name is placed above the highest note, stem or beam under it, and names on one line never overlap.
+- Score and PDF controls grouped into tidy cards (Reading & layout, Show, Appearance, View / Paper).
+
+### Falling notes
+- Redesigned scene: softly lit rounded keys, pressed keys move down and take the hand colour, a gentle light above each sounding key, rounded note bars with a lit leading edge, octave guides, a progress line.
+- **Your own hand colours:** right-hand and left-hand colour pickers, five presets (Crimson / Periwinkle, Teal / Coral, Gold / Violet, Ice / Amber, Mint / Rose), colour by hand or by track, dark or light background, glow on/off, a contrast warning, Reset. Saved in `pll.visualizer` (separate from the theme and the recording).
+- **Hands (second pass, after the owner's reference video):** two life-size, see-through 3D hands (palm, thumb and four fingers with three joints each; a hand spans about 4 white keys) seen from a gentle top-down camera, drawn as one shape with a single clean outline, fading out towards the wrist, with finger numbers on the pressed keys. Styles: Hologram (glowing outline, light fill, soft scan lines), Glass, Silhouette, Sketch and Soft; own colour, see-through amount and size. Smooth motion: each finger eases from its resting place onto its key and back (smootherstep), presses in ~60 ms, and the hand glides between positions only after its notes are released. Positions are a pure function of playback time, so pause, seek, speed and loop stay in sync. **Fingering is a transparent rule-based guess**; a MIDI file does not record the performer's fingers. Quality Automatic / High / Low; Hands off keeps the 2D view.
+- **Six visualizer themes** (Aurora, Neon, Blocks, Ember, Midnight glass, Paper), each with its own notes (soft, outlined pill, flat block, hatched, glass), keyboard (classic, dark, warm) and suggested hand style, chosen from picture cards drawn by the real renderer in one ⚙ Settings drawer (themes, colours, hands, which hand plays, display). Panels slide in gently and stay still with reduced motion.
+- Toolbar in groups: Playback (with loop), View (keys, look-ahead, full screen), ⚙ Settings, ✋ Hands on/off, Export video. Toolbar text is only rewritten when it changes (steadier frames).
+
+### New: export a piano video (MP4)
+- **Export video…** in the falling-notes view records the scene (notes, keyboard, 3D hands) with the app's own sound into a real **MP4: H.264 video + AAC sound**, checked at run time (WebView2 / Chrome 126+). Quality 240p / 360p / 480p / 720p / 1080p; shape 16:9, 9:16 or 1:1 (re-composed, never stretched); 30 or 60 fps; optional title and performer. **The video has its own look settings with a live preview** (theme, colours, hands; remembered for the next video, never changing the screen). Size estimate shown first; recordings over ~550 MB are refused.
+- Recording is real time, from the start to the end (plus 1.2 s for the last notes to ring out). If the music normally goes to an external MIDI device, the video uses the built-in instrument and says so. Cancel stops at once and saves nothing. The app checks the finished file has a picture track (and a sound track when asked) before offering to save it, and records again by itself (up to two times) if the video encoder started late.
+- If a computer cannot record MP4, the file is saved honestly as **.webm** (never a WebM renamed to .mp4).
+- Desktop app: the native Save dialog now also accepts `.mp4` / `.webm` (Rust `music_pick` kinds `mp4` and `webm`; write limit raised from 200 MB to 600 MB).
+
+### Third pass (owner review, 2026-11-18)
+- **Keyboard size** in Falling notes: Notes used, 44, 61, 88 or 108 keys; the change glides (smootherstep, ~0.5 s) and the keys, notes and hands scale together (more keys → smaller hands).
+- **Hand motion:** a wave through the fingers (each finger starts towards its key 12 ms after the previous one; the press stays on the note time), the hand lifts a little while travelling and breathes slowly at rest.
+- **Press effects:** soft light, ring and sparks where notes land and a bright landing edge on the falling note — pure functions of time, so they are identical on screen and in the video; off in Low quality and Lite effects.
+- **Frame-exact MP4 export** (WebCodecs): *bug (VERIFIED on the owner's 720p file):* the real-time recorder dropped sound and picture on a slow PC (26.1 s of sound, 27.6 s of picture at 18.9 fps for a ~31 s recording), so the sound ran ahead and ended early. Now the music plays once while an AudioWorklet captures every sample with its audio-clock frame, then every video frame is drawn for its exact time and encoded with an exact timestamp, and a built-in MP4 writer joins H.264 and AAC. Tested: sound within ~10 ms of each note with no drift, picture frame-exact, both tracks the same length, 60 fps exports contain exactly 60.00 frames per second. The real-time recorder remains only as a fallback for WebViews without WebCodecs.
+- **Export dialog** sits on a dimmed, blurred backdrop over the whole visualizer (it used to overlap the toolbar); **drop-down menus** open inside full-screen views; the **instrument list** and the **Sheet Music playback bar** are solid (they let the page show through).
+- **Sight-reading course** reorganised: 5 levels, 7 modules, 48 lessons (was 29; old lesson ids and progress kept), a new minor-keys module (the generator now writes natural minor melodies with harmonic-minor dominant chords), 2/4, 12/8, more keys, intervals, longer pieces and an exam-style test; a **Practice** item per module and a **Mixed review** that write a new sheet every time from the lessons already passed; **Dark sheet**; a tidier lesson screen.
+
+### Fourth pass (owner review, 2026-11-18)
+- **MIDI → Markdown** (new tab beside MIDI → PDF): a plain-text .md in simple words — summary (key, tempo, length, chords used), a "how to read this" legend, a bar-by-bar table with each hand's note names and the chord written *under the exact notes* where it is played, the chord progression, and the music described in words. Simple / Detailed / Complete; letters, Do Re Mi or no octave numbers; # b or ♯ ♭; copy or save as .md (native Save dialog in the app).
+- **Smarter chord engine** (PDF and Markdown): notes weighted by length and beat position, key-aware choice between close candidates, beat-by-beat timeline with hysteresis (no flicker), triads, sevenths, sus, add9, sixths, diminished, augmented, power chords ("A power chord"), and slash chords (C/E).
+- **Firm panels:** the Settings drawer, Export video window and instrument list use their own solid, blurred style, so a skin's see-through .glass rules can no longer make them transparent. The export window blurs the scene behind it.
+- **Keyboard sizes and hands:** key proportions never stretch; 44 keys is centred at a natural size; hand size follows the key width (not too thin at 108, not flat at 44).
+- **16 visualizer themes** (6 neon dark, 5 calm, 5 classic), more calm note-colour presets, 8 hand-colour swatches, custom colour per hand.
+- **Four lifelike 3D hand models** — Realistic, Pianist, Sculpture, Anatomical — with a skin-tone choice.
+- **Fix which hand played which notes** (Falling notes → Settings): drag a box over notes and mark them Left or Right; applies to hands, colours, score and PDF; saved per piece on this computer; resettable.
+- **Video export in the background:** a bottom-right card with three steps, then the Save dialog; faster (CPU-canvas encode, lighter hand drawing, cached background) while sound, picture and frame rate stay exact.
+- **Start-up and exit screens** show the running version and a "what is new" line; Settings → Start-up & exit chooses 7 dark or 7 light themes (or Automatic), with previews.
+- Tests: new `tests/v910/pass4.test.js`; `viz`, `video` and `practice` tests updated (16 themes; the easiest practice lesson has only about ten possible sheets, so a repeat is allowed).
+
+### Fifth pass (owner review of the installed app, 2026-11-18)
+- **Fixed: exported videos had no hands** even with "Show hands" on. Cause: the video draws the hands on a half-size layer, and the hand's box was cut to the half-size layer using full-size numbers, so anything in the lower half of the picture (where the hands are) was cut to nothing. Hands now appear in every video for all nine hand styles; a new test counts the hand pixels in the video picture so this cannot return unnoticed.
+- **Fixed: dark outlines on the lifelike hands came out white** (a colour-reading helper had lost its backslashes).
+- **Panels now match the app's drop-down menus:** the Settings drawer, Export video window, instrument list and the toolbar use the same frosted glass (see-through, 28 px blur, the app's own colours, 14 px corners). Instrument rows are 9 px rounded, the row under the pointer or the chosen one gets the colour gradient, and the chosen one a tick, like the other drop-downs. Works in light themes, High contrast and No-blur modes.
+
+### Statistics and the whole app
+- **Practice activity heatmap:** 52 weeks by default (26 as an option), day squares sized from the card width (14–22 px; the grid scrolls sideways on a narrow window instead of shrinking), month and weekday labels, today marked, a summary (total presses, active days, best day). Same daily totals and dates as before.
+- **Comfort pass:** the smallest labels across the app (Overview stat labels, Profile achievements and XP, table headings, helper text) are lifted to 12–12.5 px; more room in table rows; one consistent focus ring for keyboard users; form fields at least 32 px high. Measured with an audit script: tiny labels (<11 px) on Overview 57 → 39, Statistics 27 → 15, History 9 → 0; short form fields on Practice 7 → 0.
+
+### Limitations (honest)
+- The hands are stylised and the fingering is a heuristic. Tested: single notes land within 12 % of a key width; on a very wide 7-key chord the thumb can be up to 42 % of a key width off.
+- Video export plays the music once in real time to record its sound (so it takes at least as long as the music) and keeps the recording in memory until it is saved (hence the 550 MB guard). Frame rate depends on the computer: 14–21 fps in the software-only test browser, about 18 fps measured in the desktop app on this PC at 240p (target 30).
+- Not tested on the owner's ST50 or GT 710 hardware in this session (simulated MIDI only).
+- The comfort pass lifted small text and spacing across the app but did not redesign individual pages.
+
 ## 9.0.0 — 2026-11-18 · Sheet Music: score, PDF, falling notes and a sight-reading course
 
-Released 2026-11-18 as the Windows app `app-v9.0.0` and on the website.
+Released 2026-11-18 as the Windows app `app-v9.0.0` and on the website (corrected 2026-11-18 in 9.1.0: this line said "not published").
 
 ### New: Sheet Music workspace (menu → Create → Sheet Music)
 - Five sections: **Library**, **Recorder**, **Score**, **MIDI → PDF** and **Sight reading**. A transport bar (Play/Pause, Stop, position, speed 50–150%, loop, sound, falling notes) stays at the top while a piece is open.
@@ -496,15 +556,16 @@ Measured in Chrome on this PC (GeForce GT 710), Aurora Glass theme, glow notes, 
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
-| 9.0.0 | 2026-11-18 | Tauri 2.12.5 (WebView2) | Page 9.0.0 (Sheet Music). New Rust commands `music_pick` / `music_write`: a native Save dialog for `.mid` and `.pdf` files (the page only suggests a checked file name; the file is written only to the path you pick). Released 2026-11-18 (`app-v9.0.0`). |
+| 9.1.0 | 2026-11-18 | Tauri 2.12.5 (WebView2) | Page 9.1.0 (Light/Dark score, 3D hands, MP4 export, larger heatmap). `music_pick` also accepts `mp4` / `webm` (native Save dialog for videos); `music_write` limit 600 MB. Released 2026-11-18 (`app-v9.1.0`). |
+| 9.0.0 | 2026-11-18 | Tauri 2.12.5 (WebView2) | Page 9.0.0 (Sheet Music). New Rust commands `music_pick` / `music_write`: a native Save dialog for `.mid` and `.pdf` files (the page only suggests a checked file name; the file is written only to the path you pick). Released 2026-11-18 (`app-v9.0.0`; corrected in 9.1.0, this row said "not published"). |
 | 7.4.1 | 2026-11-04 | Tauri 2.12.5 (WebView2) | MIDI octave range (MIDI 0–127) and Roblox sustain (CC64) fixes (page 7.4.1). No change to the app's Rust code. Built locally, not published yet. |
 | 7.4.0 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Voice activity tracking and analytics (page 7.4.0). No change to the app's Rust code. Built locally, not published yet. |
 | 7.3.5 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Release-history ordering fixed; branding kept. Built locally, not published yet. |
 | 7.3.4 | 2026-11-03 | Tauri 2.12.5 (WebView2) | Branding & maintenance: new logo in the sidebar and app icons. Page 7.3.4. Built locally, not published yet. |
 | 7.3.3 | 2026-11-02 | Tauri 2.12.5 (WebView2) | No code change. Page 7.3.3 (animated islands, sliding sections). Built locally, Published 2026-11-02 as `app-v7.3.3`. |
 | 7.3.2 | 2026-11-02 | Tauri 2.12.5 (WebView2) | HTML5 drag and drop in the page works (`disable_drag_drop_handler`). Page 7.3.2. Published 2026-11-02 as `app-v7.3.2`. |
-| 7.3.1 | 2026-11-02 | Tauri 2.12.5 (WebView2) | Page 7.3.1 (recording player, Stop fix). No change to the app's code. Released 2026-11-18 (`app-v9.0.0`). |
-| 7.3.0 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Voice Studio support: `PermissionKind::Microphone` allowed for the app's own page (other sites still get WebView2's prompt); CSP `script-src` adds `blob:` for the AudioWorklet. Page 7.3. Released 2026-11-18 (`app-v9.0.0`). |
+| 7.3.1 | 2026-11-02 | Tauri 2.12.5 (WebView2) | Page 7.3.1 (recording player, Stop fix). No change to the app's code. Built locally, not published. |
+| 7.3.0 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Voice Studio support: `PermissionKind::Microphone` allowed for the app's own page (other sites still get WebView2's prompt); CSP `script-src` adds `blob:` for the AudioWorklet. Page 7.3. Built locally, not published. |
 | 7.2.2 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Page 7.2.2 (glass drop-down menus). No change to the app itself. |
 | 7.2.1 | 2026-11-01 | Tauri 2.12.5 (WebView2) | "Go to Roblox": `bridge_focus_target` brings the target program's window to the front. Page 7.2.1. |
 | 7.2.0 | 2026-11-01 | Tauri 2.12.5 (WebView2) | Optional close-to-tray: the window hides, a tray icon (Open / Quit) appears, WebView2 is set invisible with a low memory target, and the bridge refuses key presses (`app-in-tray`). Alt+F4 / taskbar close follow the setting; a second start brings the window back. Page 7.2. |

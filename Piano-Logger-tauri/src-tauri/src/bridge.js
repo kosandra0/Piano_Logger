@@ -53,7 +53,7 @@
     // v9.0.0: Sheet Music — Save dialog for .mid / .pdf; resolves to the saved path, or '' when cancelled
     music: Object.freeze({
       save: async function (name, kind, bytes) {
-        var id = await inv('music_pick', { name: String(name), kind: kind === 'pdf' ? 'pdf' : 'mid' });
+        var id = await inv('music_pick', { name: String(name), kind: ({ pdf: 'pdf', mp4: 'mp4', webm: 'webm', md: 'md' })[kind] || 'mid' });
         if (!id) return '';
         return inv('music_write', bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), { headers: { 'x-music-id': String(id) } });
       }

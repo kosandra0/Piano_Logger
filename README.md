@@ -6,6 +6,30 @@ A single-file, browser-based piano MIDI visualizer and lifetime key logger. Plug
 
 **Windows app:** [Download Piano-Logger-Setup.exe](https://github.com/kosandra0/Piano_Logger/releases/latest/download/Piano-Logger-Setup.exe) (Windows 10 & 11, 64-bit)
 
+## 🆕 What's new in 9.1.0 (released 2026-11-18)
+
+Full list with causes and limits: [CHANGELOG.md](CHANGELOG.md#910--2026-11-18--light-and-dark-sheet-music-3d-hands-piano-videos-and-a-bigger-heatmap).
+
+- **🌗 Light or Dark sheet music:** pick the look above the score; the PDF you save uses it (charcoal pages with light notes, or white pages). Cleaner rests, chord names that never touch the notes, silent opening bars combined into one, and evenly filled pages.
+- **✋ 3D hands:** two life-size jointed hands play the notes on the falling-notes keyboard in time with the sound, with finger numbers on the pressed keys (the fingering is a best guess from the notes). Five see-through styles (Hologram, Glass, Silhouette, Sketch, Soft) and four lifelike models (Realistic, Pianist, Sculpture, Anatomical) with a skin-tone choice. Choose your own left- and right-hand colours, size and see-through amount. Motion is smooth: a wave through the fingers, a small lift while travelling, a slow "breathing" at rest, and soft light, rings and sparks where notes land.
+- **🎬 Export a piano video:** save the falling notes, keyboard and hands with the sound as a real MP4 (H.264 + AAC; 240p to 1080p; landscape, vertical or square; 30 or 60 fps; optional title and performer). Sound and picture are frame-exact (no drift, both tracks the same length). The video has its own look settings with a live preview. It is made **in the background** with a small progress card (three steps) while you keep using the app, then the Save dialog appears.
+- **📝 MIDI → Markdown:** a plain-words .md of any piece — note names for each hand, the chord written under the exact notes, summary and chord progression (Simple, Detailed or Complete; letters or Do Re Mi). A smarter chord engine (triads, sevenths, sus, add9, sixths, diminished, augmented, power chords and slash chords) also improves the PDF chord names.
+- **🛠 Fix which hand:** in Falling notes → Settings, drag a box over notes and mark them Left or Right. It changes the hands, colours, score and PDF, is remembered per piece, and can be reset.
+- **🎨 16 visualizer themes** (6 neon, 5 calm, 5 classic) in one Settings panel, peaceful note-colour presets and hand-colour swatches. Keyboard sizes: notes used, 44, 61, 88 or 108 keys, changing smoothly.
+- **🪟 One frosted-glass look:** the Settings drawer, Export window, instrument list and toolbar match the app's drop-down menus (see-through, blurred, rounded, with a colour-gradient row and a tick on the chosen item). Works in light themes, High contrast and No-blur.
+- **🚀 Start-up and exit screens** show the version and a "what is new" line; Settings → Start-up & exit has 7 dark and 7 light themes (or follow Windows).
+- **🎓 Sight-reading course** grown from 29 to 48 lessons in 5 levels and 7 modules, with a minor-keys module, practice sheets and a mixed review (your old progress is kept).
+- **📅 Bigger practice heatmap** (52 weeks, or 26) and easier-to-read small labels across the app.
+
+**🛠 Fixes in 9.1.0**
+- **Videos now show the hands.** A late-stage bug cut the hands out of exported videos (the video's lighter hand layer was clipped with full-size numbers, so hands in the lower half of the picture vanished). Fixed for all nine hand styles, with a new test that counts hand pixels in the video picture.
+- **Lifelike-hand outlines** were white instead of dark; fixed.
+- **Rests** are written properly (no off-beat dotted rests), the PDF no longer wastes a last page, and chord names no longer touch the notes.
+- **Videos no longer drift out of sync** on a slow PC (the old real-time recorder dropped sound and picture); the new exporter writes every frame and sample with an exact time.
+- **Menus and panels** open inside full-screen views, and the export window no longer overlaps the toolbar.
+
+**Honest limits:** the hands are stylised and the fingering is a rule-based guess; a video takes at least as long as the music to make; PDF text uses Western European letters; not tested on real ST50 / GT 710 hardware (MIDI was simulated).
+
 ## 🆕 What's new in 9.0.0 (released 2026-11-18)
 
 - **🎼 Sheet Music** (menu → Create): record or import MIDI files, read them as a proper grand-staff score (chord names and note names optional), export a multi-page vector **PDF**, save `.mid` files where you choose, play them back with their own instruments or any sound the app has, and watch them as **falling notes**.
