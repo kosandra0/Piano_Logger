@@ -19,6 +19,7 @@ use tauri::{
     AppHandle, Manager, State, Url, WebviewUrl, WebviewWindowBuilder,
 };
 mod bridge;
+mod oauth; // v9.2.0: reads the browser's return trip of a sign-in (pure, unit-tested)
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
@@ -721,6 +722,73 @@ fn repair_storage(app: AppHandle, st: State<AppState>) -> Res<()> {
     app.restart();
 }
 
+/* ---------- cloud sync: where Google's sign-in comes back to (v9.2.0) ---------- */
+// The page opens Google's sign-in in the system browser. When it finishes, the browser is sent to
+// http://127.0.0.1:<port>/cb?code=...&pl_state=... . Only this app listens there: on this computer only (loopback), for one
+// answer, for at most 3 minutes. The code alone is useless to anyone else: it can only be exchanged together with a secret
+// that never leaves the page (PKCE), and the page also checks that `pl_state` is the value it sent.
+static OAUTH_STOP: Mutex<Option<std::sync::Arc<std::sync::atomic::AtomicBool>>> = Mutex::new(None);
+#[derive(Serialize)]
+struct OauthBegin {
+    port: u16,
+}
+fn oauth_reply(mut s: std::net::TcpStream, status: &str, text: &str) {
+    let body = format!("<!doctype html><meta charset=\"utf-8\"><title>Piano Logger</title><body style=\"font:16px system-ui,sans-serif;background:#0b0b1a;color:#eef0fb;display:grid;place-items:center;height:100vh;margin:0\"><p>{text}</p>");
+    let head = format!(
+        "HTTP/1.1 {status}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nContent-Security-Policy: default-src 'none'; style-src 'unsafe-inline'\r\nConnection: close\r\n\r\n",
+        body.len()
+    );
+    let _ = s.write_all(head.as_bytes());
+    let _ = s.write_all(body.as_bytes());
+}
+#[tauri::command]
+fn oauth_begin(app: AppHandle) -> Res<OauthBegin> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).map_err(err)?;
+    let port = listener.local_addr().map_err(err)?.port();
+    listener.set_nonblocking(true).map_err(err)?;
+    let stop = std::sync::Arc::new(AtomicBool::new(false));
+    if let Some(old) = OAUTH_STOP.lock().unwrap().replace(stop.clone()) {
+        old.store(true, Ordering::SeqCst); // a new sign-in attempt replaces an older one
+    }
+    std::thread::spawn(move || {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(180);
+        let mut answer: Option<serde_json::Value> = None;
+        while std::time::Instant::now() < deadline && !stop.load(Ordering::SeqCst) {
+            match listener.accept() {
+                Ok((mut s, _)) => {
+                    let _ = s.set_nonblocking(false);
+                    let _ = s.set_read_timeout(Some(std::time::Duration::from_secs(5)));
+                    let mut buf = [0u8; 8192];
+                    let n = s.read(&mut buf).unwrap_or(0);
+                    let (status, text, res) = oauth::handle(&String::from_utf8_lossy(&buf[..n]));
+                    oauth_reply(s, status, text);
+                    if res.is_some() {
+                        answer = res;
+                        break;
+                    }
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => std::thread::sleep(std::time::Duration::from_millis(100)),
+                Err(_) => break,
+            }
+        }
+        if stop.load(Ordering::SeqCst) {
+            return; // cancelled or replaced: stay silent
+        }
+        let detail = answer.unwrap_or_else(|| serde_json::json!({ "error": "The sign-in was not finished in time" }));
+        if let Some(win) = app.get_webview_window("main") {
+            let _ = win.eval(format!("window.dispatchEvent(new CustomEvent('pianoapp-oauth', {{ detail: {detail} }}))"));
+        }
+    });
+    Ok(OauthBegin { port })
+}
+#[tauri::command]
+fn oauth_cancel() {
+    if let Some(s) = OAUTH_STOP.lock().unwrap().take() {
+        s.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
 /* ---------- start ---------- */
 // What the page may load. It is one file with inline scripts and styles; it fetches piano samples, fonts and its own
 // newer version from these sites only. 'unsafe-eval' is for the page's add-ons feature (new Function on a file the user picks).
@@ -729,12 +797,15 @@ fn repair_storage(app: AppHandle, st: State<AppState>) -> Res<()> {
 // worklets follow script-src). This adds nothing the page could not already do with 'unsafe-inline'/'unsafe-eval'.
 // 8.0.0: no font service is allowed any more. Every font the app uses is built in (bundled/fonts, served by this same
 // handler), so the Google Fonts hosts were removed from style-src and font-src.
+// 9.2.0: https://rrlfnghoxocplelqigdc.supabase.co is the optional cloud sync service (sign-in, the user's own synced rows).
+// Nothing is sent to it unless the user signs in. A shell without this host cannot reach it, which is why the page checks
+// window.pianoApp.caps.cloudSync (bridge.js) before it offers cloud sync.
 const CSP: &str = "default-src 'self'; \
 script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; \
 style-src 'self' 'unsafe-inline'; \
 font-src 'self' data:; \
 img-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; \
-connect-src 'self' ipc: http://ipc.localhost data: blob: https://tonejs.github.io https://gleitz.github.io https://kosandra0.github.io; \
+connect-src 'self' ipc: http://ipc.localhost data: blob: https://tonejs.github.io https://gleitz.github.io https://kosandra0.github.io https://rrlfnghoxocplelqigdc.supabase.co; \
 frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 fn page_response(st: &AppState, path: &str) -> http::Response<Vec<u8>> {
@@ -780,7 +851,8 @@ pub fn run() {
             app_info, sf_list, sf_add, sf_read, sf_remove, sf_open, save_export, bk_save, bk_begin, bk_pick, bk_write, bk_end, bk_abort, bk_list, bk_open, music_pick, music_write,
             win_ontop, app_startup, upd_store, app_restart, open_data_dir, repair_storage,
             win_state, win_minimize, win_toggle_max, win_close, win_drag, app_close_to_tray, app_quit,
-            bridge_send, bridge_release_all, bridge_foreground, bridge_focus_target, bridge_status
+            bridge_send, bridge_release_all, bridge_foreground, bridge_focus_target, bridge_status,
+            oauth_begin, oauth_cancel
         ])
         // Alt+F4 / closing from the taskbar follows the same choice as the title bar's close button
         .on_window_event(|w, ev| {

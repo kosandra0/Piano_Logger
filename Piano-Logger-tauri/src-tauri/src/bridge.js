@@ -29,6 +29,14 @@
   window.pianoApp = Object.freeze({
     isApp: true,
     runtime: 'tauri',
+    // 9.2.0: what this installed shell can do. A shell without caps.cloudSync has no permission to reach the cloud sync
+    // service (its security rules are part of the installed program), so the page asks the user to update instead.
+    caps: Object.freeze({ cloudSync: 1, oauthLoopback: 1 }),
+    // Google sign-in: the shell listens on 127.0.0.1 for the browser's return trip, then tells the page ('pianoapp-oauth' event).
+    cloud: Object.freeze({
+      oauthBegin: function () { return inv('oauth_begin'); },
+      oauthCancel: function () { return inv('oauth_cancel'); }
+    }),
     info: function () { return inv('app_info'); },
     sf: Object.freeze({
       list: function () { return inv('sf_list'); },

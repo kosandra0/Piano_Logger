@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 9.1.0: a MIDI visualizer that saves every key press on your own device, with sheet music, MIDI to PDF, a sight-reading course, statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="9.1.0">
+  <meta name="description" content="Piano Logger 9.2.3: a MIDI visualizer that saves every key press on your own device, with optional cloud sync to your phone, sheet music, MIDI to PDF, a sight-reading course, statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="9.2.3">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13219,6 +13219,82 @@
       display: none
     }
     /* V9-CSS-END */
+    /* V92-CSS-BEGIN */
+    /* v9.2.0 — Cloud sync: status chip + account window. Source of truth: tools/v920/cs.css (spliced by tools/v920/splice.js). */
+    .cs-chip { display: flex; align-items: center; gap: 8px; width: 100%; font: inherit; font-size: 12px; color: var(--mut); background: none; border: 0; padding: 6px 6px; margin: 0; cursor: pointer; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 8px }
+    .cs-chip:hover, .cs-chip:focus-visible { color: var(--txt); background: var(--surface) }
+    .cs-chip i { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--mut2, #666) }
+    .cs-chip span { overflow: hidden; text-overflow: ellipsis }
+    .cs-chip[data-tone=ok] i { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent) }
+    .cs-chip[data-tone=busy] i { background: var(--c1); animation: csPulse 1.4s ease-in-out infinite }
+    .cs-chip[data-tone=warn] i { background: var(--c4) }
+    .cs-chip[data-tone=bad] i { background: var(--bad) }
+    html.nav-rail .cs-chip span { display: none }
+    html.nav-rail .cs-chip { justify-content: center }
+    @keyframes csPulse { 0%, 100% { opacity: .45; transform: scale(.85) } 50% { opacity: 1; transform: scale(1.15) } }
+    @media (prefers-reduced-motion: reduce) { .cs-chip[data-tone=busy] i { animation: none } .cs-bar span { transition: none } }
+
+    #csAcc { max-width: 640px; margin: 0 auto }
+    #csAcc .cs-note { color: var(--mut); font-size: 13px; line-height: 1.5; margin: 8px 0 }
+    #csAcc .cs-h { font-size: 14px; margin: 18px 0 6px; letter-spacing: .02em }
+    #csAcc .cs-who { margin: 6px 0 10px; font-size: 14px }
+    #csAcc .cs-f { display: block; margin: 10px 0; font-size: 13px; color: var(--mut) }
+    #csAcc .cs-f small { opacity: .8 }
+    #csAcc .cs-f input { display: block; width: 100%; margin-top: 4px; box-sizing: border-box; min-height: 40px }
+    /* the app styles text/number/date inputs only; email and password inputs get the same look here */
+    #csAcc input[type=email], #csAcc input[type=password], #csAcc input[type=text] { background-color: rgba(0, 0, 0, .24); border: 1px solid var(--line); border-radius: 11px; padding: 7px 11px; outline: none; color: var(--txt); color-scheme: dark; transition: border-color .15s, box-shadow .15s, background-color .15s }
+    #csAcc input[type=email]:hover, #csAcc input[type=password]:hover, #csAcc input[type=text]:hover { background-color: rgba(0, 0, 0, .32); border-color: rgba(255, 255, 255, .22) }
+    html[data-theme=light] #csAcc input[type=email], html[data-theme=light] #csAcc input[type=password], html[data-theme=light] #csAcc input[type=text] { background-color: rgba(255, 255, 255, .8); color-scheme: light }
+    #csAcc .cs-kept { margin: 4px 0 8px; padding-left: 18px; color: var(--mut); font-size: 13px; line-height: 1.5 }
+    #csAcc .cs-opt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 12px; margin: 6px 0; cursor: pointer; font-size: 14px; color: var(--txt) }
+    #csAcc .cs-opt input { margin-top: 3px; flex: 0 0 auto }
+    #csAcc .cs-opt small { display: block; color: var(--mut); font-size: 12px; margin-top: 2px; line-height: 1.45 }
+    #csAcc .cs-opt em { font-style: normal; font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--surface-hi); color: var(--mut); margin-left: 6px }
+    #csAcc .cs-loss { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; margin: 12px 0; border: 1px solid var(--c4); border-radius: 14px; background: color-mix(in srgb, var(--c4) 10%, transparent); font-size: 13px }
+    #csAcc .cs-loss span { color: var(--mut) }
+    #csAcc .cs-panel { padding: 12px 14px; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--surface); margin: 8px 0 }
+    #csAcc .cs-panel .cs-row { margin-top: 10px }
+    #csAcc .cs-qr { display: block; margin: 8px 0; padding: 8px; background: #fff; border-radius: 10px; image-rendering: pixelated }
+    #csAcc .cs-key { display: inline-block; padding: 2px 8px; border: 1px solid var(--line-soft); border-radius: 8px; font-family: ui-monospace, Consolas, monospace; letter-spacing: .08em; word-break: break-all; user-select: all }
+    #csAcc #csCode, #csAcc #csSecCode { font-size: 20px; letter-spacing: .25em; text-align: center; max-width: 12em }
+    #csAcc .cs-or { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; color: var(--mut); font-size: 12px }
+    #csAcc .cs-or::before, #csAcc .cs-or::after { content: ""; flex: 1; height: 1px; background: var(--line-soft) }
+    #csAcc .cs-google { width: 100%; min-height: 44px }
+    #csAcc .cs-tabs { display: flex; gap: 6px; margin: 12px 0 4px }
+    #csAcc .cs-tabs button { flex: 1; min-height: 40px; font: inherit; color: var(--mut); background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; cursor: pointer }
+    #csAcc .cs-tabs button[aria-selected=true] { color: var(--txt); border-color: var(--c1); background: color-mix(in srgb, var(--c1) 14%, transparent) }
+    #csAcc .cs-msg { min-height: 20px; font-size: 13px; margin: 6px 0; color: var(--mut) }
+    #csAcc .cs-msg[data-tone=bad], #csAcc .cs-err { color: var(--bad) }
+    #csAcc .cs-msg[data-tone=ok] { color: var(--ok) }
+    #csAcc .cs-err { font-size: 12px; margin: 4px 0 }
+    #csAcc .cs-state { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--surface) }
+    #csAcc .cs-state i { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 50%; background: var(--mut2, #666) }
+    #csAcc .cs-state small { display: block; color: var(--mut); font-size: 12px; margin-top: 2px }
+    #csAcc .cs-state[data-tone=ok] i { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 22%, transparent) }
+    #csAcc .cs-state[data-tone=busy] i { background: var(--c1); animation: csPulse 1.4s ease-in-out infinite }
+    #csAcc .cs-state[data-tone=warn] i { background: var(--c4) }
+    #csAcc .cs-state[data-tone=bad] i { background: var(--bad) }
+    #csAcc .cs-bar { height: 8px; border-radius: 99px; background: var(--surface-hi); overflow: hidden; margin: 8px 0 }
+    #csAcc .cs-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--c1), var(--c2)); transition: width .4s ease }
+    #csAcc .cs-sw { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mut); cursor: pointer; min-height: 40px }
+    #csAcc .cs-dev { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 12px; margin: 6px 0; flex-wrap: wrap }
+    #csAcc .cs-dev.off { opacity: .55 }
+    #csAcc .cs-dev small { display: block; color: var(--mut); font-size: 12px; margin-top: 2px }
+    #csAcc .cs-dev em { font-style: normal; font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--surface-hi); color: var(--mut); margin-left: 6px }
+    #csAcc .cs-dev em.bad { color: var(--bad) }
+    #csAcc .cs-dact { display: flex; gap: 6px; flex-wrap: wrap }
+    #csAcc .cs-rn { min-height: 34px; box-sizing: border-box }
+    #csAcc .cs-danger, #csAcc .cs-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+    #csAcc .btn.bad { border-color: var(--bad); color: var(--bad) }
+    #csAcc .btn:disabled { opacity: .45; cursor: not-allowed }
+    #csAcc .cs-prev { display: grid; gap: 4px; margin: 8px 0 }
+    #csAcc .cs-prow { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 14px }
+    #csAcc .cs-prow span { color: var(--mut) }
+    #csAcc .cs-prow b { text-align: right }
+    #csAcc .cs-h2 { font-size: 14px; margin: 12px 0 4px }
+    #csAcc .cs-prev-note { color: var(--mut); font-size: 12px }
+    @media (max-width: 560px) { #csAcc .actions { flex-wrap: wrap } #csAcc .cs-dev { align-items: flex-start } }
+    /* V92-CSS-END */
   </style>
 </head>
 
@@ -13650,7 +13726,7 @@
             breaks. Song auto-play and ear-training notes are not logged, so they earn nothing. XP moves the moment you
             release each key; above the daily amounts, notes and playing time keep earning at half rate.</p>
           <p class="sub">Your profile (name, emblem, frame, title and achievement dates) is saved in this browser on
-            this device only. It is not a cloud backup. Because XP comes from your log, restoring a log backup on
+            this device only, unless you sign in to the optional Cloud sync, which can also keep a copy online. Because XP comes from your log, restoring a log backup on
             another device brings your level back.</p>
           <p style="margin-top:12px"><button type="button" class="btn danger" id="pfReset">Reset profile…</button></p>
         </details>
@@ -14752,7 +14828,8 @@
       // v7.0: full backups also carry settings, themes, profile, quests and the pitch-bend / mod-wheel log. They are written
       // BEFORE "logs", so every Piano Logger version can still restore the presses (older ones simply skip this part).
       // Not included: device-only times, and add-ons (they are code, so they are never installed from a file).
-      const BK_SKIP = ['pll.lastBackup', 'pll.appBk', 'pll.crashSeen', 'pll.appWelcome', 'pll.addons'];
+      // v9.2.0: the cloud sync sign-in, device id, switches and owner mark never go into a backup file (a backup could be shared or restored on another computer)
+      const BK_SKIP = ['pll.lastBackup', 'pll.appBk', 'pll.crashSeen', 'pll.appWelcome', 'pll.addons', 'pll.sync.session', 'pll.sync.device', 'pll.sync.prefs', 'pll.sync.owner'];
       async function settingsSnapshot() {
         const ls = {};
         try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^pll\./.test(k) && !BK_SKIP.includes(k)) ls[k] = localStorage.getItem(k); } } catch (e) { }
@@ -15828,7 +15905,7 @@
 <li><b>Achievements</b> (over 45) cover practice, notes, exploring the keyboard, streaks and ranks. Locked ones show your progress. Use <b>All / Unlocked / Locked</b> to filter. A small card pops up when you unlock one.</li>
 <li><b>Customize:</b> click your name to rename yourself. Choose an <b>emblem</b>, a <b>frame</b> and a <b>title</b>. More unlock with levels and achievements. Hover a 🔒 item to see what it needs.</li>
 <li><b>Daily quests</b> give extra XP every day (see section 14), and <b>📇 Share my player card</b> makes a picture of your level (see section 17).</li>
-<li><b>Where it is saved:</b> your profile is kept in this browser on this device (it is not a cloud backup). Your XP always comes from your log, so restoring a log backup brings your level back. <b>Reset profile…</b> (under “How XP works”) clears your name, looks and achievement dates, but never your log.</li>
+<li><b>Where it is saved:</b> your profile is kept in this browser on this device (unless you use the optional Cloud sync, which can also keep a copy online). Your XP always comes from your log, so restoring a log backup brings your level back. <b>Reset profile…</b> (under “How XP works”) clears your name, looks and achievement dates, but never your log.</li>
 <li><b>Rolling numbers:</b> counters, XP, playing time and the clock roll digit by digit when they change. Turn them on or off in Settings → Graphics → Rolling numbers.</li>
 </ol>
 
@@ -16016,7 +16093,7 @@
 
 <h3 id="g-data">23. Backup &amp; your data</h3>
 <ul>
-<li>Everything is stored only in this browser on this computer, nothing is uploaded. Press <b>Ask browser to protect data</b> so it is not cleared automatically.</li>
+<li>Everything is stored only in this browser on this computer, and nothing is uploaded unless you sign in to the optional <b>Cloud sync</b> (then only what you allow there is saved online). Press <b>Ask browser to protect data</b> so it is not cleared automatically.</li>
 <li><b>Create backup file</b> downloads one JSON file with every press. <b>Restore</b> it with <i>Merge</i> (adds missing presses, skips duplicates) or <i>Replace everything</i>. Backups of <b>any size</b> work (even several GB): the file is read piece by piece with a progress bar, the time left and a <b>Stop</b> button. Presses restored before you stop are kept, with correct totals.</li>
 <li><b>Day summaries:</b> the page keeps a small summary of every finished day next to your data, so periods, speed statistics and trends stay quick even with millions of presses. After a very big restore they are worked out once in the background (the speed card says “Working out…”); after that the page opens straight away.</li>
 <li><b>Auto-backup:</b> choose every day or every week. In Chrome / Edge pick a <b>backup folder</b> once; backups are then saved there automatically (the newest 10 are kept). Otherwise a reminder banner and a red dot on the tab tell you when a backup is due.</li>
@@ -20339,7 +20416,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '9.1.0';
+      const APP_VERSION = '9.2.3';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -26890,7 +26967,7 @@ html:is(.sec-dnd,.sec-mv),html:is(.sec-dnd,.sec-mv) body,html:is(.sec-dnd,.sec-m
             'Older backups without voice data still restore normally'
           ]],
           ['Privacy', [
-            'Voice activity is measured on this computer. No sound is saved automatically, nothing is uploaded, and there is no speech-to-text'
+            'Voice activity is measured on this computer. No sound is saved automatically and no sound is ever uploaded (with the optional Cloud sync, only the session times can be saved online), and there is no speech-to-text'
           ]]
         ]
       });
@@ -31464,6 +31541,1841 @@ html.calm .av-aura{animation:none!important}
       })();
       window.__pl90 = SMU;      // test hooks (no access to the lifetime log)
     /* V9-JS-END */
+      /* V92-JS-BEGIN */
+      /* =====================================================================
+         v9.2.0 — CLOUD SYNC CORE (no DOM, no network): day summaries, sessions, content signatures, versions,
+         retry back-off, error classes and the sync status model. Pure functions only, so tests can run them in Node.
+         Source of truth: tools/v920/cs-core.js (spliced into the page by tools/v920/splice.js).
+         ===================================================================== */
+      const CSC = (() => {
+        const GAP_SESSION = 300000, GAP_PLAY = 2000;            // same rules as the app's own session/active-time logic (pfFeed)
+        const BATCH = 500;                                       // rows per request (the server accepts 1 to 500)
+
+        /* ---------- one local day of presses -> cloud rows ---------- */
+        // rows: presses of ONE local day (any order). A session never crosses midnight: the cloud keeps one session per local day.
+        function summarizeDay(day, rows, tz) {
+          const r = rows.slice().sort((a, b) => a.startTs - b.startTs || a.midi - b.midi);
+          const hours = Array(24).fill(0);
+          let velSum = 0, durSum = 0, maxPoly = 0, first = 0, last = 0, active = 0;
+          const sessions = []; let cur = null, prevT = null;
+          for (const p of r) {
+            const t = +p.startTs; if (!Number.isFinite(t)) continue;
+            const h = Math.min(23, Math.max(0, p.hour | 0)); hours[h]++;
+            velSum += +p.velocity || 0; durSum += Math.round(+p.durationMs || 0); maxPoly = Math.max(maxPoly, p.simultaneous | 0);
+            if (!first || t < first) first = t; if (t > last) last = t;
+            if (prevT === null || t - prevT > GAP_SESSION) {
+              cur = { start_ts: t, end_ts: t, presses: 0, active_ms: 0, day, tz: tz || null }; sessions.push(cur);
+            } else if (t - prevT <= GAP_PLAY) { cur.active_ms += t - prevT; active += t - prevT; }
+            cur.presses++; cur.end_ts = t; prevT = t;
+          }
+          return {
+            daily: { day, presses: sessions.reduce((s, x) => s + x.presses, 0), active_ms: active, hours, vel_sum: velSum, dur_sum_ms: durSum, max_poly: maxPoly, first_ts: first || null, last_ts: last || null },
+            sessions
+          };
+        }
+
+        /* ---------- content signature: same content -> same text, so unchanged days are never uploaded again ---------- */
+        function canonical(sum) {
+          const d = sum.daily;
+          return JSON.stringify([d.day, d.presses, d.active_ms, d.hours.join(','), d.vel_sum, d.dur_sum_ms, d.max_poly, d.first_ts, d.last_ts,
+            sum.sessions.map(s => [s.start_ts, s.end_ts, s.presses, s.active_ms])]);
+        }
+        function fnvHex(str) {                                    // fallback only (no crypto.subtle): two 32-bit FNV-1a passes
+          let a = 0x811c9dc5, b = 0x01000193 ^ 0x9747b28c;
+          for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); a ^= c; a = Math.imul(a, 16777619) >>> 0; b ^= c + i; b = Math.imul(b, 2246822519) >>> 0; }
+          return 'f1-' + a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0');
+        }
+        async function sha256Hex(str) {
+          const s = globalThis.crypto && globalThis.crypto.subtle;
+          if (!s) return fnvHex(str);
+          const buf = await s.digest('SHA-256', new TextEncoder().encode(str));
+          return 's2-' + Array.from(new Uint8Array(buf), x => x.toString(16).padStart(2, '0')).join('').slice(0, 40);
+        }
+        const signature = async sum => sha256Hex(canonical(sum));
+
+        /* ---------- versions: a row only changes on the server when the incoming version is HIGHER ---------- */
+        // skew = server clock minus this device's clock (ms). The version is the corrected device time, never lower than prev+1.
+        const nextVersion = (prev, nowMs, skew) => Math.max((prev || 0) + 1, Math.round(nowMs + (skew || 0)));
+
+        /* ---------- batching, back-off, errors ---------- */
+        function chunk(arr, n) { const o = []; for (let i = 0; i < arr.length; i += n) o.push(arr.slice(i, i + n)); return o; }
+        // equal jitter: between half and the full delay; 5 s, 10 s, 20 s ... capped at 15 minutes
+        const backoffMs = (attempt, rnd) => { const base = Math.min(900000, 5000 * Math.pow(2, Math.max(0, attempt - 1))); return Math.round(base / 2 + (rnd == null ? Math.random() : rnd) * base / 2); };
+        // kinds: offline (no connection) · auth (sign in again) · rate (slow down) · server (try again later) · client (our data was refused: do not retry blindly)
+        function classify(status, networkFailed, retryAfterHeader) {
+          if (networkFailed) return { kind: 'offline', retry: true };
+          if (status === 401) return { kind: 'auth', retry: false };
+          if (status === 403) return { kind: 'client', retry: false };
+          if (status === 429) { const s = parseFloat(retryAfterHeader); return { kind: 'rate', retry: true, retryAfterMs: Number.isFinite(s) ? Math.min(900000, Math.max(1000, s * 1000)) : 30000 }; }
+          if (status >= 500 || status === 408 || status === 0) return { kind: 'server', retry: true };
+          return { kind: 'client', retry: false };
+        }
+
+        /* ---------- status model: what the small chip and the Account page say ---------- */
+        // in: { enabled, signedIn, appOk, online, syncing, pending, failed, authRequired, mfaRequired, uploading:{done,total}|null, lastOkAt }
+        function statusOf(s) {
+          if (!s.enabled) return { code: 'off', text: 'Cloud sync is off', tone: 'muted' };
+          if (!s.appOk) return { code: 'update', text: 'Update the app to use cloud sync', tone: 'warn' };
+          if (!s.signedIn || s.authRequired) return { code: 'auth', text: 'Sign in to sync', tone: 'warn' };
+          if (s.mfaRequired) return { code: 'mfa', text: 'Enter your authenticator code to sync', tone: 'warn' };      // two-step sign-in not finished: nothing is uploaded
+          if (s.syncing) return s.uploading && s.uploading.total ? { code: 'syncing', text: 'Uploading history: ' + s.uploading.done + ' of ' + s.uploading.total + ' days', tone: 'busy' } : { code: 'syncing', text: 'Syncing…', tone: 'busy' };
+          if (!s.online) return { code: 'offline', text: s.pending ? 'Offline: ' + s.pending + ' day' + (s.pending === 1 ? '' : 's') + ' waiting' : 'Offline', tone: 'muted' };
+          if (s.failed) return { code: 'failed', text: 'Sync failed, will retry', tone: 'bad' };
+          if (s.pending) return { code: 'pending', text: s.pending + ' day' + (s.pending === 1 ? '' : 's') + ' waiting to sync', tone: 'busy' };
+          if (s.uploading && s.uploading.total && s.uploading.done < s.uploading.total) return { code: 'pending', text: 'Uploading history: ' + s.uploading.done + ' of ' + s.uploading.total + ' days', tone: 'busy' };
+          return s.lastOkAt ? { code: 'synced', text: 'Synced', tone: 'ok' } : { code: 'pending', text: 'Waiting for the first sync', tone: 'busy' };
+        }
+
+        /* ---------- last-writer-wins for small user settings (version = corrected time) ---------- */
+        const pickNewer = (a, b) => !a ? b : !b ? a : (b.version > a.version ? b : a);
+
+        /* ---------- small helpers ---------- */
+        const dayOf = ms => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+        const validDay = s => /^\d{4}-\d{2}-\d{2}$/.test(s) && s >= '2020-01-01' && s <= '2100-01-01';
+        const newDeviceId = () => (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+
+        /* ---------- first-upload preview: the exact numbers the owner approves (pure, no I/O) ---------- */
+        // perDay: [{ day, presses, sum: summarizeDay(day, rows, tz), sig: signature(sum) }] in day order, built from the press log.
+        // Byte counts are the JSON sizes of the rows the uploader would send (version field fixed at 1), so they are an estimate.
+        const bytesOf = obj => new TextEncoder().encode(JSON.stringify(obj)).length;
+        function previewTotals(perDay) {
+          let presses = 0, sessions = 0, sessionPresses = 0, daily = 0, dailyBytes = 0, sessionBytes = 0, rawBytes = 0, rawFiles = 0, activeMs = 0, firstDay = null, lastDay = null;
+          for (const p of perDay) {
+            presses += p.presses; daily++;
+            dailyBytes += bytesOf(Object.assign({}, p.sum.daily, { content_hash: p.sig, version: 1 }));
+            activeMs += p.sum.daily.active_ms;
+            for (const s of p.sum.sessions) { sessions++; sessionPresses += s.presses; sessionBytes += bytesOf(Object.assign({}, s, { version: 1 })); }
+            if (typeof p.gz === 'number') { rawBytes += p.gz; rawFiles++; }
+            if (firstDay === null) firstDay = p.day; lastDay = p.day;
+          }
+          // bytes = the JSON rows (daily + sessions); rawBytes = the compressed key-press files actually uploaded (separate, exact)
+          return { presses, sessionPresses, daily, sessions, dailyBytes, sessionBytes, bytes: dailyBytes + sessionBytes, rawBytes, rawFiles, activeMs, firstDay, lastDay, requests: Math.ceil(daily / BATCH) + Math.ceil(sessions / BATCH) + rawFiles };
+        }
+        // cloud: { devDays: Map(day -> { hash }) for THIS device, otherDays: Set(day) with rows from any other device, devSessions: n }
+        function previewCompare(perDay, cloud) {
+          const local = new Set(perDay.map(p => p.day)), c = { add: 0, change: 0, same: 0, cloudOnly: 0, overlap: 0, changeDays: [], overlapDays: [], devSessions: cloud.devSessions || 0 };
+          for (const p of perDay) {
+            const have = cloud.devDays.get(p.day);
+            if (!have) c.add++;
+            else if (have.hash !== p.sig) { c.change++; if (c.changeDays.length < 50) c.changeDays.push(p.day); }
+            else c.same++;
+            if (cloud.otherDays.has(p.day)) { c.overlap++; if (c.overlapDays.length < 50) c.overlapDays.push(p.day); }
+          }
+          for (const d of cloud.devDays.keys()) if (!local.has(d)) c.cloudOnly++;
+          return c;
+        }
+        // identifies exactly this preview: if the press log changes before approval, the approved fingerprint no longer matches
+        const previewFingerprint = perDay => sha256Hex(perDay.map(p => p.day + '|' + p.presses + '|' + p.sig).join('\n'));
+
+        return { GAP_SESSION, GAP_PLAY, BATCH, summarizeDay, canonical, signature, sha256Hex, fnvHex, nextVersion, chunk, backoffMs, classify, statusOf, pickNewer, dayOf, validDay, newDeviceId, previewTotals, previewCompare, previewFingerprint };
+      })();
+
+      /* =====================================================================
+         v9.2.0 — CLOUD SYNC NETWORK CLIENT: plain fetch to Supabase Auth, the database functions and file storage.
+         No library. Only the refresh token is kept (in the storage object you pass in); the short-lived access token
+         stays in memory. The key used here is the project's PUBLIC (publishable) key; the database rules protect the data.
+         Source of truth: tools/v920/cs-net.js (spliced into the page by tools/v920/splice.js).
+         ===================================================================== */
+      const CSN = (() => {
+        class CSNError extends Error { constructor(msg, o) { super(msg); Object.assign(this, o || {}); this.name = 'CSNError'; } }
+        const b64u = bytes => btoa(String.fromCharCode.apply(null, bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const rand = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return a; };
+        const jwtClaims = t => { try { return JSON.parse(atob(String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) || {}; } catch (e) { return {}; } };
+        const jwtExp = t => { try { return JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp * 1000; } catch (e) { return 0; } };
+        // the verified authenticator-app (TOTP) factors in a user record: [{id,name}], or null when the record does not say (unknown, never "none")
+        const factorsOf = u => Array.isArray(u && u.factors) ? u.factors.filter(f => f && f.factor_type === 'totp' && f.status === 'verified').map(f => ({ id: f.id, name: f.friendly_name || 'Authenticator app' })) : null;
+
+        // cfg: { url, key, fetch?, store?: {get(), set(v), clear()}, now?, timeoutMs? }
+        function create(cfg) {
+          const base = cfg.url.replace(/\/+$/, ''), now = cfg.now || (() => Date.now());
+          const doFetch = cfg.fetch || ((...a) => globalThis.fetch(...a));
+          const timeoutMs = cfg.timeoutMs || 30000;
+          let saved = null; try { saved = cfg.store ? cfg.store.get() : null; } catch (e) { saved = null; }
+          // factors: the verified authenticator factors last seen (a hint kept so an offline start knows two-step sign-in applies; not secret). null = not known yet.
+          // aal: the assurance level of the CURRENT access token ('aal2' only after the authenticator code was checked); unknown after a restart until the token is refreshed.
+          let sess = saved && saved.refresh_token ? { refresh_token: saved.refresh_token, user: saved.user || null, access_token: null, exp: 0, aal: 'aal1', factors: Array.isArray(saved.factors) ? saved.factors : null } : null;
+          let refreshing = null; const listeners = [];
+          const emit = () => listeners.forEach(f => { try { f(api.user()); } catch (e) { } });
+          const persist = () => { try { if (!cfg.store) return; if (sess) cfg.store.set({ refresh_token: sess.refresh_token, user: sess.user, factors: sess.factors }); else cfg.store.clear(); } catch (e) { } };
+
+          async function request(path, o = {}) {
+            const h = Object.assign({ apikey: cfg.key }, o.headers || {});
+            if (o.token) h.Authorization = 'Bearer ' + o.token;     // no token: only the apikey header (a publishable key is not a JWT)
+            let body = o.body;
+            if (body !== undefined && !o.raw) { h['Content-Type'] = 'application/json'; body = JSON.stringify(body); }
+            // A hard time limit that does not depend on the abort signal: a stalled connection must never leave the person (or the sync engine) waiting for ever.
+            const lim = (o.timeout || timeoutMs) + 1500;
+            const limited = p => { let t; return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => rej(Object.assign(new Error('timed out'), { name: 'TimeoutError' })), lim); })]).finally(() => clearTimeout(t)); };
+            const offline = e => new CSNError('No connection to the cloud (' + (e && e.name || 'error') + ')', Object.assign({ status: 0, cause: e }, CSC.classify(0, true)));
+            let res;
+            try {
+              res = await limited(doFetch(base + path, { method: o.method || 'GET', headers: h, body, signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(o.timeout || timeoutMs) : undefined }));
+            } catch (e) {
+              throw offline(e);
+            }
+            let text = '';
+            try { if (o.binary && res.ok) return { status: res.status, data: await limited(res.arrayBuffer()) }; text = await limited(res.text()); } catch (e) { throw offline(e); }
+            let json = null; try { json = text ? JSON.parse(text) : null; } catch (e) { json = text; }
+            if (!res.ok) {
+              const c = CSC.classify(res.status, false, res.headers && res.headers.get && res.headers.get('retry-after'));
+              const msg = (json && (json.msg || json.message || json.error_description || json.error)) || ('HTTP ' + res.status);
+              throw new CSNError(String(msg), Object.assign({ status: res.status, code: json && (json.code || json.error_code), body: json }, c));
+            }
+            return { status: res.status, data: json };
+          }
+
+          function setSession(j) {
+            const same = sess && j.user && sess.user && sess.user.id === j.user.id;          // a different person: forget what we knew about the previous one
+            const fx = j.user ? factorsOf(j.user) : null;
+            sess = { refresh_token: j.refresh_token, user: j.user ? { id: j.user.id, email: j.user.email } : (sess && sess.user), access_token: j.access_token, exp: j.expires_at ? j.expires_at * 1000 : jwtExp(j.access_token),
+              aal: jwtClaims(j.access_token).aal === 'aal2' ? 'aal2' : 'aal1', factors: fx !== null ? fx : (same || !j.user ? (sess && sess.factors) || null : null) };
+            persist(); emit();
+          }
+          const dropSession = () => { sess = null; persist(); emit(); };
+
+          async function refresh() {
+            if (!sess || !sess.refresh_token) throw new CSNError('Not signed in', { kind: 'auth', status: 401 });
+            if (refreshing) return refreshing;                       // refresh tokens rotate: only ONE refresh at a time
+            refreshing = (async () => {
+              try {
+                const r = await request('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: sess.refresh_token } });
+                setSession(r.data);
+              } catch (e) {
+                if (e.status === 400 || e.status === 401 || e.status === 403) { dropSession(); e.kind = 'auth'; e.retry = false; }
+                throw e;
+              } finally { refreshing = null; }
+            })();
+            return refreshing;
+          }
+          async function token() {
+            if (!sess) throw new CSNError('Not signed in', { kind: 'auth', status: 401 });
+            if (!sess.access_token || sess.exp - now() < 60000) await refresh();
+            return sess.access_token;
+          }
+          // Two-step sign-in gate. Every call that reads or writes the person's data (and the password change) goes through authed(), and is REFUSED here
+          // unless the account has no authenticator, or this session has completed the authenticator-code check (assurance level 2). If we do not know yet whether
+          // the account has an authenticator, we ask first. Only the calls that perform the check itself pass allowAal1. (The database enforces the same rule.)
+          const mfaBlock = () => new CSNError('Enter the code from your authenticator app to continue.', { kind: 'mfa', mfa: true, retry: false, status: 401 });
+          async function authed(path, o = {}) {
+            if (!o.allowAal1) {
+              if (sess && !sess.access_token) await token();                       // after a restart the level is only known once the token was refreshed (a refresh keeps level 2)
+              if (sess && sess.factors === null) await api.mfaStatus();
+              if (sess && !api.mfaState().ok) throw mfaBlock();
+            }
+            const t = await token();
+            try { return await request(path, Object.assign({}, o, { token: t })); }
+            catch (e) {
+              if (e.status === 401 && sess) { await refresh(); return request(path, Object.assign({}, o, { token: sess.access_token })); }
+              throw e;
+            }
+          }
+
+          const api = {
+            CSNError,
+            user: () => sess && sess.user ? { id: sess.user.id, email: sess.user.email } : null,
+            signedIn: () => !!sess,
+            onAuth: fn => { listeners.push(fn); },
+            // redirectTo: where the confirmation e-mail's link should lead (it must be in the project's list of allowed addresses)
+            async signUp(email, password, redirectTo) {
+              const r = await request('/auth/v1/signup' + (redirectTo ? '?redirect_to=' + encodeURIComponent(redirectTo) : ''), { method: 'POST', body: { email, password } });
+              if (r.data && r.data.access_token) { setSession(r.data); return { needsConfirm: false }; }
+              return { needsConfirm: true };
+            },
+            async signIn(email, password) {
+              const r = await request('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password } });
+              setSession(r.data); return api.user();
+            },
+            /* The links in confirmation and password-reset e-mails open the page with the sign-in in the address after a "#":
+               #access_token=...&refresh_token=...&expires_in=3600&type=recovery   (or type=signup)
+               or an error: #error=access_denied&error_code=otp_expired&error_description=...
+               parseHash reads it; adoptTokens checks the token with the service (never trusts the address) and signs in. */
+            parseHash(hash) {
+              const q = new URLSearchParams(String(hash || '').replace(/^#/, ''));
+              if (q.get('error') || q.get('error_code')) return { error: q.get('error_description') || q.get('error') || 'This link did not work', code: q.get('error_code') || '' };
+              if (q.get('access_token') && q.get('refresh_token')) return { access_token: q.get('access_token'), refresh_token: q.get('refresh_token'), expires_in: +q.get('expires_in') || 3600, type: q.get('type') || '' };
+              return null;
+            },
+            async adoptTokens(t) {
+              const r = await request('/auth/v1/user', { token: t.access_token });                 // a made-up or expired token fails here
+              if (!r.data || !r.data.id) throw new CSNError('This link did not work', { kind: 'auth', status: 401 });
+              setSession({ access_token: t.access_token, refresh_token: t.refresh_token, expires_at: Math.floor(now() / 1000) + (t.expires_in || 3600), user: { id: r.data.id, email: r.data.email } });
+              return api.user();
+            },
+            async updatePassword(newPassword) { await authed('/auth/v1/user', { method: 'PUT', body: { password: newPassword } }); },      // gated: with an authenticator on the account this needs the code first
+
+            /* ---- two-step sign-in with an authenticator app (TOTP). The code is only ever passed to the service; it is not stored or logged. ---- */
+            // what we know: { signedIn, known (do we know if there is an authenticator), required (there is one), level ('aal1'|'aal2'), levelKnown, pending (a code must be typed), ok (data may be used), factors:[{id,name}] }
+            mfaState() {
+              // levelKnown: false right after a restart (no access token yet): the level is learned when the token is refreshed, so it is neither "ok" nor "code needed" until then
+              const f = sess ? sess.factors : null, known = Array.isArray(f), required = known && f.length > 0, levelKnown = !!(sess && sess.access_token), level = sess && sess.aal === 'aal2' ? 'aal2' : 'aal1';
+              return { signedIn: !!sess, known, required, level, levelKnown, pending: known && required && levelKnown && level !== 'aal2', ok: !!sess && known && (!required || (levelKnown && level === 'aal2')), factors: known ? f.map(x => ({ id: x.id, name: x.name })) : [] };
+            },
+            mfaOk: () => api.mfaState().ok,
+            // ask the service which authenticators the account has (works at level 1: it is needed to know whether a code is required)
+            async mfaStatus() {
+              const r = await authed('/auth/v1/user', { allowAal1: true, timeout: 15000 });          // short: the person is waiting on this and the UI retries by itself
+              const fx = factorsOf(r.data);
+              if (sess) { sess.factors = fx === null ? [] : fx; persist(); emit(); }      // the service leaves "factors" out when there are none
+              return api.mfaState();
+            },
+            // check the 6-digit code: the answer is a NEW session at level 2 (its refresh token keeps level 2)
+            async mfaVerify(factorId, code) {
+              const c = String(code == null ? '' : code).replace(/\s+/g, '');
+              if (!/^\d{6}$/.test(c)) throw new CSNError('Please type the 6 digits shown in your authenticator app.', { kind: 'client', code: 'mfa_code_format', retry: false });
+              if (!sess) throw new CSNError('Not signed in', { kind: 'auth', status: 401 });
+              const fid = encodeURIComponent(factorId);
+              const ch = await authed('/auth/v1/factors/' + fid + '/challenge', { method: 'POST', body: {}, allowAal1: true });
+              let v;
+              try { v = await authed('/auth/v1/factors/' + fid + '/verify', { method: 'POST', body: { challenge_id: ch.data.id, code: c }, allowAal1: true }); }
+              catch (e) {
+                if (e.status === 400 || e.status === 422) { const w = new CSNError('That code did not work. Use the newest code in your authenticator app (it changes every 30 seconds) and try again.', { kind: 'client', code: 'mfa_code_wrong', status: e.status, retry: false }); throw w; }
+                throw e;
+              }
+              setSession(v.data);
+              await api.mfaStatus();
+              return api.mfaState();
+            },
+            // add an authenticator: returns what to show the person ONCE (QR picture and the typed key); activate it with mfaVerify(id, code). Never log or keep the secret.
+            async mfaEnroll(friendlyName) {
+              const r = await authed('/auth/v1/factors', { method: 'POST', body: { factor_type: 'totp', friendly_name: String(friendlyName || 'Piano Logger').slice(0, 60), issuer: 'Piano Logger' }, allowAal1: true });
+              const t = (r.data && r.data.totp) || {};
+              return { id: r.data && r.data.id, qr: t.qr_code || '', secret: t.secret || '', uri: t.uri || '' };
+            },
+            // remove an authenticator that was never activated (cancel while adding one): allowed at level 1
+            async mfaCancelEnroll(factorId) { await authed('/auth/v1/factors/' + encodeURIComponent(factorId), { method: 'DELETE', allowAal1: true }); },
+            // remove an ACTIVE authenticator: only with a level-2 session (the code was checked in this session); the caller must have asked the person to confirm
+            async mfaRemove(factorId) { await authed('/auth/v1/factors/' + encodeURIComponent(factorId), { method: 'DELETE' }); await api.mfaStatus(); },
+            async recover(email, redirectTo) { await request('/auth/v1/recover' + (redirectTo ? '?redirect_to=' + encodeURIComponent(redirectTo) : ''), { method: 'POST', body: { email } }); },
+            async signOut(scope) {                                    // scope: 'local' (this device), 'global' (every device)
+              try { if (sess && sess.access_token) await request('/auth/v1/logout?scope=' + (scope || 'local'), { method: 'POST', token: sess.access_token }); } catch (e) { /* signing out must always work locally */ }
+              dropSession();
+            },
+            refresh,
+            /* Google (or any provider) with PKCE: open the returned url in a browser, then call oauthExchange with the code from the redirect */
+            async oauthStart(provider, redirectTo) {
+              const verifier = b64u(rand(48)), state = b64u(rand(16));
+              const ch = b64u(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
+              const rt = redirectTo + (redirectTo.indexOf('?') < 0 ? '?' : '&') + 'pl_state=' + state;
+              const url = base + '/auth/v1/authorize?provider=' + encodeURIComponent(provider) + '&redirect_to=' + encodeURIComponent(rt) + '&code_challenge=' + ch + '&code_challenge_method=s256&flow_type=pkce';
+              return { url, verifier, state };
+            },
+            async oauthExchange(code, verifier) {
+              const r = await request('/auth/v1/token?grant_type=pkce', { method: 'POST', body: { auth_code: code, code_verifier: verifier } });
+              setSession(r.data); return api.user();
+            },
+            rpc: async (name, args) => (await authed('/rest/v1/rpc/' + name, { method: 'POST', body: args || {} })).data,
+            select: async (table, query) => (await authed('/rest/v1/' + table + (query ? '?' + query : ''))).data,
+            /* storage (private bucket press-chunks; the database rules allow only the user's own folder) */
+            async upload(path, bytes) { return authed('/storage/v1/object/press-chunks/' + path, { method: 'POST', body: bytes, raw: true, headers: { 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' } }); },
+            async download(path) { return (await authed('/storage/v1/object/authenticated/press-chunks/' + path, { binary: true })).data; },
+            async removeObject(path) { return authed('/storage/v1/object/press-chunks/' + path, { method: 'DELETE' }); },
+            async removeObjects(paths) { if (!paths.length) return null; return authed('/storage/v1/object/press-chunks', { method: 'DELETE', body: { prefixes: paths } }); },
+            // everything in one folder (entries with id null are sub-folders)
+            async listObjects(prefix) {
+              const out = [];
+              for (let off = 0; ; off += 1000) {
+                const r = await authed('/storage/v1/object/list/press-chunks', { method: 'POST', body: { prefix, limit: 1000, offset: off, sortBy: { column: 'name', order: 'asc' } } });
+                const a = Array.isArray(r.data) ? r.data : []; out.push(...a); if (a.length < 1000) break;
+              }
+              return out;
+            },
+            // all rows of a table (the service returns at most 1000 at a time)
+            async selectAll(table, query) {
+              const out = [];
+              for (let off = 0; ; off += 1000) { const a = await api.select(table, (query ? query + '&' : '') + 'limit=1000&offset=' + off); out.push(...a); if (a.length < 1000) break; }
+              return out;
+            },
+            async deleteAccount() { const r = await authed('/functions/v1/delete-account', { method: 'POST', body: { confirm: 'DELETE MY ACCOUNT' } }); dropSession(); return r.data; },
+            now: async () => Number(await api.rpc('sync_now', {}))
+          };
+          return api;
+        }
+        return { create, CSNError };
+      })();
+
+      /* =====================================================================
+         v9.2.0 — CLOUD SYNC ENGINE: finds the days that changed, uploads them in small checked batches, verifies the
+         cloud copy, remembers its progress after every acknowledged batch, retries with back-off, and keeps the
+         status honest ("Synced" only after the server's copy was read back and matched).
+         It never writes to the logging database and never waits on the cloud inside the key-press path: it only READS
+         local data through the small `local` adapter and only runs when called (start-up, a change, back online, retry).
+         Source of truth: tools/v920/cs-engine.js (spliced into the page by tools/v920/splice.js).
+         ===================================================================== */
+      const CSE = (() => {
+        const GROUP_DAYS = 50, GAP_MS = 300;
+        // d: { net, local:{dayCounts(), readDay(day)}, store:{get,set,del,list(prefix)}, device:{id,name,platform,appVersion,tz},
+        //      enabled(), canRun?(), online?(), idle?(), now?, sleep?, rnd?, timers?:{set,clear}, appOk?, log? }
+        function create(d) {
+          const now = d.now || (() => Date.now()), sleep = d.sleep || (ms => new Promise(r => setTimeout(r, ms)));
+          const tm = d.timers || { set: (f, ms) => setTimeout(f, ms), clear: id => clearTimeout(id) };
+          const net = d.net, local = d.local, store = d.store, dev = d.device, log = d.log || (() => { });
+          const S = { running: null, rerun: false, attempt: 0, timer: null, timerAt: 0, online: true, lastError: null, authRequired: false, failed: false, syncing: false,
+            pending: 0, uploading: null, lastOkAt: 0, localLoss: [], stopped: false, firstDirty: 0, channels: [], listeners: [], lastRunAt: 0 };
+          const iso = ms => new Date(ms).toISOString();
+
+          /* ---------- status ---------- */
+          function status() {
+            const meta = S.meta || {};
+            return CSC.statusOf({
+              enabled: d.enabled(), signedIn: net.signedIn(), appOk: d.appOk ? d.appOk() : true,
+              online: S.online && (d.online ? d.online() : true), syncing: S.syncing, pending: S.pending, failed: S.failed,
+              authRequired: S.authRequired, mfaRequired: !!(d.mfaPending && d.mfaPending()), uploading: meta.initial ? S.uploading : null, lastOkAt: S.lastOkAt
+            });
+          }
+          const emit = () => { const st = status(); S.listeners.forEach(f => { try { f(st); } catch (e) { } }); };
+
+          const getMeta = async () => { if (!S.meta) S.meta = (await store.get('meta')) || { v: 1, initial: true, skew: 0, skewAt: 0, regKey: '', lastOkAt: 0 }; return S.meta; };
+          const saveMeta = () => store.set('meta', S.meta);
+
+          /* ---------- scheduling: only when something may have changed ---------- */
+          function schedule(ms) {
+            if (S.stopped) return;
+            const at = now() + ms;
+            if (S.timer && S.timerAt <= at) return;                 // an earlier run is already planned
+            if (S.timer) tm.clear(S.timer);
+            S.timerAt = at; S.timer = tm.set(() => { S.timer = null; S.timerAt = 0; run('timer'); }, ms);
+          }
+          // a key press batch was saved: run soon after the playing pauses, but never later than 5 minutes after the first change
+          function notifyChanged() {
+            if (S.stopped || !d.enabled() || !net.signedIn()) return;
+            const t = now(); if (!S.firstDirty) S.firstDirty = t;
+            schedule(Math.max(1000, Math.min(20000, S.firstDirty + 300000 - t)));
+          }
+          function handleError(e) {
+            const k = (e && e.kind) || 'server'; S.lastError = e && e.message || String(e);
+            log('sync error', k, S.lastError);
+            if (k === 'auth') { S.authRequired = true; S.failed = false; return; }
+            if (k === 'mfa') { S.failed = false; schedule(60000); return; }          // the network client refused (two-step sign-in not finished): not an error, wait
+            if (k === 'offline') { S.online = false; S.attempt++; schedule(CSC.backoffMs(S.attempt, d.rnd && d.rnd())); return; }
+            if (k === 'rate') { schedule((e && e.retryAfterMs) || 30000); return; }
+            S.failed = true;
+            if (k === 'client') S.attempt = Math.max(S.attempt, 6); else S.attempt++;
+            schedule(CSC.backoffMs(S.attempt, d.rnd && d.rnd()));
+          }
+
+          async function run(reason) {
+            if (S.stopped) return;
+            if (S.running) { S.rerun = true; return S.running; }
+            S.running = (async () => {
+              try { await body(reason); }
+              catch (e) { S.syncing = false; handleError(e); }
+              finally { S.running = null; S.syncing = false; if (S.rerun && !S.stopped) { S.rerun = false; schedule(1000); } emit(); }
+            })();
+            return S.running;
+          }
+
+          async function body(reason) {
+            await getMeta();
+            if (!d.enabled()) { emit(); return; }
+            if (!net.signedIn()) { S.authRequired = true; emit(); return; }
+            if (d.canRun && !d.canRun()) { emit(); schedule(60000); return; }      // e.g. the two-step sign-in is not finished: nothing is read or uploaded, look again in a minute
+            S.authRequired = false; S.syncing = true; S.failed = false; S.lastRunAt = now(); S.firstDirty = 0; emit();
+            await ensureDevice();
+            const res = await syncDays();
+            for (const ch of S.channels) await ch.run({ net, store, dev, meta: S.meta, now, skew: S.meta.skew, sleep, gap: () => sleep(GAP_MS), idle: waitIdle, iso });
+            S.attempt = 0; S.online = true; S.lastError = null; S.failed = false;
+            S.meta.lastOkAt = S.lastOkAt = now(); await saveMeta();
+            if (res && res.remaining === 0) { S.meta.initial = false; await saveMeta(); }
+            S.syncing = false; emit();
+          }
+          const waitIdle = async () => { if (d.idle) await d.idle(); };
+
+          async function ensureDevice() {
+            const meta = S.meta, key = dev.id + '|' + dev.appVersion + '|' + dev.name;
+            if (meta.regKey !== key) {
+              await net.rpc('sync_register_device', { p_id: dev.id, p_name: dev.name, p_platform: dev.platform, p_app_version: dev.appVersion });
+              meta.regKey = key; await saveMeta();
+            }
+            if (!meta.skewAt || now() - meta.skewAt > 600000) {      // how far this device's clock is from the server's
+              const t0 = now(), sv = await net.now(), t1 = now();
+              if (t1 - t0 < 10000) { meta.skew = Math.round(sv - (t0 + t1) / 2); meta.skewAt = t1; await saveMeta(); }
+            }
+          }
+
+          /* ---------- the days channel: daily totals + sessions ---------- */
+          async function syncDays() {
+            const meta = S.meta, counts = await local.dayCounts();
+            const allDays = Object.keys(counts).filter(k => CSC.validDay(k) && counts[k] > 0).sort();
+            const recs = new Map((await store.list('day:')).map(([k, v]) => [k.slice(4), v]));
+            S.localLoss = [...recs.keys()].filter(k => !(counts[k] > 0)).sort();   // days the cloud has but this device no longer does
+            // a day is "changed" when the app's own per-day count differs from the count seen at the last upload (newest first)
+            const todo = allDays.filter(k => { const r = recs.get(k); return !r || r.seen !== counts[k]; }).reverse();
+            S.pending = todo.length; const total = allDays.length;
+            S.uploading = { total, done: total - todo.length }; emit();
+            const uploaded = [];
+            for (const grp of CSC.chunk(todo, GROUP_DAYS)) {
+              await waitIdle();
+              const plan = [];
+              for (const day of grp) {
+                const rows = await local.readDay(day);
+                const sum = CSC.summarizeDay(day, rows, dev.tz), sig = await CSC.signature(sum), prev = recs.get(day);
+                if (prev && prev.sig === sig) { prev.count = rows.length; prev.seen = counts[day]; await store.set('day:' + day, prev); S.pending--; continue; }   // same content: nothing to send
+                plan.push({ day, sum, sig, prev, count: rows.length, seen: counts[day] });
+                await sleep(0);                                       // let the key-press path breathe between days
+              }
+              if (!plan.length) continue;
+              const t = now(), sessRows = [], dailyRows = [];
+              for (const p of plan) {
+                p.version = CSC.nextVersion(p.prev && p.prev.version, t, meta.skew);
+                dailyRows.push(Object.assign({}, p.sum.daily, { content_hash: p.sig, version: p.version }));
+                for (const s of p.sum.sessions) sessRows.push(Object.assign({}, s, { version: p.version }));
+                if (p.prev && p.prev.sessions) {                      // a session that is no longer there (a late note moved the start): mark it deleted
+                  const keep = new Set(p.sum.sessions.map(s => s.start_ts));
+                  for (const o of p.prev.sessions) if (!keep.has(o.start_ts)) sessRows.push(Object.assign({}, o, { version: p.version, deleted_at: iso(t + meta.skew) }));
+                }
+              }
+              for (const part of CSC.chunk(sessRows, CSC.BATCH)) { await net.rpc('sync_push_sessions', { p_device: dev.id, p_rows: part }); await sleep(GAP_MS); }
+              for (const part of CSC.chunk(dailyRows, CSC.BATCH)) { await net.rpc('sync_push_daily', { p_device: dev.id, p_rows: part }); await sleep(GAP_MS); }
+              for (const p of plan) {                                 // the server acknowledged everything: remember it (resume point)
+                const rec = { count: p.count, seen: p.seen, sig: p.sig, version: p.version, daily: p.sum.daily, sessions: p.sum.sessions, at: t };
+                await store.set('day:' + p.day, rec); recs.set(p.day, rec); S.pending--; uploaded.push(p.day);
+              }
+              S.uploading = { total, done: total - S.pending }; emit();
+            }
+            if (uploaded.length) await verify(uploaded, recs);
+            if (uploaded.length || meta.initial) {
+              await net.rpc('sync_device_progress', { p_device: dev.id, p_days_total: total, p_days_uploaded: total - S.pending, p_ok: S.pending === 0 });
+            }
+            S.uploading = { total, done: total - S.pending };
+            return { remaining: S.pending, uploaded: uploaded.length };
+          }
+
+          // read the server's copy back and compare: a day counts as synced only if it matches exactly
+          async function verify(days, recs) {
+            const sorted = days.slice().sort(), bad = [];
+            for (const win of CSC.chunk(sorted, 300)) {
+              const rows = await net.rpc('sync_verify', { p_device: dev.id, p_from: win[0], p_to: win[win.length - 1] });
+              const m = new Map((rows || []).map(r => [String(r.day).slice(0, 10), r]));
+              for (const day of win) {
+                const r = m.get(day), rec = recs.get(day);
+                if (!r || r.content_hash !== rec.sig || r.presses !== rec.daily.presses || r.sessions !== rec.sessions.length) bad.push([day, r]);
+              }
+            }
+            if (!bad.length) return;
+            for (const [day, r] of bad) {                             // forget the acknowledgement so the day is sent again, with a higher version if the server holds a newer one
+              const rec = recs.get(day), v = Math.max(rec.version, r && r.version ? Number(r.version) : 0);
+              await store.set('day:' + day, { count: -1, seen: -1, sig: null, version: v, daily: rec.daily, sessions: rec.sessions, at: rec.at }); recs.set(day, { count: -1, seen: -1, sig: null, version: v });
+              S.pending++;
+            }
+            throw new net.CSNError(bad.length + ' day(s) in the cloud did not match this device; they will be sent again', { kind: 'server', retry: true });
+          }
+
+          /* ---------- the user decides what happens to cloud days that were removed on this device ---------- */
+          async function confirmLocalDeletes() {
+            const meta = await getMeta(); const t = now(), days = S.localLoss.slice(); if (!days.length) return 0;
+            const dailyRows = [], sessRows = [];
+            for (const day of days) {
+              const rec = await store.get('day:' + day); if (!rec || !rec.daily) continue;
+              const v = CSC.nextVersion(rec.version, t, meta.skew), del = iso(t + meta.skew);
+              dailyRows.push(Object.assign({}, rec.daily, { content_hash: rec.sig || 'deleted', version: v, deleted_at: del }));
+              for (const s of rec.sessions || []) sessRows.push(Object.assign({}, s, { version: v, deleted_at: del }));
+            }
+            for (const part of CSC.chunk(sessRows, CSC.BATCH)) await net.rpc('sync_push_sessions', { p_device: dev.id, p_rows: part });
+            for (const part of CSC.chunk(dailyRows, CSC.BATCH)) await net.rpc('sync_push_daily', { p_device: dev.id, p_rows: part });
+            for (const day of days) await store.del('day:' + day);
+            S.localLoss = []; emit(); return days.length;
+          }
+          async function keepCloudCopy() { for (const day of S.localLoss) await store.del('day:' + day); const n = S.localLoss.length; S.localLoss = []; emit(); return n; }
+
+          const api = {
+            run, notifyChanged, status, confirmLocalDeletes, keepCloudCopy,
+            syncNow: () => run('manual'),
+            whenIdle: () => S.running || Promise.resolve(),
+            addChannel: ch => { S.channels.push(ch); },
+            onStatus: fn => { S.listeners.push(fn); },
+            localLoss: () => S.localLoss.slice(),
+            info: () => ({ lastOkAt: S.lastOkAt, lastError: S.lastError, pending: S.pending, uploading: S.uploading, attempt: S.attempt, skew: S.meta && S.meta.skew, nextRunAt: S.timerAt }),
+            async start() { const m = await getMeta(); S.lastOkAt = m.lastOkAt || 0; S.stopped = false; emit(); if (d.enabled() && net.signedIn()) schedule((d.startDelayMs == null ? 3000 : d.startDelayMs)); },
+            backOnline() { S.online = true; S.attempt = 0; if (d.enabled() && net.signedIn()) schedule(1500); emit(); },
+            wentOffline() { S.online = false; emit(); },
+            stop() { S.stopped = true; if (S.timer) tm.clear(S.timer); S.timer = null; },
+            // forgets everything this device remembers about what it uploaded (the next run sends all days again); local data is not touched
+            async reset() { for (const [k] of await store.list('')) await store.del(k); S.meta = null; S.pending = 0; S.uploading = null; S.lastOkAt = 0; S.localLoss = []; S.channels.forEach(c => { c.lost = []; }); }
+          };
+          return api;
+        }
+        return { create };
+      })();
+
+      /* =====================================================================
+         v9.2.0 — RAW PRESS FILES for the optional "keep every key press online" setting: one small compressed file per
+         device and day. Columnar JSON (times stored as the gap to the previous press) + gzip: about 7 bytes per press.
+         The day's own date string and every press's hour are kept, so restoring on a computer in another time zone does
+         not move presses to another day. No DOM, no network: tests run it in Node.
+         Source of truth: tools/v920/cs-chunk.js (spliced into the page by tools/v920/splice.js).
+         ===================================================================== */
+      const CSK = (() => {
+        const toHex = buf => Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, '0')).join('');
+        const sha256Full = async bytes => toHex(await crypto.subtle.digest('SHA-256', bytes));
+        async function gzip(text) {
+          const s = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
+          return new Uint8Array(await new Response(s).arrayBuffer());
+        }
+        async function gunzip(bytes) {
+          const s = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+          return new Response(s).text();
+        }
+        // rows: the presses of ONE local day (any order), as stored in the log
+        function encode(day, rows) {
+          const r = rows.slice().sort((a, b) => a.startTs - b.startTs || a.midi - b.midi);
+          const src = [], dev = [], si = new Map(), di = new Map(), c = { t: [], m: [], v: [], d: [], e: [], h: [], s: [], g: [], c: [], p: [] };
+          const idx = (map, arr, k) => { let i = map.get(k); if (i === undefined) { i = arr.length; arr.push(k); map.set(k, i); } return i; };
+          let prev = 0;
+          for (const x of r) {
+            const t = Math.round(x.startTs);
+            c.t.push(t - prev); prev = t;
+            c.m.push(x.midi | 0); c.v.push(x.velocity | 0); c.d.push(Math.round((+x.durationMs || 0) * 10));
+            c.e.push(Math.round((x.endTs || t) - t)); c.h.push(x.hour | 0);
+            c.s.push(idx(si, src, String(x.source || ''))); c.g.push(idx(di, dev, String(x.device || '')));
+            c.c.push(x.channel | 0); c.p.push(x.simultaneous | 0);
+          }
+          return JSON.stringify({ v: 1, day, n: r.length, src, dev, t: c.t, m: c.m, vel: c.v, d: c.d, e: c.e, h: c.h, s: c.s, g: c.g, c: c.c, p: c.p });
+        }
+        function decode(text) {
+          const o = JSON.parse(text);
+          if (!o || o.v !== 1 || !/^\d{4}-\d{2}-\d{2}$/.test(o.day) || !Array.isArray(o.t) || o.t.length !== o.n) throw new Error('This press file is not in a format this version understands');
+          const rows = new Array(o.n); let t = 0;
+          for (let i = 0; i < o.n; i++) {
+            t += o.t[i];
+            rows[i] = { midi: o.m[i], velocity: o.vel[i], durationMs: o.d[i] / 10, startTs: t, endTs: t + o.e[i], date: o.day, hour: o.h[i], source: o.src[o.s[i]], device: o.dev[o.g[i]], channel: o.c[i], simultaneous: o.p[i] };
+          }
+          return { day: o.day, rows };
+        }
+        // one day -> the bytes to upload, with everything the cloud's list needs
+        async function pack(day, rows) {
+          const bytes = await gzip(encode(day, rows));
+          let first = 0, last = 0; for (const x of rows) { if (!first || x.startTs < first) first = x.startTs; if (x.startTs > last) last = x.startTs; }
+          return { bytes, sha256: await sha256Full(bytes), count: rows.length, first_ts: first || null, last_ts: last || null };
+        }
+        async function unpack(bytes, expectSha) {
+          if (expectSha && (await sha256Full(bytes)) !== expectSha) throw new Error('A downloaded press file did not match its checksum, so it was not used');
+          return decode(await gunzip(bytes));
+        }
+        return { encode, decode, pack, unpack, gzip, gunzip, sha256Full };
+      })();
+
+      /* =====================================================================
+         v9.3.0 — CLOUD SYNC: the other user-owned categories (page side). Source of truth: tools/v920/cs-files.js.
+         Categories: sung notes, Sheet Music (library, progress, settings), saved takes, voice recordings (details and audio),
+         voice settings, personal notes, profile picture, quests, gestures, and the large settings / voice items that are too big
+         for a database row (they travel as files instead, so nothing is left out silently).
+         ONE manifest (build) drives both the preview and the uploader: the numbers the owner approves are the numbers sent.
+         Restore is add-only: nothing that already exists on this computer is overwritten or deleted.
+         Not synced by design (documented in the preview): themes, graphics and layout (device settings), device-only caches
+         (day summaries, profile cache) and the local sync state.
+         ===================================================================== */
+      const CSF = (() => {
+        const FORMAT = 1;
+        const SETTINGS_MAX = 90000;                       // characters: above this a settings value is sent as a file (settings_large)
+        const VOICE_MAX = 19000;                          // characters: above this a voice session is sent as a file (voice_large)
+        // localStorage keys by category (values are stored as the exact text, so a restore puts back the same bytes)
+        const LS_CATS = {
+          sheet_settings: ['pll.sheetMusic'],
+          takes: ['pll.takes'],
+          voice_settings: ['pll.voice'],
+          notes: ['pll.notes75'],
+          quests: ['pll.qb', 'pll.qh', 'pll.qx']
+        };
+        // IndexedDB record sets: one JSON file each (the records are plain data; a Blob anywhere in them stops the sync with a message)
+        const SET_CATS = [
+          { cat: 'sung', db: 'PianoLoggerSungNotes', v: 1, store: 'notes', schema: 'sung' },
+          { cat: 'sheet_library', db: 'PianoLoggerSheetMusic', v: 1, store: 'library', schema: 'sheet' },
+          { cat: 'sheet_progress', db: 'PianoLoggerSheetMusic', v: 1, store: 'progress', schema: 'sheet' },
+          { cat: 'voice_details', db: 'PianoLoggerVoiceStudio', v: 1, store: 'recordings', schema: 'voice' },
+          { cat: 'gestures', db: 'PianoLoggerExtras', v: 2, store: 'gestures', schema: 'extras' }
+        ];
+        // the page's own database layouts, so a restore can create a missing database exactly as the page would
+        const SCHEMA = {
+          sung: d => { if (!d.objectStoreNames.contains('notes')) { const s = d.createObjectStore('notes', { keyPath: 'id' }); s.createIndex('t0', 't0'); s.createIndex('sid', 'sid'); s.createIndex('midi', 'midi'); } },
+          sheet: d => { if (!d.objectStoreNames.contains('library')) d.createObjectStore('library', { keyPath: 'id' }); if (!d.objectStoreNames.contains('progress')) d.createObjectStore('progress', { keyPath: 'k' }); },
+          voice: d => { if (!d.objectStoreNames.contains('recordings')) d.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true }); if (!d.objectStoreNames.contains('audio')) d.createObjectStore('audio'); },
+          extras: d => { if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv'); if (!d.objectStoreNames.contains('gestures')) d.createObjectStore('gestures', { keyPath: 'id', autoIncrement: true }).createIndex('ts', 'ts'); },
+          assets: d => { [['meta', 'k'], ['files', 'p'], ['staging', 'p'], ['user', 'k']].forEach(([n, k]) => { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k }); }); }
+        };
+        const enc = s => new TextEncoder().encode(s);
+        const reqP = q => new Promise((res, rej) => { q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+        const txP = tx => new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = tx.onabort = () => rej(tx.error); });
+        function openDb(name, v, schema) {
+          return new Promise((res, rej) => {
+            if (!window.indexedDB) return rej(new Error('IndexedDB is not available'));
+            const r = indexedDB.open(name, v);
+            r.onupgradeneeded = () => SCHEMA[schema](r.result);
+            r.onsuccess = () => res(r.result);
+            r.onerror = () => rej(r.error);
+            r.onblocked = () => rej(new Error('The ' + name + ' database is open in another window. Close it and try again.'));
+          });
+        }
+        const hasBlob = v => {
+          if (v instanceof Blob || v instanceof ArrayBuffer) return true;
+          if (v && typeof v === 'object') for (const k of Object.keys(v)) if (hasBlob(v[k])) return true;
+          return false;
+        };
+
+        /* ---------- readers (no writes) ---------- */
+        async function readSet(def) {
+          const d = await openDb(def.db, def.v, def.schema);
+          try { return await reqP(d.transaction(def.store).objectStore(def.store).getAll()); } finally { d.close(); }
+        }
+        async function readAudio() {
+          const d = await openDb('PianoLoggerVoiceStudio', 1, 'voice');
+          try {
+            const s = d.transaction('audio').objectStore('audio');
+            const keys = await reqP(s.getAllKeys()), vals = await reqP(s.getAll());
+            return keys.map((k, i) => ({ key: k, value: vals[i] }));
+          } finally { d.close(); }
+        }
+        async function readAvatar() {
+          const d = await openDb('PianoLoggerAssets', 2, 'assets');
+          try { return (await reqP(d.transaction('user').objectStore('user').get('avatar'))) || null; } finally { d.close(); }
+        }
+        const voiceSessions = async () => (window.__vaBackup ? await window.__vaBackup() : []);
+
+        /* ---------- the manifest: every item, its exact size and checksum (used by the preview AND the uploader) ---------- */
+        // item: { category, item_key, count, mime, path_ext, bytes (final bytes), sha256 }
+        async function build(uid, devId) {
+          const raw = [];                                                       // { category, item_key, count, mime, text | direct }
+          for (const def of SET_CATS) {
+            const recs = await readSet(def);
+            if (!recs.length) continue;
+            if (recs.some(hasBlob)) throw new Error('The ' + def.cat.replace(/_/g, ' ') + ' records contain binary data, which this version does not send yet.');
+            raw.push({ category: def.cat, item_key: def.cat, count: recs.length, mime: 'application/json', text: JSON.stringify({ format: FORMAT, category: def.cat, count: recs.length, items: recs }) });
+          }
+          for (const cat of Object.keys(LS_CATS)) {
+            const keys = {}; let n = 0;
+            for (const k of LS_CATS[cat]) { let v = null; try { v = localStorage.getItem(k); } catch (e) { } if (v != null) { keys[k] = v; n++; } }
+            if (n) raw.push({ category: cat, item_key: cat, count: n, mime: 'application/json', text: JSON.stringify({ format: FORMAT, category: cat, count: n, keys }) });
+          }
+          for (const a of await readAudio()) {
+            const b = a.value;
+            const bytes = b instanceof Blob ? new Uint8Array(await b.arrayBuffer()) : b instanceof ArrayBuffer ? new Uint8Array(b) : null;
+            if (!bytes) throw new Error('A saved voice recording is not in a form this version can send.');
+            raw.push({ category: 'voice_audio', item_key: String(a.key), count: 1, mime: (b.type || 'application/octet-stream'), direct: bytes });
+          }
+          const av = await readAvatar();
+          if (av) {
+            raw.push({ category: 'avatar', item_key: 'meta', count: 1, mime: 'application/json', text: JSON.stringify({ format: FORMAT, type: av.type || null, origType: av.origType || null, crop: av.crop || null, at: av.at || null }) });
+            if (av.blob instanceof Blob) raw.push({ category: 'avatar', item_key: 'image', count: 1, mime: av.blob.type || 'image/webp', direct: new Uint8Array(await av.blob.arrayBuffer()) });
+            if (av.origBlob instanceof Blob) raw.push({ category: 'avatar', item_key: 'original', count: 1, mime: av.origType || av.origBlob.type || 'image/webp', direct: new Uint8Array(await av.origBlob.arrayBuffer()) });
+          }
+          // large settings values: the settings channel leaves them to this module
+          for (const key of Object.keys(CSX.SETTINGS)) {
+            const val = CSX.readSetting(key); if (!val) continue;
+            if (JSON.stringify(val).length <= SETTINGS_MAX) continue;
+            const keys = {};                                               // the exact stored text, so a restore puts back the same bytes
+            for (const k of CSX.SETTINGS[key]) { let v = null; try { v = localStorage.getItem(k); } catch (e) { } if (v != null) keys[k] = v; }
+            raw.push({ category: 'settings_large', item_key: key, count: Object.keys(keys).length, mime: 'application/json', text: JSON.stringify({ format: FORMAT, key, keys }) });
+          }
+          // large voice sessions: the voice channel leaves them to this module
+          for (const s of await voiceSessions()) {
+            if (s.sessionStatus !== 'completed' && s.sessionStatus !== 'interrupted') continue;
+            const text = JSON.stringify(s); if (text.length <= VOICE_MAX) continue;
+            raw.push({ category: 'voice_large', item_key: String(s.sessionId), count: 1, mime: 'application/json', text: JSON.stringify({ format: FORMAT, session: s }) });
+          }
+          const items = [];
+          for (const r of raw) {
+            const body = r.direct ? r.direct : await CSK.gzip(enc(r.text));
+            const ext = r.direct ? '.bin' : '.json.gz';
+            const path = uid + '/' + devId + '/files/' + r.category + '/' + encodeURIComponent(r.item_key) + ext;
+            items.push({ category: r.category, item_key: r.item_key, count: r.count, mime: r.mime, bytes: body.length, sha256: await CSK.sha256Full(body), storage_path: path, body });
+          }
+          return items;
+        }
+        // the small summary the preview shows: per category, the number of items/records and the bytes that would be sent
+        function summarize(items) {
+          const out = new Map();
+          for (const it of items) {
+            const o = out.get(it.category) || { category: it.category, items: 0, records: 0, bytes: 0 };
+            o.items++; o.records += it.count; o.bytes += it.bytes; out.set(it.category, o);
+          }
+          return out;
+        }
+
+        /* ---------- engine channel: upload what changed (checksum per item) ---------- */
+        function channel(h) {
+          return {
+            name: 'files', lost: [],
+            async run(ctx) {
+              if (!h.prefs().extras) return;
+              const meta = ctx.meta;
+              if (meta.filesAt && ctx.now() - meta.filesAt < 600000) return;     // at most every 10 minutes, like the settings channel
+              const uid = h.uid(), items = await build(uid, ctx.dev.id);
+              const rows = [], sent = [];
+              for (const it of items) {
+                const k = 'file:' + it.category + '|' + it.item_key, rec = await ctx.store.get(k);
+                if (rec && rec.sha === it.sha256) continue;
+                await ctx.net.upload(it.storage_path, it.body);
+                const version = CSC.nextVersion(rec && rec.version, ctx.now(), ctx.skew);
+                rows.push({ category: it.category, item_key: it.item_key, mime: it.mime, item_count: it.count, bytes: it.bytes, sha256: it.sha256, storage_path: it.storage_path, version, deleted_at: null });
+                sent.push({ k, sha: it.sha256, version });
+              }
+              for (const part of CSC.chunk(rows, 100)) await ctx.net.rpc('sync_push_files', { p_device: ctx.dev.id, p_rows: part });
+              // read back: every item sent must be listed online with the same checksum before it counts as uploaded
+              if (sent.length) {
+                const back = await ctx.net.selectAll('category_files', 'select=category,item_key,sha256&device_id=eq.' + ctx.dev.id + '&deleted_at=is.null');
+                const m = new Map(back.map(r => [r.category + '|' + r.item_key, r.sha256]));
+                const bad = rows.filter(r => m.get(r.category + '|' + r.item_key) !== r.sha256);
+                if (bad.length) throw new ctx.net.CSNError(bad.length + ' item(s) of your other data were not confirmed by the cloud; they will be sent again', { kind: 'server', retry: true });
+                for (const s of sent) await ctx.store.set(s.k, { sha: s.sha, version: s.version });
+              }
+              meta.filesAt = ctx.now(); await ctx.store.set('meta', meta);
+            }
+          };
+        }
+
+        /* ---------- restore (add-only; checksum checked before anything is written) ---------- */
+        async function restore(h, progress) {
+          const net = h.net, say = p => { try { progress && progress(p); } catch (e) { } };
+          const out = { sets: 0, ls: 0, audio: 0, avatar: 0, settingsLarge: 0, voiceLarge: 0, reload: false };
+          const rows = await net.selectAll('category_files', 'select=category,item_key,mime,item_count,bytes,sha256,storage_path&deleted_at=is.null&order=category.asc');
+          const avatar = {};                                               // the three avatar parts are written together, once
+          let i = 0;
+          for (const r of rows) {
+            say({ phase: 'Restoring ' + r.category.replace(/_/g, ' ') + '…', done: i++, total: rows.length });
+            const body = new Uint8Array(await net.download(r.storage_path));
+            if ((await CSK.sha256Full(body)) !== r.sha256) throw new Error('A downloaded file for ' + r.category + ' does not match its checksum. Nothing from it was added.');
+            if (r.category === 'voice_audio') { out.audio += await putAudio(r.item_key, body, r.mime); continue; }
+            if (r.category === 'avatar') { avatar[r.item_key] = { body, mime: r.mime }; continue; }
+            const doc = JSON.parse(await CSK.gunzip(body));
+            if (r.category === 'settings_large') { out.settingsLarge += putLsMissing(doc.keys || {}); out.reload = true; continue; }
+            if (r.category === 'voice_large') { if (await addVoiceMissing(doc.session)) out.voiceLarge++; continue; }
+            if (LS_CATS[r.category]) { out.ls += putLsMissing(doc.keys || {}); out.reload = true; continue; }
+            const def = SET_CATS.find(d => d.cat === r.category);
+            if (def) out.sets += await putSetAddOnly(def, doc.items || []);
+          }
+          if (avatar.meta) { out.avatar += await putAvatar(avatar); out.reload = true; }
+          say({ phase: 'Restoring your other data…', done: rows.length, total: rows.length });
+          return out;
+        }
+        function putLsMissing(keys) {
+          let n = 0;
+          for (const k of Object.keys(keys)) { try { if (localStorage.getItem(k) == null) { localStorage.setItem(k, keys[k]); n++; } } catch (e) { } }
+          return n;
+        }
+        // add-only: a record whose key already exists here is left as it is
+        async function putSetAddOnly(def, recs) {
+          if (!recs.length) return 0;
+          const d = await openDb(def.db, def.v, def.schema);
+          try {
+            const keyOf = rec => def.store === 'progress' ? rec.k : rec.id;
+            const s = d.transaction(def.store).objectStore(def.store);
+            const missing = [];
+            for (const rec of recs) if ((await reqP(s.getKey(keyOf(rec)))) === undefined) missing.push(rec);
+            if (!missing.length) return 0;
+            const tx = d.transaction(def.store, 'readwrite'), w = tx.objectStore(def.store);
+            for (const rec of missing) w.add(rec);
+            await txP(tx);
+            return missing.length;
+          } finally { d.close(); }
+        }
+        async function putAudio(key, bytes, mime) {
+          const d = await openDb('PianoLoggerVoiceStudio', 1, 'voice'), tx = d.transaction('audio', 'readwrite'), s = tx.objectStore('audio');
+          const k = /^\d+$/.test(key) ? Number(key) : key;
+          const exists = await reqP(s.getKey(k));
+          let n = 0;
+          if (exists === undefined) { s.put(new Blob([bytes], { type: mime }), k); n = 1; }
+          await txP(tx); d.close(); return n;
+        }
+        // parts: { meta: {body}, image: {body,mime}?, original: {body,mime}? } · a profile picture already on this computer is kept
+        async function putAvatar(parts) {
+          const d = await openDb('PianoLoggerAssets', 2, 'assets');
+          try {
+            const cur = await reqP(d.transaction('user').objectStore('user').get('avatar'));
+            if (cur) return 0;
+            const meta = JSON.parse(await CSK.gunzip(parts.meta.body));
+            const rec = { k: 'avatar', at: meta.at || Date.now(), crop: meta.crop || undefined, type: meta.type || undefined };
+            if (parts.image) rec.blob = new Blob([parts.image.body], { type: parts.image.mime });
+            if (parts.original) { rec.origBlob = new Blob([parts.original.body], { type: parts.original.mime }); rec.origType = meta.origType || undefined; }
+            const tx = d.transaction('user', 'readwrite'); tx.objectStore('user').put(rec); await txP(tx);
+            return 1;
+          } finally { d.close(); }
+        }
+        async function addVoiceMissing(session) {
+          if (!session || typeof session.sessionId !== 'string') return false;
+          const have = (await voiceSessions()).some(s => s.sessionId === session.sessionId);
+          if (have) return false;
+          await CSX.putVoice([session]);
+          return true;
+        }
+
+        return { FORMAT, SETTINGS_MAX, VOICE_MAX, LS_CATS, SET_CATS, build, summarize, channel, restore, enc };
+      })();
+
+      /* =====================================================================
+         v9.2.0 — CLOUD SYNC EXTRAS: the three optional channels (settings and notes, voice sessions, raw key-press files),
+         "Restore from the cloud" (for a new or reinstalled computer) and "Download my cloud data".
+         Rules kept here: everything that goes UP is read-only on this computer; everything that comes DOWN happens only in an
+         explicit Restore, only adds (the app's own duplicate-safe import) and is offered after a backup prompt.
+         Source of truth: tools/v920/cs-extra.js (spliced into the page by tools/v920/splice.js).
+         ===================================================================== */
+      const CSX = (() => {
+        // the user-owned things that are kept online (everything else, such as themes and graphics, stays on this computer)
+        const SETTINGS = { 'profile.identity': ['pll.profile'], journal: ['pll.journal'], routines: ['pll.routines'], badges: ['pll.badges', 'pll.badges3'], best: ['pll.best'] };
+        const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const readSetting = key => {
+          const o = {}; let any = false;
+          for (const k of SETTINGS[key]) { let raw = null; try { raw = localStorage.getItem(k); } catch (e) { } if (raw != null) { try { o[k] = JSON.parse(raw); any = true; } catch (e) { } } }
+          return any ? o : null;
+        };
+        async function uuidFor(id) {                               // voice session ids are not always UUIDs: make a stable UUID from them
+          if (UUID.test(id)) return id.toLowerCase();
+          const h = await CSK.sha256Full(new TextEncoder().encode('pl-voice:' + id));
+          return h.slice(0, 8) + '-' + h.slice(8, 12) + '-4' + h.slice(13, 16) + '-8' + h.slice(17, 20) + '-' + h.slice(20, 32);
+        }
+
+        /* ---------- channels the engine runs after the days ---------- */
+        // h: { net, prefs(), LOCAL, uid(), progress: {} }
+        function channels(h) {
+          const settings = {
+            name: 'settings',
+            async run(ctx) {
+              if (!h.prefs().extras) return;
+              const meta = ctx.meta; if (meta.setAt && ctx.now() - meta.setAt < 600000) return;      // the profile changes every few seconds while playing: at most every 10 minutes
+              const rows = [];
+              for (const key of Object.keys(SETTINGS)) {
+                const val = readSetting(key); if (!val) continue;
+                const text = JSON.stringify(val); if (text.length > CSF.SETTINGS_MAX) continue;   // larger values are sent as a file by the files channel (never dropped)
+                const sig = await CSC.sha256Hex(text), rec = await ctx.store.get('set:' + key);
+                if (rec && rec.sig === sig) continue;
+                rows.push({ key, value: val, version: CSC.nextVersion(rec && rec.version, ctx.now(), ctx.skew), _sig: sig });
+              }
+              meta.setAt = ctx.now(); await ctx.store.set('meta', meta);
+              if (!rows.length) return;
+              await ctx.net.rpc('sync_push_settings', { p_device: ctx.dev.id, p_rows: rows.map(r => ({ key: r.key, value: r.value, version: r.version })) });
+              for (const r of rows) await ctx.store.set('set:' + r.key, { sig: r._sig, version: r.version });
+            }
+          };
+          const voice = {
+            name: 'voice', lost: [],
+            async run(ctx) {
+              if (!h.prefs().extras || !window.__vaBackup) return;
+              const list = (await window.__vaBackup()).filter(s => s.sessionStatus === 'completed' || s.sessionStatus === 'interrupted');
+              const known = new Map((await ctx.store.list('voice:')).map(([k, v]) => [k.slice(6), v]));
+              const rows = [];
+              for (const s of list) {
+                const sig = [s.updatedAt, s.sessionStatus, s.activeVoiceDurationMs, s.endTimestamp].join('|'), rec = known.get(s.sessionId);
+                if (rec && rec.sig === sig) continue;
+                if (JSON.stringify(s).length > CSF.VOICE_MAX) continue;      // larger sessions are sent as a file by the files channel (never dropped)
+                rows.push({ session_id: await uuidFor(s.sessionId), activity_type: s.activityType, start_ts: s.startTimestamp, local_date: s.localDate, active_ms: s.activeVoiceDurationMs, status: s.sessionStatus, payload: s, version: CSC.nextVersion(rec && rec.version, ctx.now(), ctx.skew), _id: s.sessionId, _sig: sig });
+              }
+              for (const part of CSC.chunk(rows, 100)) {
+                await ctx.net.rpc('sync_push_voice', { p_device: ctx.dev.id, p_rows: part.map(r => ({ session_id: r.session_id, activity_type: r.activity_type, start_ts: r.start_ts, local_date: r.local_date, active_ms: r.active_ms, status: r.status, payload: r.payload, version: r.version })) });
+                for (const r of part) await ctx.store.set('voice:' + r._id, { sig: r._sig, version: r.version, row: { session_id: r.session_id, activity_type: r.activity_type, start_ts: r.start_ts, local_date: r.local_date, status: r.status } });
+                await ctx.gap();
+              }
+              const have = new Set(list.map(s => s.sessionId)); voice.lost = [...known.keys()].filter(id => !have.has(id)); voice.ctx = ctx;
+            },
+            // sessions deleted on this computer are NOT deleted online unless the user says so
+            async confirmLoss(ctx) {
+              const t = ctx.now(); let n = 0;
+              for (const id of voice.lost) {
+                const rec = await ctx.store.get('voice:' + id); if (!rec || !rec.row) continue;
+                await ctx.net.rpc('sync_push_voice', { p_device: ctx.dev.id, p_rows: [Object.assign({}, rec.row, { payload: {}, version: CSC.nextVersion(rec.version, t, ctx.skew), deleted_at: ctx.iso(t + ctx.skew) })] });
+                await ctx.store.del('voice:' + id); n++;
+              }
+              voice.lost = []; return n;
+            }
+          };
+          const chunks = {
+            name: 'chunks',
+            async run(ctx) {
+              if (!h.prefs().raw) { h.progress.raw = null; return; }
+              if (!ctx.meta.rawFlag) { await ctx.net.rpc('sync_set_prefs', { p_raw: true, p_settings: null, p_display_name: null }); ctx.meta.rawFlag = true; await ctx.store.set('meta', ctx.meta); }
+              const counts = await h.LOCAL.dayCounts(), days = Object.keys(counts).filter(k => CSC.validDay(k) && counts[k] > 0).sort().reverse();
+              const recs = new Map((await ctx.store.list('chunk:')).map(([k, v]) => [k.slice(6), v]));
+              const todo = days.filter(d => { const r = recs.get(d); return !r || r.seen !== counts[d]; });
+              const uid = h.uid(); let done = days.length - todo.length; h.progress.raw = { done, total: days.length };
+              const sent = [];
+              for (let i = 0; i < todo.length; i++) {
+                await ctx.idle();
+                const day = todo[i], rows = await h.LOCAL.readDay(day), pk = await CSK.pack(day, rows), prev = recs.get(day);
+                if (prev && prev.sha === pk.sha256) { await ctx.store.set('chunk:' + day, Object.assign({}, prev, { seen: counts[day] })); h.progress.raw = { done: ++done, total: days.length }; continue; }
+                await ctx.net.upload(uid + '/' + ctx.dev.id + '/' + day + '-presses.pc.gz', pk.bytes);
+                const version = CSC.nextVersion(prev && prev.version, ctx.now(), ctx.skew);
+                await ctx.net.rpc('sync_push_chunks', { p_device: ctx.dev.id, p_rows: [{ day, kind: 'presses', count: pk.count, bytes: pk.bytes.length, sha256: pk.sha256, first_ts: pk.first_ts, last_ts: pk.last_ts, version }] });
+                await ctx.store.set('chunk:' + day, { seen: counts[day], sha: pk.sha256, version, count: pk.count });
+                sent.push(day); h.progress.raw = { done: ++done, total: days.length }; await ctx.gap();
+              }
+              // read the manifest back: every day we sent must be listed with the same checksum
+              for (const win of CSC.chunk(sent, 200)) {
+                const back = await ctx.net.select('press_chunks', 'select=day,sha256,count&kind=eq.presses&device_id=eq.' + ctx.dev.id + '&day=in.(' + win.join(',') + ')');
+                const m = new Map(back.map(r => [r.day, r]));
+                const bad = win.filter(d => { const r = m.get(d), rec = recs.get(d); return !r; });
+                for (const d of win) { const r = m.get(d); const rec = await ctx.store.get('chunk:' + d); if (r && rec && r.sha256 !== rec.sha) bad.push(d); }
+                if (bad.length) { for (const d of bad) await ctx.store.del('chunk:' + d); throw new ctx.net.CSNError(bad.length + ' press file(s) were not confirmed by the cloud; they will be sent again', { kind: 'server', retry: true }); }
+              }
+              h.progress.raw = { done: days.length, total: days.length };
+            }
+          };
+          const files = CSF.channel(h);
+          return { settings, voice, chunks, files };
+        }
+
+        /* ---------- delete the online press files (used by "Delete my cloud data") ---------- */
+        async function removeAllChunks(h) {
+          const uid = h.uid(), paths = [];
+          for (const f of await h.net.listObjects(uid)) {
+            if (f.id === null) for (const o of await h.net.listObjects(uid + '/' + f.name)) paths.push(uid + '/' + f.name + '/' + o.name); else paths.push(uid + '/' + f.name);
+          }
+          for (const part of CSC.chunk(paths, 100)) await h.net.removeObjects(part);
+          return paths.length;
+        }
+
+        /* ---------- what the cloud holds, for the Restore window ---------- */
+        async function restoreInfo(h) {
+          const net = h.net;
+          const [devices, chunks, voice, sets] = await Promise.all([
+            net.selectAll('devices', 'select=id,name,platform,app_version,days_total,days_uploaded,revoked_at,last_sync_ok&order=first_seen.asc'),
+            net.selectAll('press_chunks', 'select=device_id,day,count&kind=eq.presses&deleted_at=is.null&order=day.asc'),
+            net.selectAll('voice_sessions', 'select=session_id&deleted_at=is.null'),
+            net.selectAll('user_settings', 'select=key&deleted_at=is.null')
+          ]);
+          const per = new Map();
+          for (const c of chunks) { const p = per.get(c.device_id) || { days: 0, presses: 0, from: c.day, to: c.day }; p.days++; p.presses += c.count; if (c.day < p.from) p.from = c.day; if (c.day > p.to) p.to = c.day; per.set(c.device_id, p); }
+          return { devices: devices.map(d => Object.assign({}, d, { raw: per.get(d.id) || null })), voiceCount: voice.length, settingKeys: sets.map(s => s.key) };
+        }
+
+        /* ---------- Restore ---------- */
+        // opts: { device: id|null (take over this device's raw press history), voice: bool, settings: bool }
+        // h: { net, uid(), devInfo(), setDevice(id, name), pauseEngine(), page:{sanitize, writeBatch, applySettingsBackup, refresh}, LOCAL }
+        async function restore(h, opts, progress) {
+          const net = h.net, out = { presses: 0, dup: 0, voice: 0, settings: 0, days: 0, reload: false };
+          const say = p => { try { progress && progress(p); } catch (e) { } };
+          h.pauseEngine();
+          if (opts.device) {
+            const info = await restoreInfo(h), src = info.devices.find(d => d.id === opts.device); if (!src || !src.raw) throw new Error('That device has no press history online');
+            const cur = h.devInfo().id;
+            if (cur !== opts.device) {          // this computer takes over the old device's identity so nothing is counted twice
+              say({ phase: 'Taking over "' + src.name + '"…' });
+              try { await net.rpc('sync_forget_device', { p_id: cur }); } catch (e) { if (!(e && e.status === 403)) throw e; }
+              const stale = await net.listObjects(h.uid() + '/' + cur).catch(() => []);
+              if (stale.length) await net.removeObjects(stale.map(o => h.uid() + '/' + cur + '/' + o.name)).catch(() => { });
+              await h.setDevice(opts.device, src.name);
+            }
+            const list = await net.selectAll('press_chunks', 'select=day,count,sha256,storage_path&kind=eq.presses&deleted_at=is.null&device_id=eq.' + opts.device + '&order=day.asc');
+            let i = 0; const total = list.length;
+            const work = async () => {
+              while (i < list.length) {
+                const c = list[i++]; say({ phase: 'Restoring your key presses', done: i - 1, total, added: out.presses });
+                const bytes = new Uint8Array(await net.download(c.storage_path)), day = await CSK.unpack(bytes, c.sha256);
+                const recs = day.rows.map(r => h.page.sanitize(r)).filter(Boolean);
+                for (const part of CSC.chunk(recs, 2000)) { const r = await h.page.writeBatch(part); out.presses += r.added; out.dup += r.dup; }
+                out.days++;
+              }
+            };
+            await Promise.all([work(), work(), work()]);
+            say({ phase: 'Restoring your key presses', done: total, total, added: out.presses });
+          }
+          if (opts.voice) {
+            const rows = await net.selectAll('voice_sessions', 'select=session_id,payload&deleted_at=is.null');
+            const have = new Set(window.__vaBackup ? (await window.__vaBackup()).map(s => s.sessionId) : []);
+            const fresh = rows.map(r => r.payload).filter(p => p && typeof p.sessionId === 'string' && !have.has(p.sessionId));
+            if (fresh.length) { await putVoice(fresh); out.voice = fresh.length; out.reload = true; }
+          }
+          if (opts.settings) {
+            const rows = await net.selectAll('user_settings', 'select=key,value&deleted_at=is.null');
+            const ls = {};
+            for (const r of rows) if (SETTINGS[r.key] && r.value && typeof r.value === 'object') for (const k of SETTINGS[r.key]) if (r.value[k] !== undefined) ls[k] = JSON.stringify(r.value[k]);
+            if (Object.keys(ls).length) { await h.page.applySettingsBackup({ localStorage: ls, gestures: [] }); out.settings = Object.keys(ls).length; out.reload = true; }
+          }
+          if (opts.settings) {                                   // the other categories (sung notes, Sheet Music, takes, recordings, quests, ...) are add-only
+            say({ phase: 'Restoring your other data…' });
+            const f = await CSF.restore(h, progress);
+            out.other = f; if (f.reload) out.reload = true;
+          }
+          if (out.presses && h.page.refresh) h.page.refresh();
+          return out;
+        }
+        // adds voice sessions to the voice activity database (existing ids are never touched); the page sanitises them when it reloads
+        function putVoice(list) {
+          return new Promise((res, rej) => {
+            const r = indexedDB.open('PianoLoggerVoiceActivity', 1);
+            r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('voiceSessions')) { const s = d.createObjectStore('voiceSessions', { keyPath: 'sessionId' }); s.createIndex('activityType', 'activityType'); s.createIndex('startTimestamp', 'startTimestamp'); s.createIndex('localDate', 'localDate'); } };
+            r.onerror = () => rej(r.error);
+            r.onsuccess = () => {
+              const d = r.result, tx = d.transaction('voiceSessions', 'readwrite'), s = tx.objectStore('voiceSessions');
+              list.forEach(o => { const q = s.add(o); q.onerror = e => { e.preventDefault(); e.stopPropagation(); }; });
+              tx.oncomplete = () => { d.close(); res(); }; tx.onerror = tx.onabort = () => rej(tx.error);
+            };
+          });
+        }
+
+        /* ---------- "Download my cloud data": a file the app's own Restore understands ---------- */
+        async function exportAll(h, progress) {
+          const net = h.net, say = p => { try { progress && progress(p); } catch (e) { } };
+          say({ phase: 'Collecting your cloud data…' });
+          const [devices, daily, sessions, voice, sets, chunks] = await Promise.all([
+            net.selectAll('devices', 'select=id,name,platform,app_version,first_seen,last_sync_ok,days_total,days_uploaded,revoked_at&order=first_seen.asc'),
+            net.selectAll('daily_stats', 'select=device_id,day,presses,active_ms,hours,vel_sum,dur_sum_ms,max_poly,first_ts,last_ts&deleted_at=is.null&order=day.asc'),
+            net.selectAll('practice_sessions', 'select=device_id,start_ts,end_ts,presses,active_ms,day,tz&deleted_at=is.null&order=start_ts.asc'),
+            net.selectAll('voice_sessions', 'select=session_id,payload&deleted_at=is.null'),
+            net.selectAll('user_settings', 'select=key,value&deleted_at=is.null'),
+            net.selectAll('press_chunks', 'select=day,storage_path,sha256,count&kind=eq.presses&deleted_at=is.null&order=day.asc')
+          ]);
+          const ls = {};
+          for (const r of sets) if (SETTINGS[r.key] && r.value && typeof r.value === 'object') for (const k of SETTINGS[r.key]) if (r.value[k] !== undefined) ls[k] = JSON.stringify(r.value[k]);
+          const head = '{"app":"piano-lifetime-logger","version":1,"kind":"backup","exportedAt":"' + new Date().toISOString() + '","source":"cloud-export",' +
+            '"settings":' + JSON.stringify({ format: 1, appVersion: APP_VERSION, savedAt: new Date().toISOString(), localStorage: ls, gestures: [] }) + ',' +
+            '"voiceActivityVersion":1,"voiceSessions":' + JSON.stringify(voice.map(v => v.payload).filter(Boolean)) + ',' +
+            '"cloud":' + JSON.stringify({ devices, dailyTotals: daily, practiceSessions: sessions }) + ',"logs":[';
+          let blob = new Blob([head]), parts = [], size = 0, n = 0, i = 0;
+          for (const c of chunks) {
+            say({ phase: 'Downloading your key presses', done: i++, total: chunks.length });
+            const day = await CSK.unpack(new Uint8Array(await net.download(c.storage_path)), c.sha256);
+            const recs = day.rows.map(r => h.page.sanitize(r)).filter(Boolean);
+            if (recs.length) { const s = (n ? ',' : '') + recs.map(r => JSON.stringify(r)).join(','); parts.push(s); size += s.length; n += recs.length; if (size > 8e6) { blob = new Blob([blob, ...parts]); parts = []; size = 0; } }
+          }
+          blob = new Blob([blob, ...parts, '],"count":' + n + '}'], { type: 'application/json' });
+          return { blob, presses: n, days: daily.length, devices: devices.length };
+        }
+
+        return { SETTINGS, readSetting, uuidFor, channels, removeAllChunks, restoreInfo, restore, exportAll, putVoice };
+      })();
+
+      /* =====================================================================
+         v9.2.0 — CLOUD SYNC (page side): the small status chip, the "Cloud sync" account window, the local adapter that
+         lets the engine READ the press log, and the wiring. Own database: PianoLoggerSync (v1). The lifetime logger
+         (PianoLifetimeLogger) is never written by anything in this module.
+         If you never sign in, this module makes no network request at all.
+         Source of truth: tools/v920/cs-ui.js (spliced into the page by tools/v920/splice.js).
+         ===================================================================== */
+      const CSU = (() => {
+        // The project address and its PUBLIC key (the database rules protect the data; the key alone gives no access to anyone's data).
+        const CFG = { url: 'https://rrlfnghoxocplelqigdc.supabase.co', key: 'sb_publishable_j1cAUpJiW1hqJcKDD9Kk7Q_0jOaV7o6' };
+        // E-mail links (confirm the account, choose a new password) always open Piano Logger Cloud on the website, which handles them. The app's own
+        // address (http://pianologger.localhost) is not reachable from an e-mail, so it is never used for that.
+        const DASH = 'https://kosandra0.github.io/Piano_Logger_Website/dashboard/';
+        const K = { session: 'pll.sync.session', device: 'pll.sync.device', prefs: 'pll.sync.prefs', owner: 'pll.sync.owner' };
+        const isApp = () => !!(window.pianoApp && window.pianoApp.isApp);
+        // the desktop shell must be new enough to allow the connection (its security rules are part of the installed program)
+        const appOk = () => !isApp() || !!(window.pianoApp.caps && window.pianoApp.caps.cloudSync);
+        // enabled: sync this device (OFF by default: nothing uploads until the owner approves a first-upload preview) · extras: settings, notes and voice history · raw: every key press
+        // 9.3.0: extras and raw are honoured as stored (the owner's directive approves the full backup). Both default OFF for a new profile.
+        const prefs = () => Object.assign({ enabled: false, extras: false, raw: false }, LS.get(K.prefs, {}));
+        const setPrefs = p => LS.set(K.prefs, Object.assign(prefs(), p));
+        const ST = { eng: null, engUid: null, status: null, ownerBlocked: false, devices: null, devErr: '', msg: '', msgTone: '', mode: 'in', busy: false, confirm: '', lastChange: 0, leader: false, rename: null, oauth: null, oauthWait: false, ch: null, progress: { raw: null }, restore: null, exporting: '', prev: null };
+        ICO.cloud = '<path d="M7 18a4 4 0 0 1-.7-7.94A6 6 0 0 1 18 9.3 4.4 4.4 0 0 1 17.5 18Z"/>';
+
+        /* ---------- this device ---------- */
+        function devInfo() {
+          let d = LS.get(K.device, null);
+          if (!d || !d.id) { d = { id: CSC.newDeviceId(), name: isApp() ? 'Windows app' : 'Web browser' }; LS.set(K.device, d); }
+          let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { }
+          return { id: d.id, name: d.name, platform: isApp() ? 'windows-app' : 'web', appVersion: APP_VERSION, tz };
+        }
+
+        /* ---------- own database (per signed-in user, so two accounts never mix their progress) ---------- */
+        let sdb = null;
+        function openSyncDb() {
+          if (sdb) return sdb;
+          return sdb = new Promise((res, rej) => { const r = indexedDB.open('PianoLoggerSync', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+        }
+        async function userStore(uid) {
+          const d = await openSyncDb(), p = uid + ':';
+          const tx = (mode, fn) => new Promise((res, rej) => { const t = d.transaction('kv', mode), s = t.objectStore('kv'); let out; try { out = fn(s); } catch (e) { rej(e); return; } t.oncomplete = () => res(out && 'result' in out ? out.result : undefined); t.onerror = t.onabort = () => rej(t.error); });
+          return {
+            get: k => tx('readonly', s => s.get(p + k)),
+            set: (k, v) => tx('readwrite', s => s.put(v, p + k)),
+            del: k => tx('readwrite', s => s.delete(p + k)),
+            async list(prefix) {
+              const range = IDBKeyRange.bound(p + prefix, p + prefix + '￿');
+              return new Promise((res, rej) => { const t = d.transaction('kv'), s = t.objectStore('kv'), keys = s.getAllKeys(range), vals = s.getAll(range); t.oncomplete = () => res(keys.result.map((k, i) => [k.slice(p.length), vals.result[i]])); t.onerror = () => rej(t.error); });
+            }
+          };
+        }
+
+        /* ---------- the local press log, read-only ---------- */
+        const LOCAL = {
+          async dayCounts() { try { const g = await getOne('agg', 'global'); return Object.assign({}, (g && g.days) || {}); } catch (e) { return {}; } },
+          async readDay(day) { if (!db) throw new Error('The local database is not open'); return reqP(db.transaction('logs').objectStore('logs').index('date').getAll(IDBKeyRange.only(day))); }
+        };
+
+        /* ---------- network ---------- */
+        const net = CSN.create({
+          url: CFG.url, key: CFG.key,
+          store: { get: () => LS.get(K.session, null), set: v => LS.set(K.session, v), clear: () => { try { localStorage.removeItem(K.session); } catch (e) { } } }
+        });
+        net.onAuth(() => { paint(); });
+
+        /* ---------- engine ---------- */
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        async function waitQuiet() { for (let i = 0; i < 20 && Date.now() - ST.lastChange < 1500; i++) await sleep(500); }   // never upload in the middle of playing
+        let leaderP = null;
+        function whenLeader() {                                    // only ONE window per browser syncs (another waits and takes over when it closes)
+          if (leaderP) return leaderP;
+          return leaderP = new Promise(res => { if (!navigator.locks) { ST.leader = true; res(); return; } navigator.locks.request('pianologger-sync', () => { ST.leader = true; res(); return new Promise(() => { }); }); });
+        }
+        async function ensureEngine() {
+          const u = net.user(); if (!u || !appOk()) return null;
+          if (ST.eng && ST.engUid === u.id) return ST.eng;
+          if (ST.eng) ST.eng.stop();
+          const owner = LS.get(K.owner, null);
+          if (owner && owner !== u.id) { ST.ownerBlocked = true; ST.eng = null; paint(); return null; }
+          ST.ownerBlocked = false; if (!owner) LS.set(K.owner, u.id);
+          const store = await userStore(u.id);
+          // canRun: nothing is read or uploaded until the account's two-step sign-in is satisfied (no authenticator on the account, or its code was checked in this session)
+          ST.eng = CSE.create({ net, local: LOCAL, store, device: devInfo(), enabled: () => prefs().enabled && !ST.ownerBlocked, canRun: () => net.mfaOk(), mfaPending: mfaPending, appOk, online: () => navigator.onLine !== false, idle: waitQuiet });
+          ST.engUid = u.id; ST.eng.onStatus(st => { ST.status = st; paint(); });
+          ST.ch = CSX.channels(mkH()); ST.eng.addChannel(ST.ch.settings); ST.eng.addChannel(ST.ch.voice); ST.eng.addChannel(ST.ch.chunks); ST.eng.addChannel(ST.ch.files);
+          await whenLeader();
+          await ST.eng.start();
+          // find out (without waiting, and without needing a connection to record) whether the account has an authenticator; when the check is satisfied the engine looks again
+          net.mfaStatus().then(() => { if (ST.eng && net.mfaOk()) ST.eng.backOnline(); paint(); }).catch(() => { });
+          return ST.eng;
+        }
+        // the sign-in is not finished: the account has an authenticator and this session has not checked its code
+        function mfaPending() { return net.mfaState().pending; }
+        const stop = () => { if (ST.eng) ST.eng.stop(); ST.eng = null; ST.engUid = null; ST.status = null; };
+
+        /* ---------- hooks into the page (wrap-and-append: nothing inside the logging code is edited) ---------- */
+        const _sr = scheduleRefresh;
+        scheduleRefresh = function () { try { ST.lastChange = Date.now(); if (ST.eng) ST.eng.notifyChanged(); } catch (e) { } return _sr.apply(this, arguments); };
+        window.addEventListener('online', () => { if (ST.eng) ST.eng.backOnline(); });
+        window.addEventListener('offline', () => { if (ST.eng) ST.eng.wentOffline(); });
+
+        /* ---------- status chip ---------- */
+        function curStatus() {
+          if (!appOk()) return CSC.statusOf({ enabled: true, signedIn: true, appOk: false });     // an old desktop shell cannot connect at all: say so first
+          if (!net.signedIn()) return { code: 'off', text: 'Cloud sync: not signed in', tone: 'muted' };
+          if (ST.ownerBlocked) return { code: 'auth', text: 'This device uses another account', tone: 'warn' };
+          if (mfaPending()) return { code: 'mfa', text: 'Enter your authenticator code', tone: 'warn' };       // signing in is not finished, whatever the sync setting is
+          if (!prefs().enabled) return { code: 'off', text: 'Cloud sync is off', tone: 'muted' };
+          return ST.status || { code: 'pending', text: 'Starting…', tone: 'busy' };
+        }
+        function paint() {
+          const c = $('#csChip'), st = curStatus();
+          if (c) { c.dataset.tone = st.tone; c.dataset.code = st.code; c.querySelector('span').textContent = st.text; c.title = st.text + ' (click to open Cloud sync)'; }
+          if ($('#csAcc') && !$('#gm').hidden) acPaintSoft();
+        }
+
+        /* ---------- the Cloud sync window ---------- */
+        const ago = ts => { if (!ts) return 'never'; const s = Math.round((Date.now() - ts) / 1000); return s < 10 ? 'just now' : s < 60 ? s + ' seconds ago' : s < 3600 ? Math.round(s / 60) + ' minutes ago' : s < 86400 ? Math.round(s / 3600) + ' hours ago' : Math.round(s / 86400) + ' days ago'; };
+        const nice = e => { const m = String((e && e.message) || e || 'Something went wrong'); return /Invalid login/i.test(m) ? 'That email and password do not match.' : /already registered/i.test(m) ? 'There is already an account with that email. Try signing in.' : /not confirmed/i.test(m) ? 'Please open the link in the email we sent you first, then sign in.' : /rate limit|too many/i.test(m) ? 'Too many tries. Please wait a little and try again.' : m; };
+        const say = (m, tone) => { ST.msg = m || ''; ST.msgTone = tone || ''; const el = $('#csMsg'); if (el) { el.textContent = ST.msg; el.dataset.tone = ST.msgTone; } };
+
+        function openAccount() {
+          navClose(); ST.confirm = ''; ST.msg = ''; ST.rename = null;
+          openModal('<div id="csAcc"></div>'); acPaint();
+          if (net.signedIn() && appOk() && !ST.ownerBlocked) { ensureEngine().catch(() => { }); loadDevices(); }
+        }
+        function acPaintSoft() { const el = $('#csAcc'); if (!el) return; const act = document.activeElement; if (act && el.contains(act) && /INPUT|TEXTAREA|SELECT/.test(act.tagName)) { const s = $('#csState'); if (s) s.innerHTML = stateHtml(); return; } acPaint(); }
+        function stateHtml() {
+          const st = curStatus(), inf = ST.eng ? ST.eng.info() : {}, up = inf.uploading, pct = up && up.total ? Math.round(up.done / up.total * 100) : 0;
+          return '<div class="cs-state" data-tone="' + st.tone + '"><i></i><div><b>' + esc(st.text) + '</b><small>Last successful sync: ' + esc(ago(inf.lastOkAt)) + (inf.pending ? ' · ' + inf.pending + ' day' + (inf.pending === 1 ? '' : 's') + ' waiting' : '') + '</small></div></div>' +
+            (up && up.total && st.code === 'syncing' ? '<div class="cs-bar" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><span style="width:' + pct + '%"></span></div>' : '') +
+            (inf.lastError && st.code === 'failed' ? '<p class="cs-err">' + esc(inf.lastError) + '</p>' : '');
+        }
+        function acPaint() {
+          const el = $('#csAcc'); if (!el) return;
+          const head = '<div class="th-head"><h2 style="font-size:20px">Cloud sync</h2><span class="sub">Keep your practice statistics safe online and see them on your phone</span></div>';
+          let h = head;
+          if (!appOk()) {
+            h += '<p class="cs-note">Cloud sync needs a newer version of the Windows app. Your practice is not affected. Please install the latest Piano Logger from the website, then open this window again.</p>';
+          } else if (!net.signedIn()) {
+            h += '<p class="cs-note">Cloud sync is optional. Piano Logger works fully without it, with or without internet. When you sign in, your totals for each day and your practice sessions are saved online so you can see them on your phone and keep them if you change computer. Single key presses are <b>not</b> uploaded.</p>' +
+              '<div class="cs-tabs" role="tablist"><button type="button" role="tab" data-cs="mode-in" aria-selected="' + (ST.mode === 'in') + '">Sign in</button><button type="button" role="tab" data-cs="mode-up" aria-selected="' + (ST.mode === 'up') + '">Create account</button></div>' +
+              '<label class="cs-f">Email<input id="csEmail" type="email" autocomplete="email" inputmode="email" spellcheck="false"></label>' +
+              '<label class="cs-f">Password' + (ST.mode === 'up' ? ' <small>(at least 10 characters)</small>' : '') + '<input id="csPw" type="password" autocomplete="' + (ST.mode === 'up' ? 'new-password' : 'current-password') + '"></label>' +
+              '<div class="cs-msg" id="csMsg" role="status" data-tone="' + esc(ST.msgTone) + '">' + esc(ST.msg) + '</div>' +
+              '<div class="actions"><button class="btn primary" id="csGo" data-cs="go">' + (ST.mode === 'up' ? 'Create account' : 'Sign in') + '</button>' + (ST.mode === 'in' ? '<button class="btn" data-cs="forgot">Forgot password?</button>' : '') + '<span style="flex:1"></span><button class="btn" data-act="close">Close</button></div>' +
+              '<div class="cs-or"><span>or</span></div>' +
+              (ST.oauthWait ? '<p class="cs-note" role="status">Finish signing in with Google in your browser, then come back here. <button class="btn" data-cs="google-cancel">Cancel</button></p>' : '<button class="btn cs-google" data-cs="google">Continue with Google</button>');
+          } else if (!net.mfaOk()) {
+            h += mfaStepHtml();                                                    // two-step sign-in not finished (or not known yet): nothing else is shown or loaded
+          } else if (ST.ownerBlocked) {
+            h += '<p class="cs-note"><b>This device already belongs to another account.</b> Its practice history was saved to a different account, so it will not be uploaded to <b>' + esc((net.user() || {}).email || 'this account') + '</b> by accident.</p>' +
+              '<div class="actions"><button class="btn primary" data-cs="signout">Sign out</button><button class="btn" data-cs="rebind">Use this device\'s history with the new account</button><span style="flex:1"></span><button class="btn" data-act="close">Close</button></div>';
+          } else {
+            const p = prefs();
+            h += '<div class="cs-who">Signed in as <b>' + esc((net.user() || {}).email || '') + '</b></div><div id="csState">' + stateHtml() + '</div>' +
+              '<div class="actions"><button class="btn primary" data-cs="now">Sync now</button><label class="cs-sw"><input type="checkbox" id="csOn"' + (p.enabled ? ' checked' : '') + '> Sync this device</label></div>' +
+              lossHtml() +
+              '<h3 class="cs-h">What is kept online</h3>' + keptHtml() +
+              '<div id="csSec">' + secHtml() + '</div>' +
+              '<div id="csPrev">' + prevHtml() + '</div>' +
+              '<h3 class="cs-h">Your devices</h3><div id="csDevs">' + devsHtml() + '</div>' +
+              '<h3 class="cs-h">Get your data back</h3><div id="csRestore">' + restoreHtml() + '</div>' +
+              '<h3 class="cs-h">Delete</h3><p class="cs-note">Syncing never changes the history on this computer. Only "Restore" adds to it, and only after you start it. The delete buttons act on the copy stored online.</p>' +
+              '<div class="cs-danger">' + dangerHtml() + '</div>' +
+              '<div class="cs-msg" id="csMsg" role="status" data-tone="' + esc(ST.msgTone) + '">' + esc(ST.msg) + '</div>' +
+              '<div class="actions"><button class="btn" data-cs="signout">Sign out</button><button class="btn" data-cs="signoutall">Sign out everywhere</button><span style="flex:1"></span><button class="btn primary" data-act="close">Done</button></div>';
+          }
+          el.innerHTML = h; acBind(el);
+        }
+        /* ---------- first-upload preview: reads the press log and writes nothing; uploads only after the owner approves THIS preview ---------- */
+        // The scan reads one day at a time with the same summary the uploader uses (summarizeDay + signature), so the numbers shown are what would be sent.
+        // Approval re-reads the log and refuses if anything changed, so the approved numbers always match the upload.
+        async function distinctLogDays() {
+          return new Promise((res, rej) => {
+            const out = [], req = db.transaction('logs').objectStore('logs').index('date').openKeyCursor(null, 'nextunique');
+            req.onsuccess = () => { const c = req.result; if (c) { out.push(c.key); c.continue(); } else res(out); };
+            req.onerror = () => rej(req.error);
+          });
+        }
+        async function buildPreview(onStep) {
+          if (!db) throw new Error('The press log is not open yet. Wait a moment and try again.');
+          const tz = devInfo().tz, days = (await distinctLogDays()).filter(d => CSC.validDay(d)).sort();
+          const idx = await LOCAL.dayCounts(), perDay = [];
+          let read = 0;
+          for (let i = 0; i < days.length; i++) {
+            const day = days[i], rows = await LOCAL.readDay(day), sum = CSC.summarizeDay(day, rows, tz);
+            const pk = await CSK.pack(day, rows);                                  // the exact compressed file the raw channel would upload for this day
+            perDay.push({ day, presses: rows.length, sum, sig: await CSC.signature(sum), indexCount: +idx[day] || 0, gz: pk.bytes.length, gzSha: pk.sha256 });
+            read += rows.length;
+            if (onStep && (i % 10 === 9 || i === days.length - 1)) { onStep(i + 1, days.length); await new Promise(r => setTimeout(r, 0)); }
+          }
+          const logRows = await reqP(db.transaction('logs').objectStore('logs').count());
+          const have = new Set(days);
+          const mismatch = perDay.filter(p => p.indexCount !== p.presses).map(p => p.day);                       // the app's own day index disagrees with the log
+          const indexOnly = Object.keys(idx).filter(k => CSC.validDay(k) && (+idx[k] || 0) > 0 && !have.has(k)).sort();
+          return { perDay, totals: CSC.previewTotals(perDay), logRows, unplaced: logRows - read, mismatch, indexOnly, tz, other: await otherInventory((net.user() || {}).id, devInfo().id) };
+        }
+        // Every other persistent data category, with its exact local count and size (read-only; nothing is changed).
+        // inc: 'extras' = uploaded under the Profile toggle · 'derived' = rebuilt on another computer, never uploaded · null = NOT uploaded in this version.
+        const PREV_OTHER = [
+          { key: 'profile', label: 'Profile, journal, routines, badges, best scores', kind: 'ls', inc: 'extras', keys: ['pll.profile', 'pll.journal', 'pll.routines', 'pll.badges', 'pll.badges3', 'pll.best'] },
+          { key: 'voiceSessions', label: 'Voice session records', kind: 'idb', inc: 'extras', db: 'PianoLoggerVoiceActivity', store: 'voiceSessions' },
+          { key: 'sung', label: 'Sung notes', cat: 'sung', inc: 'extras' },
+          { key: 'sheetLib', label: 'Sheet Music library', cat: 'sheet_library', inc: 'extras' },
+          { key: 'sheetProg', label: 'Sheet Music learning progress', cat: 'sheet_progress', inc: 'extras' },
+          { key: 'sheetLs', label: 'Sheet Music settings', cat: 'sheet_settings', inc: 'extras' },
+          { key: 'takes', label: 'Saved takes (MIDI recordings)', cat: 'takes', inc: 'extras' },
+          { key: 'voiceAudio', label: 'Voice recordings (audio files)', cat: 'voice_audio', inc: 'extras' },
+          { key: 'voiceRec', label: 'Voice recording details', cat: 'voice_details', inc: 'extras' },
+          { key: 'voiceSet', label: 'Voice settings', cat: 'voice_settings', inc: 'extras' },
+          { key: 'notes', label: 'Personal notes', cat: 'notes', inc: 'extras' },
+          { key: 'avatar', label: 'Profile picture', cat: 'avatar', inc: 'extras' },
+          { key: 'quests', label: 'Quests and goals', cat: 'quests', inc: 'extras' },
+          { key: 'gestures', label: 'Gesture history', cat: 'gestures', inc: 'extras' },
+          { key: 'largeSet', label: 'Large profile or journal values (sent as files)', cat: 'settings_large', inc: 'extras' },
+          { key: 'largeVoice', label: 'Large voice session records (sent as files)', cat: 'voice_large', inc: 'extras' },
+          { key: 'themes', label: 'Themes, graphics and layout', kind: 'none', inc: 'device' },
+          { key: 'derivedCache', label: 'Derived caches (day summaries, profile cache)', kind: 'idb', inc: 'derived', db: 'PianoLoggerExtras', store: 'kv' },
+        ];
+        // every category comes from CSF.build, the same manifest the uploader uses; a read problem is reported, never hidden
+        async function otherInventory(uid, devId) {
+          const dbs = new Set(((await indexedDB.databases()) || []).map(d => d.name)), out = {};
+          let man = null;
+          try { man = CSF.summarize(await CSF.build(uid || 'local', devId || 'local')); } catch (e) { out.__err = String(e && e.message || e); }
+          out.__manifest = man ? [...man.values()] : null;
+          for (const c of PREV_OTHER) {
+            if (c.cat) { const m = man && man.get(c.cat); out[c.key] = m ? { count: m.records, bytes: m.bytes } : { count: 0, bytes: 0 }; continue; }
+            if (c.kind === 'none') { out[c.key] = { count: 0, bytes: 0 }; continue; }
+            if (c.kind === 'ls') { let n = 0, b = 0; for (const k of c.keys) { let v = null; try { v = localStorage.getItem(k); } catch (e) { } if (v != null) { n++; b += v.length; } } out[c.key] = { count: n, bytes: b }; continue; }
+            out[c.key] = dbs.has(c.db) ? await idbInventory(c.db, c.store) : { count: 0, bytes: 0 };
+          }
+          return out;
+        }
+        async function idbInventory(name, store) {
+          const db = await new Promise((res, rej) => { const r = indexedDB.open(name); r.onerror = () => rej(r.error); r.onsuccess = () => res(r.result); });
+          try {
+            if (!db.objectStoreNames.contains(store)) return { count: 0, bytes: 0 };
+            const count = await reqP(db.transaction(store).objectStore(store).count());
+            let bytes = 0;
+            await new Promise((res, rej) => {
+              const q = db.transaction(store).objectStore(store).openCursor();
+              q.onsuccess = () => { const c = q.result; if (!c) return res(); const v = c.value;
+                if (v instanceof Blob) bytes += v.size; else if (v && v.blob instanceof Blob) bytes += v.blob.size;
+                else { try { bytes += JSON.stringify(v).length; } catch (e) { } }
+                c.continue(); };
+              q.onerror = () => rej(q.error);
+            });
+            return { count, bytes };
+          } finally { db.close(); }
+        }
+        // what is already online for THIS computer, and what other computers have on the same days (RLS limits both to this account)
+        async function cloudSide(perDay) {
+          const me = devInfo().id;
+          const rows = await net.selectAll('daily_stats', 'select=device_id,day,content_hash&deleted_at=is.null');
+          const devDays = new Map(), otherDays = new Set();
+          for (const r of rows) { if (r.device_id === me) devDays.set(r.day, { hash: r.content_hash }); else otherDays.add(r.day); }
+          const sess = await net.selectAll('practice_sessions', 'select=day&device_id=eq.' + me + '&deleted_at=is.null');
+          return CSC.previewCompare(perDay, { devDays, otherDays, devSessions: sess.length });
+        }
+        async function makePreview() {
+          ST.prev = { busy: true, step: 'Starting…' }; acPaint();
+          try {
+            const r = await buildPreview((done, total) => { if (ST.prev && ST.prev.busy) { ST.prev.step = 'Reading your press log: ' + done + ' of ' + total + ' days'; const el = $('#csPrevMsg'); if (el) el.textContent = ST.prev.step; } });
+            const fp = await CSC.previewFingerprint(r.perDay);
+            let cloud = null, cloudErr = '';
+            try { cloud = await cloudSide(r.perDay); } catch (e) { cloudErr = nice(e); }
+            ST.prev = { r, fp, cloud, cloudErr, at: Date.now() };
+          } catch (e) { ST.prev = { err: nice(e) }; }
+          acPaint();
+        }
+        const prevBlockers = p => {
+          const r = p.r, out = [];
+          if (r.mismatch.length) out.push(r.mismatch.length + ' day' + (r.mismatch.length === 1 ? '' : 's') + ' where the day index does not match the press log');
+          if (r.indexOnly.length) out.push(r.indexOnly.length + ' day' + (r.indexOnly.length === 1 ? '' : 's') + ' in the day index with no presses in the log');
+          if (r.unplaced) out.push(r.unplaced + ' presses without a valid day');
+          if (p.cloudErr) out.push('the copy online could not be compared (' + p.cloudErr + ')');
+          if (r.other && r.other.__err) out.push('some of your other data could not be read (' + r.other.__err + ')');
+          return out;
+        };
+        const prevCanApprove = () => !!(ST.prev && ST.prev.r && !ST.prev.busy && !ST.prev.err && !ST.prev.approvedAt && !prevBlockers(ST.prev).length);
+        async function approveUpload() {
+          const p = ST.prev, box = $('#csApprove');
+          if (!p || !p.r) return say('Make a new preview first.', 'bad');
+          if (!box || !box.checked) return say('Tick the box to approve this preview first.', 'bad');
+          if (!prevCanApprove()) return say('This preview has a problem that must be fixed first. Nothing was uploaded.', 'bad');
+          say('Checking that your press log has not changed since the preview…');
+          const again = await buildPreview(), fp = await CSC.previewFingerprint(again.perDay);
+          if (fp !== p.fp) { ST.prev = null; acPaint(); return say('Your press log changed since the preview, so nothing was uploaded. Please make a new preview.', 'bad'); }
+          setPrefs({ enabled: true, extras: true, raw: true });                                              // 9.3.0: days, sessions, every key press (raw files), profile/notes/voice history
+          p.approvedAt = Date.now();
+          await ensureEngine(); if (ST.eng) ST.eng.syncNow();
+          acPaint(); paint(); say('Upload approved. Daily totals, practice sessions, every key press (compressed files) and the profile, notes and voice history are sent. Categories marked "NOT in this version" in the preview are not sent.', 'ok');
+        }
+        const fmtN = n => (+n || 0).toLocaleString('en-US');
+        const fmtKB = b => b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(2) + ' MB';
+        function prevHtml() {
+          const p = ST.prev, h = '<h3 class="cs-h">First upload preview</h3>';
+          if (!p) return h + '<p class="cs-note">Nothing is uploaded until you approve a preview. Making a preview reads your press log on this computer and changes nothing in it.</p><div class="actions"><button class="btn" data-cs="preview">Make a preview</button></div>';
+          if (p.busy) return h + '<p class="cs-note" id="csPrevMsg" role="status">' + esc(p.step || 'Reading…') + '</p>';
+          if (p.err) return h + '<p class="cs-err">' + esc(p.err) + '</p><div class="actions"><button class="btn" data-cs="preview">Try again</button></div>';
+          const r = p.r, t = r.totals, c = p.cloud, blockers = prevBlockers(p);
+          const line = (k, v) => '<div class="cs-prow"><span>' + esc(k) + '</span><b>' + esc(v) + '</b></div>';
+          let out = h + '<p class="cs-note">Read from your press log at ' + esc(new Date(p.at).toLocaleTimeString()) + '. Nothing has been uploaded.</p>' +
+            '<div class="cs-prev">' +
+            line('Days with key presses', fmtN(t.daily) + (t.firstDay ? ' (' + t.firstDay + ' to ' + t.lastDay + ')' : '')) +
+            line('Key presses in your press log', fmtN(r.logRows) + (r.unplaced ? ' (' + fmtN(r.unplaced) + ' without a valid day, not counted here)' : '')) +
+            line('Daily totals to upload', fmtN(t.daily) + ' rows · JSON ' + fmtKB(t.dailyBytes)) +
+            line('Practice sessions to upload', fmtN(t.sessions) + ' rows · JSON ' + fmtKB(t.sessionBytes) + ' (containing ' + fmtN(t.sessionPresses) + ' presses; a session ends after 5 minutes without a press)') +
+            line('Every key press (toggle ' + (prefs().raw ? 'ON' : 'OFF') + ')', fmtN(r.logRows) + ' presses · compressed ' + fmtKB(t.rawBytes) + ' in ' + fmtN(t.rawFiles) + ' day files (exact)') +
+            line('Profile, notes and voice history (toggle ' + (prefs().extras ? 'ON' : 'OFF') + ')', 'see the table below') +
+            line('Upload requests (approximate)', fmtN(t.requests) + ' (up to 500 rows per request)') +
+            '</div>' +
+            (function () {
+              const rowsH = PREV_OTHER.map(c => {
+                const v = (r.other || {})[c.key] || { count: 0, bytes: 0 };
+                const st = c.inc === 'extras' ? (prefs().extras ? 'uploads with the Profile toggle' : 'waits for the Profile toggle') : c.inc === 'derived' ? 'not uploaded (rebuilt on each computer)' : c.inc === 'device' ? 'stays on this computer (device settings, by design)' : 'NOT in this version: not uploaded yet';
+                return '<tr><td>' + esc(c.label) + '</td><td>' + fmtN(v.count) + '</td><td>' + fmtKB(v.bytes) + '</td><td>' + esc(st) + '</td></tr>';
+              }).join('');
+              return '<h4 class="cs-h2">Everything else on this computer</h4><div class="cs-tablewrap"><table class="cs-tbl"><thead><tr><th>Category</th><th>Items</th><th>Size</th><th>Upload status</th></tr></thead><tbody>' + rowsH + '</tbody></table></div>';
+            })();
+          if (c) {
+            const list = (a, n) => a.length ? ' <small>' + a.slice(0, 5).join(', ') + (a.length > 5 ? ' and ' + fmtN(a.length - 5) + ' more' : '') + '</small>' : '';
+            out += '<h4 class="cs-h2">Compared with the copy online</h4><div class="cs-prev">' +
+              line('This computer, already online', fmtN(c.same) + ' days unchanged · ' + fmtN(c.change) + ' changed · ' + fmtN(c.add) + ' new') +
+              line('Practice sessions already online for this computer', fmtN(c.devSessions)) +
+              line('Online for this computer but not on this computer', fmtN(c.cloudOnly) + ' days (kept; nothing is deleted)') +
+              line('Also recorded by your other computers', fmtN(c.overlap) + ' days (both copies count in your totals)') +
+              '</div>' +
+              (c.change ? '<p class="cs-note">Changed days will be replaced by this computer\'s copy:' + list(c.changeDays, c.change) + '</p>' : '') +
+              (c.overlap ? '<p class="cs-err">Possible double count: these days are also on another computer.' + list(c.overlapDays, c.overlap) + '</p>' : '');
+          }
+          out += '<h4 class="cs-h2">Included</h4><ul class="cs-kept"><li><b>Daily totals:</b> key presses, active time, the 24-hour pattern, velocity and duration, most notes at once, first and last press time.</li><li><b>Practice sessions:</b> start, end, presses, active time, day and time zone.</li><li><b>Your other data (under the Profile, notes and voice history toggle):</b> the categories marked "uploads with the Profile toggle" in the table above, with their exact sizes.</li></ul>' +
+            '<h4 class="cs-h2">Not uploaded</h4><ul class="cs-kept"><li><b>Themes, graphics and layout:</b> device settings that stay on this computer by design.</li><li><b>Derived caches</b> (day summaries, profile cache): rebuilt from the press log on each computer.</li></ul>';
+          if (blockers.length) out += '<p class="cs-err"><b>Upload is blocked until these are fixed:</b> ' + esc(blockers.join('; ')) + '. Nothing will be uploaded until you make a new preview.</p>';
+          if (p.approvedAt) return out + '<p class="cs-note" role="status"><b>Approved.</b> Sync this device is on and the upload runs now. Its progress shows at the top of this window.</p>';
+          return out + '<label class="cs-sw"><input type="checkbox" id="csApprove"><span>I have read this preview. Approve the uploads marked above (' + fmtN(t.daily) + ' days, ' + fmtN(t.sessions) + ' practice sessions' + (prefs().raw ? ', ' + fmtN(r.logRows) + ' key presses' : '') + ') and turn Sync this device on.</span></label>' +
+            '<div class="actions"><button class="btn primary" id="csApproveGo" data-cs="approve" disabled>Approve and upload</button><button class="btn" data-cs="prev-close">Discard this preview</button></div>';
+        }
+
+        /* ---------- sections of the signed-in window ---------- */
+        function keptHtml() {
+          const p = prefs(), raw = ST.progress.raw, rp = raw && raw.total ? ' <small>' + (raw.done < raw.total ? 'Uploading press files: ' + raw.done + ' of ' + raw.total + ' days' : 'All ' + raw.total + ' days are online') + '</small>' : '';
+          return '<ul class="cs-kept"><li><b>Always:</b> your total for each day and your practice sessions (not single key presses).</li></ul>' +
+            '<label class="cs-sw cs-opt"><input type="checkbox" id="csExtras"' + (p.extras ? ' checked' : '') + '><span><b>Profile, notes and voice history</b><small>Your name and look, practice journal, routines, badges, best scores and voice sessions. Themes and graphics stay on this computer.</small></span></label>' +
+            '<label class="cs-sw cs-opt"><input type="checkbox" id="csRaw"' + (p.raw ? ' checked' : '') + '><span><b>Every key press</b><small>Rebuilds your whole history on a new or reinstalled computer.</small>' + rp + '</span></label>';
+        }
+        function lossHtml() {
+          const days = ST.eng ? ST.eng.localLoss().length : 0, voice = ST.ch && ST.ch.voice ? ST.ch.voice.lost.length : 0;
+          if (!days && !voice) return '';
+          const what = [days ? days + ' day' + (days === 1 ? '' : 's') + ' of key presses' : '', voice ? voice + ' voice session' + (voice === 1 ? '' : 's') : ''].filter(Boolean).join(' and ');
+          return '<div class="cs-loss" role="alert"><b>' + esc(what) + ' no longer ' + (days + voice === 1 ? 'exists' : 'exist') + ' on this computer.</b><span>They are still safe online. Nothing is deleted online unless you say so.</span><div class="cs-row"><button class="btn" data-cs="loss-keep">Keep them online</button><button class="btn bad" data-cs="loss-del">Delete them online too</button></div></div>';
+        }
+        function restoreHtml() {
+          const R = ST.restore;
+          const base = '<div class="cs-row"><button class="btn" data-cs="restore-open">Restore from the cloud…</button><button class="btn" data-cs="export"' + (ST.exporting ? ' disabled' : '') + '>' + (ST.exporting ? esc(ST.exporting) : 'Download my cloud data') + '</button></div>' +
+            '<p class="cs-note">Restore is for a new or reinstalled computer. The download is a file that this app\'s own Restore can read.</p>';
+          if (!R) return base;
+          if (R.step === 'loading') return '<p class="cs-note">Looking at what is online…</p>';
+          if (R.err) return '<p class="cs-err">' + esc(R.err) + '</p><div class="cs-row"><button class="btn" data-cs="restore-cancel">Close</button></div>';
+          if (R.step === 'choose') {
+            const raws = R.info.devices.filter(d => d.raw), me = devInfo().id;
+            let h = '<div class="cs-panel"><b>Restore from the cloud</b><p class="cs-note">Nothing on this computer is removed. Presses and sessions that are already here stay, and nothing is added twice.</p>';
+            if (raws.length) {
+              h += '<div class="cs-pick">' + raws.map((d, i) => '<label class="cs-opt"><input type="radio" name="csDev" value="' + esc(d.id) + '"' + (R.device === d.id || (!R.device && i === 0) ? ' checked' : '') + '><span><b>' + esc(d.name) + '</b>' + (d.id === me ? ' <em>this device</em>' : '') + '<small>' + d.raw.presses.toLocaleString() + ' key presses on ' + d.raw.days + ' days (' + esc(d.raw.from) + ' to ' + esc(d.raw.to) + ')</small></span></label>').join('') + '<label class="cs-opt"><input type="radio" name="csDev" value=""' + (R.device === '' ? ' checked' : '') + '><span><b>No key presses</b><small>Only the items below</small></span></label></div>' +
+                '<p class="cs-note">Choosing a device makes <b>this computer take over that device</b>, so your totals are not counted twice. Do this only if that computer is retired or has been reinstalled.</p>';
+            } else h += '<p class="cs-note">No key presses are stored online. (Switch on "Every key press" on your other computer first.)</p>';
+            h += '<label class="cs-sw"><input type="checkbox" id="csRsVoice"' + (R.voice !== false ? ' checked' : '') + '> Voice sessions (' + R.info.voiceCount + ')</label><label class="cs-sw"><input type="checkbox" id="csRsSet"' + (R.settings !== false ? ' checked' : '') + '> Profile, journal, routines, badges and best scores (' + R.info.settingKeys.length + ' saved)</label>' +
+              '<div class="cs-row"><button class="btn primary" data-cs="restore-next">Continue</button><button class="btn" data-cs="restore-cancel">Cancel</button></div></div>';
+            return h;
+          }
+          if (R.step === 'backup') return '<div class="cs-panel"><b>First, save a backup file</b><p class="cs-note">This is a safety copy of what is on this computer right now. It takes a moment and you can restore it later with Data &amp; backup.</p><div class="cs-row"><button class="btn" data-cs="restore-backup">Create backup file</button><button class="btn primary" data-cs="restore-go">Start restoring</button><button class="btn" data-cs="restore-cancel">Cancel</button></div></div>';
+          if (R.step === 'run') { const p = R.prog || {}, pct = p.total ? Math.round(p.done / p.total * 100) : 0; return '<div class="cs-panel" role="status"><b>' + esc(p.phase || 'Restoring…') + '</b>' + (p.total ? '<div class="cs-bar"><span style="width:' + pct + '%"></span></div><small>' + p.done + ' of ' + p.total + ' days · ' + (p.added || 0).toLocaleString() + ' key presses added</small>' : '') + '<p class="cs-note">Please keep this window open.</p></div>'; }
+          if (R.step === 'done') { const r = R.res; return '<div class="cs-panel"><b>Done.</b><p class="cs-note">' + (r.presses ? r.presses.toLocaleString() + ' key presses were added' + (r.dup ? ' (' + r.dup.toLocaleString() + ' were already here)' : '') + '. ' : '') + (r.voice ? r.voice + ' voice sessions were added. ' : '') + (r.settings ? 'Your profile and notes were restored. ' : '') + (!r.presses && !r.voice && !r.settings ? 'There was nothing new to add.' : '') + '</p><div class="cs-row">' + (r.reload ? '<button class="btn primary" data-cs="reload">Reload Piano Logger</button>' : '<button class="btn primary" data-cs="restore-cancel">Close</button>') + '</div></div>'; }
+          return base;
+        }
+        function dangerHtml() {
+          if (ST.confirm === 'data' || ST.confirm === 'acct') {
+            const what = ST.confirm === 'data' ? 'all your cloud sync data (your account stays)' : 'your account and everything stored online';
+            return '<p class="cs-note">This will permanently delete ' + what + '. Your history on this computer stays. Type <b>DELETE</b> to confirm.</p><div class="cs-row"><input id="csDel" type="text" autocomplete="off" spellcheck="false" aria-label="Type DELETE"><button class="btn bad" id="csDelGo" data-cs="' + (ST.confirm === 'data' ? 'del-data-go' : 'del-acct-go') + '" disabled>Delete</button><button class="btn" data-cs="del-cancel">Cancel</button></div>';
+          }
+          return '<button class="btn" data-cs="del-data">Delete my cloud data</button><button class="btn" data-cs="del-acct">Delete my account</button>';
+        }
+        function devsHtml() {
+          if (ST.devErr) return '<p class="cs-err">' + esc(ST.devErr) + '</p>';
+          if (!ST.devices) return '<p class="cs-note">Loading…</p>';
+          if (!ST.devices.length) return '<p class="cs-note">No device has synced yet.</p>';
+          const me = devInfo().id;
+          return ST.devices.map(d => {
+            const mine = d.id === me, prog = d.days_total ? ' · ' + d.days_uploaded + ' of ' + d.days_total + ' days uploaded' : '';
+            return '<div class="cs-dev' + (d.revoked_at ? ' off' : '') + '" data-id="' + esc(d.id) + '"><div><b>' + (ST.rename === d.id ? '<input class="cs-rn" id="csRn" value="' + esc(d.name) + '" maxlength="60" aria-label="Device name">' : esc(d.name)) + '</b>' + (mine ? ' <em>this device</em>' : '') + (d.revoked_at ? ' <em class="bad">disconnected</em>' : '') +
+              '<small>' + (d.platform === 'windows-app' ? 'Windows app' : 'Web browser') + ' · version ' + esc(d.app_version || '?') + ' · last synced ' + esc(ago(d.last_sync_ok ? Date.parse(d.last_sync_ok) : 0)) + esc(prog) + '</small></div>' +
+              (d.revoked_at ? '' : '<div class="cs-dact">' + (ST.rename === d.id ? '<button class="btn" data-cs="rn-save" data-id="' + esc(d.id) + '">Save</button>' : '<button class="btn" data-cs="rn" data-id="' + esc(d.id) + '">Rename</button>') + '<button class="btn" data-cs="disc" data-id="' + esc(d.id) + '">Disconnect</button></div>') + '</div>';
+          }).join('');
+        }
+        async function loadDevices() {
+          try { ST.devices = await net.select('devices', 'select=id,name,platform,app_version,last_sync_ok,days_total,days_uploaded,revoked_at&order=first_seen.asc'); ST.devErr = ''; }
+          catch (e) { ST.devErr = 'Could not load your devices: ' + nice(e); }
+          const el = $('#csDevs'); if (el) { el.innerHTML = devsHtml(); acBind(el); }
+        }
+
+        function acBind(root) {
+          root.querySelectorAll('[data-cs]').forEach(b => { b.onclick = () => act(b.dataset.cs, b); });
+          const del = root.querySelector('#csDel'); if (del) del.oninput = () => { root.querySelector('#csDelGo').disabled = del.value.trim() !== 'DELETE'; };
+          const rm = root.querySelector('#csRm'); if (rm) rm.oninput = () => { root.querySelector('#csRmGo').disabled = rm.value.trim() !== 'REMOVE'; };
+          const cd = root.querySelector('#csCode'); if (cd) { cd.onkeydown = e => { if (e.key === 'Enter') act('mfa-go'); }; setTimeout(() => { try { cd.focus(); } catch (e) { } }, 0); }
+          const sc = root.querySelector('#csSecCode'); if (sc) sc.onkeydown = e => { if (e.key === 'Enter') act('sec-confirm'); };
+          const pw = root.querySelector('#csPw'); if (pw) pw.onkeydown = e => { if (e.key === 'Enter') act('go'); };
+          const em = root.querySelector('#csEmail'); if (em) em.onkeydown = e => { if (e.key === 'Enter') { const p = $('#csPw'); if (p) p.focus(); } };
+          const ex = root.querySelector('#csExtras'); if (ex) ex.onchange = () => { setPrefs({ extras: ex.checked }); if (ex.checked && ST.eng) ST.eng.syncNow(); };
+          const rw = root.querySelector('#csRaw'); if (rw) rw.onchange = () => { setPrefs({ raw: rw.checked }); if (ST.eng) { if (rw.checked) ST.eng.syncNow(); } acPaintSoft(); };
+          const ap = root.querySelector('#csApprove'); if (ap) ap.onchange = () => { const g = root.querySelector('#csApproveGo'); if (g) g.disabled = !ap.checked || !prevCanApprove(); };
+          const on = root.querySelector('#csOn'); if (on) on.onchange = async () => { setPrefs({ enabled: on.checked }); if (on.checked) { await ensureEngine(); if (ST.eng) ST.eng.syncNow(); } else if (ST.eng) ST.eng.stop(), ST.eng = null, ST.engUid = null; paint(); };
+        }
+        async function act(a, b) {
+          if (ST.busy) return;
+          const run = async fn => { ST.busy = true; try { await fn(); } catch (e) { say(nice(e), 'bad'); } finally { ST.busy = false; } };
+          if (a === 'mode-in' || a === 'mode-up') { ST.mode = a === 'mode-up' ? 'up' : 'in'; ST.msg = ''; acPaint(); return; }
+          if (a === 'go') return run(async () => {
+            const email = ($('#csEmail').value || '').trim(), pw = $('#csPw').value || '';
+            if (!/^\S+@\S+\.\S+$/.test(email)) return say('Please type a valid email address.', 'bad');
+            if (ST.mode === 'up') {
+              if (pw.length < 10) return say('Please choose a password with at least 10 characters.', 'bad');
+              say('Creating your account…');
+              const r = await net.signUp(email, pw, DASH);
+              if (r.needsConfirm) return say('Almost done: we sent an email to ' + email + '. Open the link in it, then come back and sign in.', 'ok');
+            } else { say('Signing in…'); await net.signIn(email, pw); }
+            await afterSignIn();
+          });
+          if (a === 'google') return run(async () => { await googleStart(); });
+          if (a === 'google-cancel') { cancelGoogle(); acPaint(); return; }
+          if (a === 'forgot') return run(async () => {
+            const email = ($('#csEmail').value || '').trim(); if (!/^\S+@\S+\.\S+$/.test(email)) return say('Type your email first, then press "Forgot password?".', 'bad');
+            await net.recover(email, DASH); say('If that address has an account, we sent it a link. It opens Piano Logger Cloud in your browser, where you choose a new password. Then come back here and sign in.', 'ok');
+          });
+          if (a === 'mfa-retry') return run(async () => { say('Checking…'); await afterSignIn(3); });
+          if (a === 'mfa-go') return run(async () => {
+            if (ST.mfaLock && ST.mfaLock > Date.now()) return say('Too many wrong codes. Please wait a moment and try again.', 'bad');
+            const m = net.mfaState(), sel = $('#csFactor'), fid = sel ? sel.value : (m.factors[0] || {}).id, code = ($('#csCode') || {}).value || '';
+            if (!fid) return say('No authenticator was found on this account.', 'bad');
+            say('Checking the code…');
+            try { await net.mfaVerify(fid, code); }
+            catch (e) {
+              if (e && e.code === 'mfa_code_wrong' && (ST.mfaFails = (ST.mfaFails || 0) + 1) >= 5) { ST.mfaFails = 0; ST.mfaLock = Date.now() + 30000; acPaint(); say('Too many wrong codes. Please wait 30 seconds and try again.', 'bad'); setTimeout(() => { if (!ST.mfaLock || ST.mfaLock <= Date.now()) acPaint(); }, 30500); return; }
+              throw e;
+            }
+            ST.mfaFails = 0; ST.msg = ''; await ensureEngine(); if (ST.eng) ST.eng.backOnline(); acPaint(); paint(); loadDevices();
+            toast('Verified. Cloud sync is ' + (prefs().enabled ? 'on' : 'off') + '.', 'ok');
+          });
+          if (a === 'sec-add') return run(async () => {
+            say('Preparing…'); const r = await net.mfaEnroll('Piano Logger ' + new Date().toISOString().slice(0, 16).replace('T', ' '));
+            ST.sec = { step: 'enroll', id: r.id, qr: qrUrl(r.qr), secret: r.secret }; say(''); refreshSec();
+          });
+          if (a === 'sec-confirm') return run(async () => {
+            const code = ($('#csSecCode') || {}).value || ''; say('Checking the code…');
+            await net.mfaVerify(ST.sec.id, code);                                   // activates the new authenticator; this session becomes a level-2 session
+            dropSec(); acPaint(); paint(); say('Two-step sign-in is on for this account.', 'ok');
+          });
+          if (a === 'sec-cancel') return run(async () => { const s = dropSec(); if (s && s.step === 'enroll' && s.id) { try { await net.mfaCancelEnroll(s.id); } catch (e) { } } say(''); refreshSec(); });
+          if (a === 'sec-remove') { ST.sec = { step: 'remove', id: b.dataset.id }; refreshSec(); return; }
+          if (a === 'sec-remove-go') return run(async () => { const id = ST.sec && ST.sec.id; await net.mfaRemove(id); dropSec(); acPaint(); paint(); say('The authenticator was removed.', 'ok'); });
+          if (a === 'now') return run(async () => { const e = await ensureEngine(); if (e) { say('Syncing…'); await e.syncNow(); say(''); } });
+          if (a === 'preview') return run(async () => { await makePreview(); });
+          if (a === 'prev-close') { ST.prev = null; acPaint(); return; }
+          if (a === 'approve') return run(async () => { await approveUpload(); });
+          if (a === 'signout' || a === 'signoutall') return run(async () => { stop(); await net.signOut(a === 'signoutall' ? 'global' : 'local'); ST.prev = null; ST.devices = null; ST.ownerBlocked = false; ST.sec = null; ST.msg = ''; acPaint(); paint(); toast('Signed out. Your data on this computer was not changed.', 'ok'); });
+          if (a === 'rebind') return run(async () => { const u = net.user(); if (u) LS.set(K.owner, u.id); ST.ownerBlocked = false; await ensureEngine(); acPaint(); loadDevices(); });
+          if (a === 'del-data' || a === 'del-acct') { ST.confirm = a === 'del-data' ? 'data' : 'acct'; acPaint(); return; }
+          if (a === 'del-cancel') { ST.confirm = ''; acPaint(); return; }
+          if (a === 'loss-keep') return run(async () => { if (ST.eng) await ST.eng.keepCloudCopy(); if (ST.ch) ST.ch.voice.lost = []; acPaint(); });
+          if (a === 'loss-del') return run(async () => {
+            if (ST.eng) await ST.eng.confirmLocalDeletes();
+            if (ST.ch && ST.ch.voice.lost.length && ST.ch.voice.ctx) await ST.ch.voice.confirmLoss(ST.ch.voice.ctx);
+            acPaint(); say('Deleted online. Your history on this computer is untouched.', 'ok');
+          });
+          if (a === 'restore-open') return run(async () => {
+            ST.restore = { step: 'loading' }; refreshRestore();
+            try { ST.restore = { step: 'choose', info: await CSX.restoreInfo(mkH()), device: undefined, voice: true, settings: true }; } catch (e) { ST.restore = { step: 'choose', err: nice(e) }; }
+            refreshRestore();
+          });
+          if (a === 'restore-cancel') { ST.restore = null; refreshRestore(); return; }
+          if (a === 'restore-next') {
+            const R = ST.restore, r = document.querySelector('input[name=csDev]:checked');
+            R.device = r ? r.value : ''; R.voice = !!(document.getElementById('csRsVoice') || {}).checked; R.settings = !!(document.getElementById('csRsSet') || {}).checked;
+            if (!R.device && !R.voice && !R.settings) { ST.restore = null; refreshRestore(); say('Nothing was selected to restore.', ''); return; }
+            R.step = 'backup'; refreshRestore(); return;
+          }
+          if (a === 'restore-backup') { const b = $('#btnBackup'); if (b) { b.click(); toast('Saving a backup file… choose where to keep it.', 'ok'); } return; }
+          if (a === 'restore-go') return restoreGo();
+          if (a === 'reload') { location.reload(); return; }
+          if (a === 'export') return run(exportNow);
+          if (a === 'del-data-go') return run(async () => {
+            if (ST.eng) { ST.eng.stop(); await ST.eng.reset(); }
+            await CSX.removeAllChunks(mkH());
+            await net.rpc('sync_delete_my_data', {});
+            setPrefs({ enabled: false }); ST.eng = null; ST.engUid = null; ST.status = null;      // sync stays off here until the user switches it on again (otherwise the next key press would upload everything again)
+            ST.confirm = ''; ST.devices = null; acPaint(); paint(); say('Your cloud data was deleted. Cloud sync is now switched off on this computer. Your history here is untouched.', 'ok'); loadDevices();
+          });
+          if (a === 'del-acct-go') return run(async () => {
+            stop(); await net.deleteAccount(); LS.set(K.owner, null); try { localStorage.removeItem(K.owner); } catch (e) { }
+            ST.confirm = ''; ST.devices = null; ST.mode = 'in'; acPaint(); paint(); toast('Your account and cloud data were deleted. Your history on this computer is untouched.', 'ok');
+          });
+          if (a === 'rn') { ST.rename = b.dataset.id; const el = $('#csDevs'); el.innerHTML = devsHtml(); acBind(el); const i = $('#csRn'); if (i) i.focus(); return; }
+          if (a === 'rn-save') return run(async () => {
+            const name = ($('#csRn').value || '').trim(); if (!name) return;
+            await net.rpc('sync_rename_device', { p_id: b.dataset.id, p_name: name.slice(0, 60) });
+            if (b.dataset.id === devInfo().id) LS.set(K.device, Object.assign(LS.get(K.device, {}), { name: name.slice(0, 60) }));
+            ST.rename = null; await loadDevices();
+          });
+          if (a === 'disc') return run(async () => {
+            const id = b.dataset.id; await net.rpc('sync_revoke_device', { p_id: id });
+            if (id === devInfo().id) { stop(); await net.signOut('local'); acPaint(); paint(); toast('This device was disconnected and signed out.', 'ok'); return; }
+            await loadDevices(); toast('Device disconnected. It can no longer upload.', 'ok');
+          });
+        }
+        // what cs-extra.js needs from the page (the page's own save and import functions, so restore uses the same safe paths as a backup restore)
+        function mkH() {
+          return {
+            net, prefs, LOCAL, progress: ST.progress, devInfo,
+            uid: () => (net.user() || {}).id,
+            setDevice: async (id, name) => { LS.set(K.device, { id, name: name || 'Windows app' }); },
+            pauseEngine: () => { if (ST.eng) ST.eng.stop(); },
+            page: { sanitize: r => sanitize(r), writeBatch: (r, c) => writeBatch(r, c), applySettingsBackup: s => applySettingsBackup(s), refresh: () => scheduleRefresh() }
+          };
+        }
+
+        /* ---------- restore and export ---------- */
+        function refreshRestore() { const el = $('#csRestore'); if (el) { el.innerHTML = restoreHtml(); acBind(el); } }
+        function refreshSec() { const el = $('#csSec'); if (el) { el.innerHTML = secHtml(); acBind(el); } }
+        async function restoreGo() {
+          const R = ST.restore; R.step = 'run'; R.prog = { phase: 'Starting…' }; delete R.err; refreshRestore();
+          const eng = ST.eng;
+          try {
+            R.res = await CSX.restore(mkH(), { device: R.device || null, voice: R.voice, settings: R.settings }, p => { R.prog = p; refreshRestore(); });
+            R.step = 'done';
+          } catch (e) { R.err = nice(e); }
+          // what this computer remembers about its uploads no longer applies (a new identity and a larger history): forget it, upload again later
+          try { if (eng) await eng.reset(); } catch (e) { }
+          ST.eng = null; ST.engUid = null; ST.devices = null;
+          refreshRestore();
+          if (!(R.res && R.res.reload)) { try { await ensureEngine(); loadDevices(); } catch (e) { } }
+        }
+        async function exportNow() {
+          ST.exporting = 'Preparing…'; refreshRestore();
+          try {
+            const r = await CSX.exportAll(mkH(), p => { ST.exporting = p.total ? p.phase + ' (' + p.done + ' of ' + p.total + ')' : p.phase; refreshRestore(); });
+            download('piano-logger-cloud-export-' + stampName() + '.json', [r.blob], 'application/json');
+            say('Saved: ' + r.days + ' days of totals' + (r.presses ? ' and ' + r.presses.toLocaleString() + ' key presses' : '') + '.', 'ok');
+          } finally { ST.exporting = ''; refreshRestore(); }
+        }
+
+        /* ---------- after any sign-in (password or Google) ---------- */
+        async function afterSignIn(tries) {
+          tries = tries || 0; ST.msg = ''; ST.devices = null; ST.oauthWait = false; ST.oauth = null; ST.sec = null; ST.mfaFails = 0; ST.mfaLock = 0;
+          let m;
+          try { m = await net.mfaStatus(); }
+          catch (e) {
+            // the lookup "does this account have an authenticator?" failed (no connection, or the service said slow down): nothing is shown or uploaded meanwhile; say why and try again by itself
+            acPaint(); say('Signed in, but your account security could not be checked yet (' + nice(e) + ').' + (tries < 3 ? ' Trying again…' : ''), 'bad');
+            if (tries < 3) setTimeout(() => { if (net.signedIn() && !net.mfaState().known) afterSignIn(tries + 1); }, 4000 * (tries + 1));
+            return;
+          }
+          if (m.required && m.level !== 'aal2') { await ensureEngine(); acPaint(); paint(); toast('One more step: type the code from your authenticator app.', 'ok'); return; }        // the engine exists but cannot run until the code is checked
+          await ensureEngine(); acPaint(); loadDevices(); toast('Signed in. Cloud sync is ' + (prefs().enabled ? 'on' : 'off') + '.', 'ok');
+        }
+        /* ---------- the authenticator code step, and the Security section ---------- */
+        // the service sends the QR picture as a large SVG document ("<?xml ...?><!-- ... --><svg ...>", about 300 KB): show it through a Blob address (released by dropSec), never as a giant data address
+        function qrUrl(q) {
+          q = String(q || ''); if (/^data:image\//i.test(q)) return q;
+          const i = q.search(/<svg[\s>]/i); if (i < 0) return '';
+          const svg = q.slice(i);
+          try { return URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })); } catch (e) { return svg.length < 400000 ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) : ''; }
+        }
+        function dropSec() { const s = ST.sec; ST.sec = null; try { if (s && /^blob:/.test(s.qr || '')) URL.revokeObjectURL(s.qr); } catch (e) { } return s; }
+        function mfaStepHtml() {
+          const m = net.mfaState(), lock = ST.mfaLock && ST.mfaLock > Date.now();
+          if (!m.known || !m.levelKnown) return '<div class="cs-who">Signed in as <b>' + esc((net.user() || {}).email || '') + '</b></div><p class="cs-note" role="status">Checking your account security… (this needs a connection)</p><div class="cs-msg" id="csMsg" role="status" data-tone="' + esc(ST.msgTone) + '">' + esc(ST.msg) + '</div><div class="actions"><button class="btn" data-cs="mfa-retry">Try again</button><button class="btn" data-cs="signout">Sign out</button><span style="flex:1"></span><button class="btn" data-act="close">Close</button></div>';
+          return '<div class="cs-who">Signed in as <b>' + esc((net.user() || {}).email || '') + '</b></div>' +
+            '<p class="cs-note"><b>One more step.</b> This account is protected with an authenticator app. Open it and type the current 6-digit code. Nothing is uploaded or shown until you do.</p>' +
+            (m.factors.length > 1 ? '<label class="cs-f">Authenticator<select id="csFactor">' + m.factors.map(f => '<option value="' + esc(f.id) + '">' + esc(f.name) + '</option>').join('') + '</select></label>' : '') +
+            '<label class="cs-f">6-digit code<input id="csCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false"' + (lock ? ' disabled' : '') + '></label>' +
+            '<div class="cs-msg" id="csMsg" role="status" data-tone="' + esc(ST.msgTone) + '">' + esc(ST.msg) + '</div>' +
+            '<div class="actions"><button class="btn primary" id="csVerify" data-cs="mfa-go"' + (lock ? ' disabled' : '') + '>Verify</button><button class="btn" data-cs="signout">Sign out</button><span style="flex:1"></span><button class="btn" data-act="close">Close</button></div>' +
+            '<p class="cs-note">Cannot get a code? Cloud sync stays locked for this account until its authenticator is removed by whoever runs the service. Your history on this computer is not affected.</p>';
+        }
+        function secHtml() {
+          const m = net.mfaState(), S2 = ST.sec;
+          let h = '<h3 class="cs-h">Account security</h3>';
+          if (S2 && S2.step === 'enroll') {
+            return h + '<div class="cs-panel"><b>Add an authenticator app</b><p class="cs-note">1. Open an authenticator app (for example Google Authenticator, Microsoft Authenticator or Authy). 2. Scan this picture, or type the key. 3. Type the 6-digit code it shows.</p>' +
+              (S2.qr ? '<img class="cs-qr" alt="QR code for your authenticator app" width="180" height="180" src="' + esc(S2.qr) + '">' : '<p class="cs-note">The picture could not be shown. Type the key below into your authenticator app instead.</p>') +
+              '<p class="cs-note">Key to type instead: <code class="cs-key" id="csSecKey">' + esc(S2.secret || '') + '</code></p>' +
+              '<label class="cs-f">6-digit code<input id="csSecCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false"></label>' +
+              '<div class="cs-row"><button class="btn primary" data-cs="sec-confirm">Turn on</button><button class="btn" data-cs="sec-cancel">Cancel</button></div></div>';
+          }
+          if (S2 && S2.step === 'remove') {
+            const f = m.factors.find(x => x.id === S2.id) || { name: 'this authenticator' };
+            return h + '<div class="cs-panel"><b>Remove ' + esc(f.name) + '?</b><p class="cs-note">' + (m.factors.length === 1 ? 'This is your only authenticator. After removing it, signing in needs only your password or Google account, and you can no longer use the authenticator to protect this account.' : 'You will still have your other authenticator.') + ' Type <b>REMOVE</b> to confirm.</p>' +
+              '<div class="cs-row"><input id="csRm" type="text" autocomplete="off" spellcheck="false" aria-label="Type REMOVE"><button class="btn bad" id="csRmGo" data-cs="sec-remove-go" disabled>Remove</button><button class="btn" data-cs="sec-cancel">Cancel</button></div></div>';
+          }
+          h += m.required
+            ? '<p class="cs-note"><b>Two-step sign-in is ON.</b> ' + m.factors.length + ' authenticator' + (m.factors.length === 1 ? '' : 's') + ': ' + m.factors.map(f => esc(f.name)).join(', ') + '.</p>' +
+              '<div class="cs-row">' + m.factors.map(f => '<button class="btn" data-cs="sec-remove" data-id="' + esc(f.id) + '">Remove ' + esc(f.name) + '</button>').join('') + '<button class="btn" data-cs="sec-add">Add another authenticator</button></div>'
+            : '<p class="cs-note"><b>Two-step sign-in is off.</b> Add an authenticator app so that a password alone is not enough to open your cloud data.</p><div class="cs-row"><button class="btn" data-cs="sec-add">Add an authenticator app</button></div>';
+          return h;
+        }
+
+        /* ---------- Google sign-in (PKCE; the secret verifier never leaves this page) ---------- */
+        // Desktop app: the system browser does the sign-in and the app catches the return trip on 127.0.0.1 (see lib.rs oauth_begin).
+        // Browser: the page itself goes to Google and comes back with ?code=...&pl_state=... which is handled below on load.
+        const OAK = 'pll.sync.oauth';
+        async function googleStart() {
+          const loop = isApp() && window.pianoApp.cloud && window.pianoApp.caps && window.pianoApp.caps.oauthLoopback;
+          if (isApp() && !loop) throw new Error('Please update the Windows app to sign in with Google.');
+          say('Opening Google sign-in in your browser…');
+          if (loop) {
+            const { port } = await window.pianoApp.cloud.oauthBegin();
+            const o = await net.oauthStart('google', 'http://127.0.0.1:' + port + '/cb');
+            ST.oauth = { verifier: o.verifier, state: o.state }; ST.oauthWait = true; say(''); acPaint();
+            window.open(o.url, '_blank');                          // the app sends websites to the system browser
+            return;
+          }
+          const o = await net.oauthStart('google', location.origin + location.pathname);
+          try { sessionStorage.setItem(OAK, JSON.stringify({ verifier: o.verifier, state: o.state })); } catch (e) { throw new Error('This browser blocks the storage that Google sign-in needs.'); }
+          location.href = o.url;
+        }
+        function cancelGoogle() { ST.oauth = null; ST.oauthWait = false; try { if (isApp() && window.pianoApp.cloud) window.pianoApp.cloud.oauthCancel(); } catch (e) { } }
+        window.addEventListener('pianoapp-oauth', async ev => {
+          const d = (ev && ev.detail) || {}, o = ST.oauth; if (!o) return;
+          if (d.error) { cancelGoogle(); acPaint(); say(String(d.error), 'bad'); return; }
+          if (d.state !== o.state) { cancelGoogle(); acPaint(); say('That sign-in answer was not meant for this window. Please try again.', 'bad'); return; }
+          ST.oauth = null; ST.oauthWait = false;
+          try { await net.oauthExchange(String(d.code || ''), o.verifier); await afterSignIn(); } catch (e) { acPaint(); say(nice(e), 'bad'); }
+        });
+        function webReturn() {                                     // back from Google in a normal browser
+          let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
+          const code = q.get('code'), st = q.get('pl_state'), err = q.get('error_description') || q.get('error');
+          if (!(st && (code || err))) return;
+          let saved = null; try { saved = JSON.parse(sessionStorage.getItem(OAK) || 'null'); sessionStorage.removeItem(OAK); } catch (e) { }
+          try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { }
+          if (!saved || saved.state !== st) return;                // not our attempt: ignore it
+          if (err && !code) { setTimeout(() => toast('Google sign-in did not finish: ' + err, 'bad'), 800); return; }
+          net.oauthExchange(code, saved.verifier).then(async () => { await afterSignIn(); openAccount(); }).catch(e => setTimeout(() => toast('Google sign-in failed: ' + nice(e), 'bad'), 800));
+        }
+
+        /* ---------- nav item and chip ---------- */
+        function install() {
+          const nv = $('#v7nav'); if (!nv) return;
+          const ref = nv.querySelector('.nv-i[data-nv="settings"]');
+          if (ref && !nv.querySelector('[data-nv="cloud"]')) {
+            const b = document.createElement('button'); b.type = 'button'; b.className = 'nv-i'; b.dataset.nv = 'cloud'; b.title = 'Cloud sync';
+            b.innerHTML = icon('cloud') + '<span>Cloud sync</span>'; ref.before(b);
+            NAV.splice(NAV.findIndex(n => n[0] === 'settings'), 0, ['cloud', 'Cloud sync', 'cloud', () => openAccount()]);
+          }
+          const nvs = $('#nvStatus');
+          if (nvs && !$('#csChip')) {
+            const c = document.createElement('button'); c.type = 'button'; c.id = 'csChip'; c.className = 'cs-chip'; c.innerHTML = '<i></i><span></span>'; c.onclick = () => openAccount();
+            nvs.after(c);
+          }
+          paint();
+        }
+        /* ---------- What's new and Help (shown only once the version is 9.2.0 or newer) ---------- */
+        if (!vsVerLt(APP_VERSION, '9.2.0')) {
+          VERSIONS.unshift({
+            v: '9.2.0', date: '2026-11-23', title: 'Optional Cloud sync: your practice on your phone, and a safe copy if you change computer',
+            groups: [
+              ['Cloud sync (optional)', [
+                'New: Cloud sync, in the left menu (below MIDI devices). Sign in with an email and password or with Google. Your total for each day and your practice sessions are then saved online, so you can see them on your phone and keep them if you change computer. It is off until you sign in, and Piano Logger works fully without it, with or without internet',
+                'It runs quietly in the background and never slows down your playing: it only reads your history and sends small changes. A small light under the left menu shows what is happening (Synced, Syncing, waiting, Offline or Failed). It says Synced only after the copy online was read back and matched yours',
+                'If you stop playing or lose the connection nothing is lost: it keeps its place and carries on by itself when you are back online',
+                'Nothing is deleted online by itself. If you delete history on this computer, Piano Logger asks whether to delete it online too',
+                'Your devices: see them, rename one, or disconnect one so it can no longer upload. “Delete my cloud data” and “Delete my account” need you to type DELETE. Your history on this computer is never changed by any of these buttons'
+              ]],
+              ['Optional extras (in the Cloud sync window)', [
+                'Profile, notes and voice history: your name and look, practice journal, routines, badges, best scores and voice sessions (never the sound). Themes and graphics stay on each computer',
+                'Every key press: one small compressed file for each day, about 1 MB online for every 100,000 key presses. It is off unless you switch it on',
+                'Restore from the cloud: for a new or reinstalled computer. It first suggests a backup file, then adds your history without removing anything or adding anything twice. This computer takes over the old device, so your totals are not counted twice',
+                'Download my cloud data saves one file that Data & backup → Restore can read'
+              ]],
+              ['On your phone', [
+                'New: Piano Logger Cloud, a page on the official website. Sign in with the same account to see your total time, key presses, today, this week, this month, this year, streaks, a practice calendar, your sessions and your devices. It is made for phones and also works on a computer. It only shows totals, never single key presses'
+              ]],
+              ['Things to know', [
+                'Two computers that you use at the same time each keep their own key presses; the phone page adds their totals together',
+                'Sheet Music, voice recordings (the sound), themes and graphics are not part of Cloud sync',
+                'The Windows app must be 9.2.0 or newer for Cloud sync. An older app is told to update; nothing else changes for it',
+                'Your sign-in and device number are never written into backup files',
+                'Creating an account sends a confirmation email. If another account signs in on a computer that already belongs to someone else’s Cloud sync, that history is not uploaded to it by accident'
+              ]]
+            ]
+          });
+          const hp = $('#p-help'), old = hp && hp.querySelector('#help910');
+          if (hp && !hp.querySelector('#help920')) {
+            const card = '<div class="v71card" id="help920" style="margin-top:14px"><h3 style="margin:0 0 8px">New in 9.2.0</h3><ul style="margin:0;padding-left:18px;line-height:1.6">' +
+              '<li><b>Cloud sync (optional):</b> left menu → <b>Cloud sync</b>. Sign in, and your daily totals and practice sessions are saved online. The small light under the menu shows <i>Synced</i>, <i>Syncing</i>, <i>Offline</i> or <i>Failed</i>. Nothing changes for you if you never sign in.</li>' +
+              '<li><b>On your phone:</b> open Piano Logger Cloud on the official website and sign in with the same account.</li>' +
+              '<li><b>New or reinstalled computer:</b> sign in, switch on <b>Every key press</b> on the old computer first, then press <b>Restore from the cloud…</b> on the new one.</li>' +
+              '<li><b>Delete:</b> “Delete my cloud data” removes what is online and switches syncing off here; “Delete my account” removes the account too. Your history on this computer stays.</li>' +
+              '<li><b>If it says Failed or Offline:</b> your playing is still saved here. It retries by itself; press <b>Sync now</b> in the Cloud sync window to try at once.</li></ul></div>';
+            if (old) old.insertAdjacentHTML('beforebegin', card); else hp.insertAdjacentHTML('beforeend', card);
+          }
+        }
+        /* 9.2.1: two-step sign-in. Added above the 9.2.0 entry (newest first). */
+        if (!vsVerLt(APP_VERSION, '9.2.1')) {
+          VERSIONS.unshift({
+            v: '9.2.1', date: '2026-11-23', title: 'Two-step sign-in for Cloud sync, and a safer sign-in',
+            groups: [
+              ['Two-step sign-in (authenticator app)', [
+                'New: if your account has an authenticator app (Google Authenticator, Microsoft Authenticator, Authy and similar), Piano Logger asks for its 6-digit code after you sign in with a password, with Google, or from a password-reset link. Until you type it, nothing of your account is shown and nothing is uploaded',
+                'Cloud sync window → Account security shows whether it is on. You can add an authenticator (scan the picture or type the key) and remove one (you must type REMOVE). Piano Logger never removes an authenticator by itself',
+                'Choosing a new password after “Forgot password?” also asks for the code first, on the Piano Logger Cloud page',
+                'Five wrong codes in a row lock the code box for 30 seconds'
+              ]],
+              ['Smaller changes', [
+                'A slow or stuck connection now ends with a clear message and tries again by itself, instead of waiting for ever',
+                'After you sign in the message says whether Cloud sync is on or off for this computer'
+              ]],
+              ['Things to know', [
+                'Cloud sync does nothing until the code step is finished. If you cannot get a code, your history on this computer is not affected',
+                'Only the totals and sessions that Cloud sync already uses are involved; nothing about playing, recording or your saved history changes'
+              ]]
+            ]
+          });
+          const hp2 = $('#p-help'), old2 = hp2 && hp2.querySelector('#help920');
+          if (hp2 && !hp2.querySelector('#help921')) {
+            const card2 = '<div class="v71card" id="help921" style="margin-top:14px"><h3 style="margin:0 0 8px">New in 9.2.1</h3><ul style="margin:0;padding-left:18px;line-height:1.6">' +
+              '<li><b>Two-step sign-in:</b> if your account uses an authenticator app, type its 6-digit code after signing in. Manage it in <b>Cloud sync → Account security</b>.</li>' +
+              '<li><b>Lost your authenticator?</b> Cloud sync stays locked for that account until the service administrator removes it. Your history on this computer is never affected.</li></ul></div>';
+            if (old2) old2.insertAdjacentHTML('beforebegin', card2); else if (hp2) hp2.insertAdjacentHTML('beforeend', card2);
+          }
+        }
+
+        install();
+        webReturn();                                              // only does anything when the address carries a Google answer
+        if (net.signedIn() && appOk()) setTimeout(() => ensureEngine().catch(() => { }), 0);   // signed-in users only: otherwise no network request is ever made
+        // t: test helpers (the same things anyone can already do from the browser console; used by tests/v920 to seed and read a throw-away profile)
+        const t = {
+          writeRecord: r => writeRecord(r), getOne: (s, k) => getOne(s, k), settingsSnapshot: () => settingsSnapshot(),
+          allLogs: () => reqP(db.transaction('logs').objectStore('logs').getAll()),
+          clearAll: () => new Promise((res, rej) => { const tx = db.transaction(['logs', 'keys', 'daily', 'agg'], 'readwrite'); ['logs', 'keys', 'daily', 'agg'].forEach(s => tx.objectStore(s).clear()); tx.oncomplete = res; tx.onerror = tx.onabort = () => rej(tx.error); })
+        };
+        return { CFG, net, ST, prefs, devInfo, LOCAL, ensureEngine, openAccount, paint, stop, userStore, curStatus, K, t };
+      })();
+      window.__pl92 = CSU;      // test hooks (no access to the lifetime log beyond what the page already has)
+    /* V92-JS-END */
       // debugging / automated checks only (no access to your logged data)
       window.__pl71 = Object.freeze({
         rb: { ids: () => RB_IDS.slice(), opts: rbOpts, still(id, W, H) { const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const d = RBD[id], o = rbOpts(id); rbStill(cv.getContext('2d'), rbEnv(d, W, H, o, 1, rbPal(d, o))); return cv; }, frame(id, W, H, steps) { const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), d = RBD[id], o = rbOpts(id), E = rbEnv(d, W, H, o, 1, rbPal(d, o)); rbBase(g, E); for (let i = 0; i < steps; i++) { g.clearRect(0, 0, W, H); rbBase(g, E); rbFrame(g, E, 33); } return cv; }, open: openRollStudio },

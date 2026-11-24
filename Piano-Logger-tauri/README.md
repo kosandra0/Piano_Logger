@@ -15,10 +15,11 @@ the same API the Electron app's `preload.js` provides, so the page code is ident
 | `package.json` | version, and the `dev` / `build` scripts (Tauri CLI 2.12) |
 | `scripts/copy-page.mjs` | copies the newest page (`../index.html` or `../piano-logger.html`) to `web/index.html` before every build |
 | `web/` | the page inside the app (generated; do not edit) |
-| `src-tauri/tauri.conf.json` | name, version 9.1.0, identifier, installer settings |
+| `src-tauri/tauri.conf.json` | name, version 9.2.3, identifier, installer settings |
 | `src-tauri/capabilities/default.json` | no plugin permissions are given to the page (least privilege) |
 | `src-tauri/src/lib.rs` | the app: window, page serving and updates, SoundFonts, backups, always on top, start with Windows, MIDI + microphone permission, system tray; since 9.0.0 `music_pick` / `music_write` (Save dialog for Sheet Music `.mid` and `.pdf` files: the page suggests a checked file name, the file is written only to the path the user picks); since 9.1.0 also `.mp4` / `.webm` piano videos (limit 600 MB) |
-| `src-tauri/src/bridge.js` | `window.pianoApp` for the page |
+| `src-tauri/src/bridge.js` | `window.pianoApp` for the page; since 9.2.0 also `caps` (`cloudSync`, `oauthLoopback`) and `cloud.oauthBegin/oauthCancel` for the optional Cloud sync |
+| `src-tauri/src/oauth.rs` | 9.2.0: reads the browser's return trip of a Google sign-in (only `GET /cb`, only plain token characters; unit-tested). `lib.rs` listens on `127.0.0.1` for it (`oauth_begin`, one answer, 3 minutes) |
 | `src-tauri/src/bridge.rs` | MIDI Keyboard Bridge: key presses with `SendInput`, target-window check, Ctrl+Alt+End hotkey, `bridge_focus_target` (Go to Roblox) |
 | `.github/workflows/build-windows-tauri.yml` | builds the installer on GitHub and publishes it as `Piano-Logger-Setup.exe` |
 
@@ -31,7 +32,7 @@ npm install
 npm run build        # web page copied in, release build, NSIS installer
 ```
 
-The installer is written to `src-tauri/target/release/bundle/nsis/Piano Logger_9.1.0_x64-setup.exe`,
+The installer is written to `src-tauri/target/release/bundle/nsis/Piano Logger_9.2.3_x64-setup.exe`,
 and the app itself to `src-tauri/target/release/piano-logger.exe`. `npm run dev` starts a debug build.
 
 ## How it behaves

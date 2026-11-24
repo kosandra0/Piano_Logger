@@ -3,6 +3,89 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
+## Unreleased — other data categories (live page only; NOT yet verified; migration NOT applied)
+
+The live demo page now contains a new `files` sync channel. It is not in the 9.2.3 installer and is not verified yet.
+- Sung notes, Sheet Music (library, progress, settings), saved takes, voice recordings (details and audio), voice settings, personal notes, profile picture, quests and gestures are read by one manifest (the preview and the uploader use the same numbers) and uploaded as checksummed files when the Profile, notes and voice history toggle is on.
+- Large settings values and voice session records, which used to be skipped silently above 90,000 and 19,000 characters, are now sent as files.
+- Restore of these categories is add-only: it never overwrites or deletes what is already on the computer, and a file whose SHA-256 does not match is refused.
+- Needs the database migration `cloud-sync/migrations/0006_category_files.sql` (adds one table and one function). The migration is written and dry-run tested, but it is not applied to the live project yet.
+- Not yet done: isolated upload and restore tests of these categories, a new installer, and a version bump.
+- Still not synced by design: themes, graphics and layout (device settings), and derived caches (rebuilt on each computer).
+
+## 9.2.3 — 2026-11-24 · Every key press, profile and voice history in the cloud, restorable on a new computer (installer published)
+
+Status: the Windows installer 9.2.3 is published as release `app-v9.2.3` (SHA-256 `407483D5D310EE3739F2A7DE0BE7694BFE6B7969DA039E69FBC5AA089EA9224E`). It was tested on an isolated copy of the owner's data and installed on the owner's computer. Nothing was uploaded to the owner's account yet: that needs the owner's authenticator code.
+
+### What is new
+- **Every key press (optional toggle).** Approved uploads send each day's key presses as compressed files. Isolated test: 940,452 presses in 27 day files, checksums matched.
+- **Profile, notes and voice history (optional toggle).** Profile, journal, routines, badges, best scores and voice session records. Covered by the isolated full-sync test (7 of 7 checks passed).
+- **Restore from the cloud.** Restores into a fresh profile: 940,452 presses, 27 days, 67 voice sessions (restore test, 6 of 6 checks passed).
+- **Exact preview.** Counts and storage sizes per category, read from the same data the upload uses.
+
+### Not in this release
+- Sung notes, Sheet Music, saved takes, voice recordings (sound and details), voice settings, personal notes, profile picture, quests and gestures are not uploaded by 9.2.3. They are listed in the preview as not in this version. See the Unreleased section for the page that adds them.
+- Themes, graphics and layout stay on the computer by design.
+
+## 9.2.2 — 2026-11-24 · First-upload preview for Cloud sync (nothing uploads until you approve)
+
+Status: the page, the Windows shell (version 9.2.2) and their tests are built and tested on an isolated copy of the owner's data. The installer is built but **has not been installed**, and nothing is published or pushed.
+
+### What is new
+- **First-upload preview.** In Cloud sync, "Make a preview" reads the press log on this computer (read-only) and shows the exact number of days, daily totals and practice sessions that would be uploaded, the presses counted, an estimated upload size and the number of requests.
+- **Compared with the copy online.** For this computer: days unchanged, changed or new, and practice sessions already online. Days also recorded by your other computers are flagged as a possible double count.
+- **Approval gate.** Nothing uploads until you tick the box and press "Approve and upload". Approval re-reads the press log and refuses if anything changed since the preview.
+- **Sync is off by default.** A new profile starts with "Sync this device" OFF (it used to start ON).
+- **Voice history, settings and Every key press are not uploaded in this release.** Their switches are shown as "not in this release yet" and cannot be ticked.
+
+### Not changed
+- Key presses, the local press log, backups and the sync engine's upload code (daily totals and practice sessions only).
+
+## 9.2.1 — 2026-11-23 · Two-step sign-in for Cloud sync
+
+Status: the page, the phone page, the Windows installer (`installers/release-9.2.1-2026-11-23/`) and their tests are built and tested; the installer has **not been installed** and nothing is published or deployed (this line is replaced by the release date when the owner approves publishing). The matching server rule (`cloud-sync/proposed/0005_mfa_enforcement.sql`) is **proposed and not applied**. 9.2.0 was never released, so 9.2.1 is the first public version with Cloud sync. The Rust shell and its security rules are unchanged from the 9.2.0 build; only the page inside the app changed.
+
+### What is new
+- **Two-step sign-in (authenticator app).** If your account has an authenticator app, Piano Logger asks for its 6-digit code after any sign-in (password, Google or a password-reset link) before anything of your account is shown or uploaded; Cloud sync cannot start until the code is checked. *Cloud sync → Account security* shows whether it is on, lets you add an authenticator (QR code or typed key) and remove one (you must type REMOVE). Piano Logger never removes an authenticator by itself. Five wrong codes lock the code box for 30 seconds.
+- **Password reset with two-step sign-in.** On the Piano Logger Cloud page the link from the reset e-mail asks for the authenticator code first, and only then lets you choose a new password.
+- **Steadier sign-in.** A slow or stuck connection now ends with a clear message and an automatic retry instead of waiting for ever. After signing in the message says whether Cloud sync is on or off for this computer.
+
+### Tests
+- Two-step sign-in: fake service 44/44; real service with disposable accounts 25/25; real page 31/31 (+4/4 for an account without an authenticator); phone page 18/18; compiled shell (isolated copy) 33/33 at 9.2.0. Earlier suites re-run: sync page 47/47, phone page 40/40, core 97/97.
+
+## 9.2.0 — 2026-11-23 · Optional Cloud sync: your practice on your phone, and a safe copy if you change computer
+
+Status: the page, the cloud service, the phone page, their tests and the Windows installer (`installers/release-9.2.0-2026-11-23/`) are built and tested; the installer has **not been installed or run on a normal profile yet** and nothing is published (this line is replaced by the release date when the owner approves publishing). Needs the Windows app 9.2.0 (the older app's security rules do not allow the connection; it shows "update the app").
+
+### What is new
+- **Cloud sync (optional).** Left menu → *Cloud sync*. Sign in with an email and password or with Google. Your total for each day and your practice sessions are saved online. Nothing is sent unless you sign in; signed-out users make no network request at all (checked by a test).
+- **Honest status.** A small light under the left menu: *Synced*, *Syncing* (with "x of y days" for the first upload), *x days waiting*, *Offline*, *Sync failed, will retry*, *Sign in to sync*, or *Update the app to use cloud sync*. *Synced* appears only after the copy online was read back and matched the local one.
+- **Offline first.** Playing is never delayed by the cloud: syncing only reads your history in small steps and waits while you play. It resumes from its last confirmed step after a restart or a lost connection, retries with growing pauses, and never uploads the same day twice unless it changed.
+- **Phone page.** *Piano Logger Cloud* on the official website: sign in with the same account to see total time and key presses, today / this week / this month / this year, streaks, a practice calendar, sessions and devices. Designed for phones first (bottom tab bar, large touch targets), works on computers too. The numbers use the app's own rules (tested for exact agreement, including Monday-based weeks and the streak rule).
+- **Optional extras (Cloud sync window):** *Profile, notes and voice history* (name and look, journal, routines, badges, best scores, voice sessions, never the sound; at most every 10 minutes) and *Every key press* (one compressed file per day, about 1 MB online per 100,000 presses; off unless you switch it on).
+- **Restore from the cloud** (new or reinstalled computer): asks for a backup first, then adds your history with the app's own duplicate-safe import. This computer takes over the old device's identity so totals are not counted twice. **Download my cloud data** saves a file that *Data & backup → Restore* reads (tested).
+- **Devices and account.** See, rename and disconnect devices; *Sign out*, *Sign out everywhere*; *Delete my cloud data* (also removes the press files and switches syncing off here) and *Delete my account*, both only after typing DELETE. Your history on this computer is never changed by any of these.
+- **Windows app:** the app's security rules now allow the cloud sync service, and Google sign-in opens your normal browser and listens on `127.0.0.1` for the return trip (one answer, 3 minutes, plain token characters only).
+
+- **E-mail links work.** The link in a confirmation e-mail signs you in to Piano Logger Cloud ("Your email is confirmed"); the link in a password-reset e-mail opens "Choose a new password" (at least 10 characters). Expired or used links say so in plain words and a made-up link is refused by the service. The sign-in token is removed from the address bar at once. (Both need the project's e-mail delivery to be set up; the page side is tested with real tokens.)
+
+### Checked before release (exact, run on 2026-11-23)
+Security rules 81/81 · sync engine and network client 97/97 · raw-press files 12/12 · app page against the live service 47/47 · Google sign-in page flow (with a stand-in for Google) 25/25 · restore on a new computer 32/32 · dashboard statistics equal the app's own 16/16 · dashboard files and policy 8/8 · dashboard in Chrome at phone and desktop sizes 40/40 · account isolation and e-mail links 21/21 · Windows shell reader of the Google return trip 5/5 · **the real compiled Windows app (isolated copy) 25/25**: capability flag, security rules allow the cloud service and still block other websites, the Google return listener (hostile input, cancel, replacement), sign-in and a real sync from inside the app. **Not yet run:** a real Google sign-in, real e-mail delivery, real phones, MIDI recording offline in the real app, restore on a clean real-app profile.
+
+### Safety decisions
+- Nothing is deleted online by itself: when days or voice sessions disappear from this computer, the window asks whether to delete them online too.
+- A computer whose history belongs to one account is not given to a different account by accident (a clear choice is required).
+- Backup files never contain the sign-in, the device number or the sync switches.
+- Every write goes through server functions that check who you are and that the device is not disconnected; the database refuses anything else (direct table writes are not allowed at all). One person can never read another person's rows.
+- A page update cannot make an old app connect: the app must carry the new security rules (`caps.cloudSync`).
+
+### Honest limits
+- Two computers used at the same time each keep their own key presses; the phone page adds their totals. Restore is for a new or reinstalled computer, not for merging two live ones.
+- A session that runs past midnight is shown as one session per day in the cloud.
+- Sheet Music, voice *recordings* (sound), themes and graphics are not part of Cloud sync.
+- A real Google round trip and e-mail confirmation delivery depend on the project's settings (see the master record); the Google page code is tested with a stand-in for Google.
+- Free hosting tier: the online project can pause after about a week without use and has no automatic backups; the *Download my cloud data* button is the user's own backup.
+
 ## 9.1.0 — 2026-11-18 · Light and dark sheet music, 3D hands, piano videos and a bigger heatmap
 
 Released 2026-11-18 as the Windows app `app-v9.1.0` and on the website (the earlier "not published" wording was correct until the owner approved publishing on 2026-11-18).
@@ -556,6 +639,9 @@ Measured in Chrome on this PC (GeForce GT 710), Aurora Glass theme, glow notes, 
 
 | App | Date | Built with | Notes |
 |---|---|---|---|
+| 9.2.0 | 2026-11-23 | Tauri 2.12.5 (WebView2) | Page 9.2.0 (Cloud sync). **The shell changed:** the Content-Security-Policy `connect-src` allows the cloud sync service; new commands `oauth_begin` / `oauth_cancel` (Google sign-in return on `127.0.0.1`, new `oauth.rs`); `window.pianoApp.caps` and `.cloud`. An older app cannot use Cloud sync and is told to update. Built locally (installer 6,092,332 bytes) and tested as an isolated copy (25 checks of the shell, below); not installed over the owner's app and not published. |
+| 9.2.2 | 2026-11-24 | Tauri 2.12.5 (WebView2) | Page 9.2.2 (first-upload preview; sync off by default; voice, settings and key presses not uploaded yet). **The shell is unchanged** from 9.2.0/9.2.1 (same security rules and commands); version field 9.2.2. Built locally and tested as an isolated copy of the owner's data; not installed over the owner's app and not published. |
+| 9.2.1 | 2026-11-23 | Tauri 2.12.5 (WebView2) | Page 9.2.1 (two-step sign-in with an authenticator app). **The shell is unchanged** from 9.2.0 (same security rules and commands); only the bundled page changed. Built locally and tested as an isolated copy; not installed over the owner's app and not published. |
 | 9.1.0 | 2026-11-18 | Tauri 2.12.5 (WebView2) | Page 9.1.0 (Light/Dark score, 3D hands, MP4 export, larger heatmap). `music_pick` also accepts `mp4` / `webm` (native Save dialog for videos); `music_write` limit 600 MB. Released 2026-11-18 (`app-v9.1.0`). |
 | 9.0.0 | 2026-11-18 | Tauri 2.12.5 (WebView2) | Page 9.0.0 (Sheet Music). New Rust commands `music_pick` / `music_write`: a native Save dialog for `.mid` and `.pdf` files (the page only suggests a checked file name; the file is written only to the path you pick). Released 2026-11-18 (`app-v9.0.0`; corrected in 9.1.0, this row said "not published"). |
 | 7.4.1 | 2026-11-04 | Tauri 2.12.5 (WebView2) | MIDI octave range (MIDI 0–127) and Roblox sustain (CC64) fixes (page 7.4.1). No change to the app's Rust code. Built locally, not published yet. |

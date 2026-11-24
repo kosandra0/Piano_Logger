@@ -6,6 +6,29 @@ A single-file, browser-based piano MIDI visualizer and lifetime key logger. Plug
 
 **Windows app:** [Download Piano-Logger-Setup.exe](https://github.com/kosandra0/Piano_Logger/releases/latest/download/Piano-Logger-Setup.exe) (Windows 10 & 11, 64-bit)
 
+## 🆕 What's new in 9.2.3 (2026-11-24)
+
+Full list with limits: [CHANGELOG.md](CHANGELOG.md#923--2026-11-24--every-key-press-profile-and-voice-history-in-the-cloud-restorable-on-a-new-computer-installer-published).
+
+- **Every key press in the cloud (optional).** When you approve the first upload, your key presses can be saved online as compressed daily files. Tested on an isolated copy: 940,452 presses in 27 day files.
+- **Profile, notes and voice history (optional).** Your profile, journal, routines, badges, best scores and voice session records can be saved online too.
+- **Restore on a new computer.** Restore adds what is missing to a fresh install and never removes anything. Tested: 940,452 presses, 27 days and 67 voice sessions came back.
+- **Not in this release:** sung notes, Sheet Music, saved takes, voice recordings, personal notes, profile picture, quests and gestures are not uploaded yet. Themes and graphics stay on your computer by design.
+
+## 🆕 What's new in 9.2.1 (2026-11-23)
+
+- **Two-step sign-in for Cloud sync.** If your account uses an authenticator app, Piano Logger asks for its 6-digit code after you sign in (password, Google or a reset link) before anything is shown or uploaded. Manage it in *Cloud sync → Account security*. Nothing about playing, recording or your saved history changes.
+
+## 🆕 What's new in 9.2.0 (2026-11-23)
+
+Full list with limits: [CHANGELOG.md](CHANGELOG.md#920--2026-11-23--optional-cloud-sync-your-practice-on-your-phone-and-a-safe-copy-if-you-change-computer).
+
+- **☁ Optional Cloud sync:** sign in (email or Google) from the left menu and your totals for each day and your practice sessions are saved online. See them on your phone with **Piano Logger Cloud** on the official website, and keep them if you change computer. Nothing is sent unless you sign in, and everything still works without internet.
+- **Honest status light:** *Synced* only appears after the copy online was read back and matched. Playing is never slowed down; syncing waits while you play and carries on by itself after an interruption.
+- **New or reinstalled computer:** *Restore from the cloud* (with the optional *Every key press* setting) rebuilds your history without removing anything or counting anything twice. *Download my cloud data* saves a file the normal Restore reads.
+- **You stay in control:** nothing is deleted online by itself, devices can be renamed or disconnected, and your cloud data or account can be deleted (typed confirmation). Your history on your computer is never changed by those buttons.
+- **Needs the Windows app 9.2.0 or newer** (the older app is told to update). Honest limits: two computers used at the same time each keep their own key presses (the phone page adds their totals); Sheet Music, voice sound, themes and graphics are not synced.
+
 ## 🆕 What's new in 9.1.0 (released 2026-11-18)
 
 Full list with causes and limits: [CHANGELOG.md](CHANGELOG.md#910--2026-11-18--light-and-dark-sheet-music-3d-hands-piano-videos-and-a-bigger-heatmap).
@@ -114,9 +137,9 @@ Notes: only the *tested* machine above was actually measured; the *Recommended* 
 
 ## 🔒 Privacy
 
-This app has **no server and no accounts**. All data — your key presses, voice recordings, settings, and practice scores — is stored only on your own device. Nothing is uploaded anywhere. The microphone is used only while Voice Studio is started and is closed when you press Stop. If you clear your browser data, your log history is lost unless you've made a backup, so regular backups are recommended (the Windows app makes one every day).
+By default this app has **no server and no accounts**. All data — your key presses, voice recordings, settings, and practice scores — is stored only on your own device, and nothing is uploaded anywhere. Since 9.2.0 there is an **optional Cloud sync**: only if you sign in, your total for each day and your practice sessions are saved online (and, only if you switch them on, your profile and notes, voice session times and every key press). Voice recordings (the sound) and Sheet Music are never uploaded. Each person can only ever read their own rows, the sign-in is never written into backup files, and you can delete your cloud data or your account at any time from the app. The microphone is used only while Voice Studio is started and is closed when you press Stop. If you clear your browser data, your log history is lost unless you've made a backup, so regular backups are recommended (the Windows app makes one every day).
 
-Voice activity tracking (7.4.0) saves only numbers — when a session started and ended, how long the microphone was watched and how long a voice was detected. It saves no audio, no text and nothing is uploaded. These sessions are included in full backups.
+Voice activity tracking (7.4.0) saves only numbers — when a session started and ended, how long the microphone was watched and how long a voice was detected. It saves no audio and no text, and the sound is never uploaded (with the optional Cloud sync switched on, only these session times can be saved online). These sessions are included in full backups.
 
 ## 🚀 How to use
 
