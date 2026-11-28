@@ -11,6 +11,69 @@
   var verOf = function (html) { var m = /const APP_VERSION\s*=\s*['"]([\d.]+)['"]/.exec(html || ''); return m ? m[1] : '0'; };
   var looksLikePage = function (html) { return typeof html === 'string' && html.length > 100000 && html.indexOf('const APP_VERSION') >= 0 && /<\/html>\s*$/i.test(html.trim()) && html.indexOf('PianoLifetimeLogger') >= 0; };
 
+  // v9.2.4: MIDI goes through the app, not through the browser. WebView2's own Web MIDI opens every input as soon as it is
+  // used and never gives one back, so it is replaced here (before the page runs). An input is open in Windows only while the
+  // page has a message handler on it; every other port stays free for other programs.
+  (function () {
+    var ins = new Map(), outs = new Map(), access = null, timer = null, queued = false, busy = {}, anyBusy = false;
+    function Port(type, name) { this.type = type; this.name = name; this.id = 'native-' + type + '-' + name; this.manufacturer = ''; this.state = 'connected'; this.connection = 'closed'; this._h = null; }
+    Object.defineProperty(Port.prototype, 'onmidimessage', {
+      get: function () { return this._h; },
+      set: function (h) { this._h = typeof h === 'function' ? h : null; if (this.type === 'input') { this.connection = this._h ? 'open' : 'closed'; plan(); } }
+    });
+    Port.prototype.open = function () { return Promise.resolve(this); };   // an input opens when it gets a handler
+    Port.prototype.close = function () {
+      if (this.type === 'input') { this._h = null; plan(); } else inv('midi_close_output', { name: this.name }).catch(function () { });
+      this.connection = 'closed'; return Promise.resolve(this);
+    };
+    Port.prototype.send = function (data, when) {
+      var self = this, bytes = Array.from(data);
+      var go = function () { inv('midi_send', { name: self.name, bytes: bytes }).then(function () { self.connection = 'open'; delete busy['out ' + self.name]; }).catch(function () { warn('out ' + self.name, self.name); }); };
+      if (when > performance.now()) setTimeout(go, when - performance.now()); else go();
+    };
+    function warn(key, name) { if (busy[key]) return; busy[key] = true; window.dispatchEvent(new CustomEvent('pianoapp-midi-busy', { detail: name })); }
+    function plan() { if (queued) return; queued = true; Promise.resolve().then(sync); }
+    function sync() {
+      queued = false;
+      var wanted = []; ins.forEach(function (p) { if (p._h && p.state === 'connected') wanted.push(p.name); });
+      return inv('midi_sync', { inputs: wanted }).then(function (failed) {
+        anyBusy = failed.length > 0;
+        wanted.forEach(function (n) { if (failed.indexOf(n) < 0) delete busy['in ' + n]; else warn('in ' + n, n); });
+      }).catch(function () { });
+    }
+    function apply(map, type, names) {
+      var changed = [];
+      names.forEach(function (n) {
+        var id = 'native-' + type + '-' + n, p = map.get(id);
+        if (!p) { p = new Port(type, n); map.set(id, p); changed.push(p); }
+        else if (p.state !== 'connected') { p.state = 'connected'; changed.push(p); }
+      });
+      map.forEach(function (p) { if (p.state === 'connected' && names.indexOf(p.name) < 0) { p.state = 'disconnected'; p.connection = 'closed'; changed.push(p); } });
+      return changed;
+    }
+    function poll() {
+      return inv('midi_list').then(function (l) {
+        var changed = apply(ins, 'input', l.inputs).concat(apply(outs, 'output', l.outputs));
+        if (access && access.onstatechange) changed.forEach(function (p) { try { access.onstatechange({ port: p }); } catch (e) { } });
+        if (changed.length || anyBusy) plan();
+      });
+    }
+    window.addEventListener('pianoapp-midi', function (e) {
+      (e.detail || []).forEach(function (m) {
+        var p = ins.get('native-input-' + m[0]);
+        if (p && p._h) { try { p._h({ data: new Uint8Array(m[1]), timeStamp: performance.now() - m[2], target: p }); } catch (err) { console.error(err); } }
+      });
+    });
+    var request = function () {
+      return poll().then(function () {
+        if (!access) access = { inputs: ins, outputs: outs, onstatechange: null, sysexEnabled: false, nativePorts: true };
+        if (!timer) timer = setInterval(function () { poll().catch(function () { }); }, 2000);   // plugging and unplugging
+        return access;
+      });
+    };
+    try { Object.defineProperty(navigator, 'requestMIDIAccess', { value: request, configurable: true }); } catch (e) { }
+  })();
+
   // look for a newer page on the website; the app keeps it and uses it from the next start
   async function checkUpdate() {
     var current = '0';

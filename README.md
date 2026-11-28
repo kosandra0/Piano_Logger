@@ -6,6 +6,15 @@ A single-file, browser-based piano MIDI visualizer and lifetime key logger. Plug
 
 **Windows app:** [Download Piano-Logger-Setup.exe](https://github.com/kosandra0/Piano_Logger/releases/latest/download/Piano-Logger-Setup.exe) (Windows 10 & 11, 64-bit)
 
+## 🆕 What's new in 9.2.4 (2026-11-28)
+
+Full list with limits: [CHANGELOG.md](CHANGELOG.md).
+
+- **🎹 Only your chosen MIDI port is used (Windows app).** Pick one input and the other ports stay free for your other programs. The choice is remembered. *All MIDI inputs* still opens all of them, and Windows keeps listing every port in other programs.
+- **Fixed:** repeating "Connected" pop-ups, and "Sync failed, will retry" in Cloud sync.
+- **Lighter:** *Lite effects* removes all blur and moving decorations; decorations also pause while another window is in front.
+- **Not synced yet:** sung notes, Sheet Music, saved takes, voice recordings, personal notes, profile picture, quests and gestures stay on your computer.
+
 ## 🆕 What's new in 9.2.3 (2026-11-24)
 
 Full list with limits: [CHANGELOG.md](CHANGELOG.md#923--2026-11-24--every-key-press-profile-and-voice-history-in-the-cloud-restorable-on-a-new-computer-installer-published).

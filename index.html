@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Piano Logger · MIDI Visualizer & Lifetime Key Logger</title>
-  <meta name="description" content="Piano Logger 9.2.3: a MIDI visualizer that saves every key press on your own device, with optional cloud sync to your phone, sheet music, MIDI to PDF, a sight-reading course, statistics, practice tools and 190+ themes.">
-  <meta name="application-version" content="9.2.3">
+  <meta name="description" content="Piano Logger 9.2.4: a MIDI visualizer that saves every key press on your own device, with optional cloud sync to your phone, sheet music, MIDI to PDF, a sight-reading course, statistics, practice tools and 190+ themes.">
+  <meta name="application-version" content="9.2.4">
   <meta name="theme-color" content="#05050f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13296,6 +13296,12 @@
     @media (max-width: 560px) { #csAcc .actions { flex-wrap: wrap } #csAcc .cs-dev { align-items: flex-start } }
     /* V92-CSS-END */
   </style>
+  <!-- v9.2.4: performance rules (the endless animations are paused by the script at the end of the page) -->
+  <style id="pl-idle-css">
+    /* Lite effects: no blur anywhere (blur is redrawn all the time); menus and panels become solid instead */
+    html.lite *, html.lite *::before, html.lite *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important }
+    html.lite .gsel, html.lite .plx { background: color-mix(in srgb, var(--bg, #14162a) 96%, transparent) !important }
+  </style>
 </head>
 
 <body>
@@ -14450,7 +14456,7 @@
       /* ============================================================
          Settings (localStorage, optional)
          ============================================================ */
-      const S = { lite: false, dir: 'rise', speed: 0.12, soundScreen: true, soundMidi: false, vol: 0.7, labels: true, pcKeys: true, fwdMute: true, outName: '', gmProgram: 0 };
+      const S = { lite: false, dir: 'rise', speed: 0.12, soundScreen: true, soundMidi: false, vol: 0.7, labels: true, pcKeys: true, fwdMute: true, outName: '', inName: '', gmProgram: 0 };
       try { Object.assign(S, JSON.parse(localStorage.getItem('pll.settings') || '{}')); } catch (e) { }
       const saveSettings = () => { try { localStorage.setItem('pll.settings', JSON.stringify(S)); } catch (e) { } };
 
@@ -15235,8 +15241,12 @@
         catch (err) {
           return setStatus(err && (err.name === 'SecurityError' || err.name === 'NotAllowedError') ? 'denied' : 'error', err);
         }
+        // opening or closing a port also raises "statechange": only a real plug-in or unplug may be announced
+        const seen = new Map([...midiAccess.inputs.values(), ...midiAccess.outputs.values()].map(p => [p.id, p.state]));
         midiAccess.onstatechange = e => {
           const p = e.port;
+          if (seen.get(p.id) === p.state) return;
+          seen.set(p.id, p.state);
           if (p.type === 'input') {
             if (p.state === 'disconnected') { releaseWhere(n => n.src === p.id); allNotesOffOut(); toast('Disconnected: ' + p.name, 'bad'); }
             else if (p.state === 'connected') toast('Connected: ' + p.name, 'ok');
@@ -15249,14 +15259,23 @@
         if (!midiAccess) return;
         refreshOutputs();
         const ins = [...midiAccess.inputs.values()];
-        const sel = $('#deviceSel'), prev = selectedInput;
+        const sel = $('#deviceSel');
+        // the chosen input is remembered by name; while it is unplugged nothing else is listened to instead
+        const chosen = S.inName ? ins.find(i => i.id === selectedInput && i.name === S.inName) || ins.find(i => i.name === S.inName) : null;
         sel.innerHTML = '<option value="all">All MIDI inputs</option>' + ins.map(i =>
           '<option value="' + esc(i.id) + '">' + esc(i.name || 'MIDI input') + (i.manufacturer ? ' (' + esc(i.manufacturer) + ')' : '') +
-          (i.state !== 'connected' ? ' — disconnected' : '') + '</option>').join('');
-        sel.value = ins.some(i => i.id === prev) ? prev : 'all';
-        selectedInput = sel.value;
-        ins.forEach(i => { i.onmidimessage = e => onMidi(e, i); try { i.open && i.open().catch(() => { }); } catch (e) { } });
-        const live = ins.filter(i => i.state === 'connected' && !(outPort && i.name === outPort.name));
+          (i.state !== 'connected' ? ' — disconnected' : '') + '</option>').join('') +
+          (S.inName && !chosen ? '<option value="missing">' + esc(S.inName) + ' — not connected</option>' : '');
+        selectedInput = !S.inName ? 'all' : chosen ? chosen.id : 'missing';
+        sel.value = selectedInput;
+        const heard = i => i.state === 'connected' && !(outPort && i.name === outPort.name) && (selectedInput === 'all' || selectedInput === i.id);
+        // Desktop app (nativePorts): only an input with a handler is opened in Windows, so unused ports stay free for other
+        // programs. In a web browser every port is opened by the browser itself, and setting a handler to null changes nothing.
+        ins.forEach(i => {
+          if (!heard(i)) releaseWhere(n => n.src === i.id);
+          i.onmidimessage = !midiAccess.nativePorts || heard(i) ? e => onMidi(e, i) : null;
+        });
+        const live = ins.filter(heard);
         if (!live.length) setStatus('nodevice');
         else setStatus('ok', live.map(i => i.name || 'MIDI input').join(', '));
       }
@@ -15311,6 +15330,7 @@
       }
       function setOut(port) {
         allNotesOffOut();                                   // silence the old port first
+        if (outPort && midiAccess && midiAccess.nativePorts && (!port || port.id !== outPort.id)) outPort.close();   // free the old port
         outPort = port; S.outName = port ? port.name : ''; saveSettings(); updateOutStatus();
         if (port && S.gmProgram) sendOut([0xC0, S.gmProgram]);       // apply the chosen instrument to the new port
       }
@@ -15318,6 +15338,7 @@
       $('#outSel').onchange = e => {
         if (!midiAccess) return;
         setOut([...midiAccess.outputs.values()].find(o => o.id === e.target.value) || null);
+        refreshInputs();                                    // the output cable is never listened to
       };
       $('#gmSel').onchange = e => { S.gmProgram = +e.target.value; saveSettings(); sendOut([0xC0, S.gmProgram]); };
       $('#optFwdMute').onchange = e => { S.fwdMute = e.target.checked; saveSettings(); };
@@ -15327,7 +15348,13 @@
       };
       $('#btnOutPanic').onclick = () => { allNotesOffOut(); toast('Sent “all notes off”.', 'ok'); };
       $('#btnConnect').onclick = connectMIDI;
-      $('#deviceSel').onchange = e => { selectedInput = e.target.value; };
+      $('#deviceSel').onchange = e => {
+        selectedInput = e.target.value;
+        const p = midiAccess && [...midiAccess.inputs.values()].find(i => i.id === selectedInput);
+        if (p || selectedInput === 'all') { S.inName = p ? p.name : ''; saveSettings(); }
+        refreshInputs();
+      };
+      window.addEventListener('pianoapp-midi-busy', e => toast(e.detail + ' is in use by another program', 'bad'));
 
       /* ============================================================
          Charts (hand-drawn on canvas, no libraries)
@@ -17405,7 +17432,7 @@
       }
       function dashRangeBounds() {
         const v = $('#dashRange').value, today = localParts(Date.now()).date;
-        $('#dashCustom').hidden = v !== 'custom';
+        if ($('#dashCustom').hidden !== (v !== 'custom')) $('#dashCustom').hidden = v !== 'custom';
         if (v === 'all') return null;
         if (v === 'today') return { from: today, to: today };
         if (v === '7' || v === '30') return { from: dayStr(+v - 1), to: today };
@@ -18232,9 +18259,10 @@ PianoLogger.on('noteon', e => {
         const now = performance.now(); LIVE.t.push(now); while (LIVE.t[0] < now - 1000) LIVE.t.shift();
         LIVE.peak = Math.max(LIVE.peak, LIVE.t.length); liveRoll(); LIVE.hist[59]++; LIVE.dirty = true; liveShow();
       });
+      function setText(el, v) { v = String(v); if (el && el.textContent !== v) el.textContent = v; }   // no redraw when nothing changed
       function liveShow() {
         const now = performance.now(); while (LIVE.t.length && LIVE.t[0] < now - 1000) LIVE.t.shift();
-        $('#cNow').textContent = LIVE.t.length; $('#cPeakS').textContent = LIVE.peak;
+        setText($('#cNow'), LIVE.t.length); setText($('#cPeakS'), LIVE.peak);
       }
       function liveDraw() {
         if (!LIVE.dirty || HTML.classList.contains('pl-tray')) return; LIVE.dirty = false;
@@ -18285,19 +18313,20 @@ PianoLogger.on('noteon', e => {
         const cur = LIVE.t.length, avg10 = SES.t10.length / 10, playing = SES.last && now - SES.last <= GAP_PLAY;
         liveSmooth += ((playing ? Math.max(cur, avg10) : 0) - liveSmooth) * 0.35;
         const pill = $('#liveSpd'); if (pill) {
-          pill.querySelector('b').textContent = cur; pill.classList.toggle('hot', cur >= 8); pill.classList.toggle('on', cur > 0);
+          setText(pill.querySelector('b'), cur); pill.classList.toggle('hot', cur >= 8); pill.classList.toggle('on', cur > 0);
           pill.querySelector('i').style.width = Math.min(100, liveSmooth / 15 * 100) + '%';
         }
         if (activeTab() !== 'dash' || !$('#liveCards') || HTML.classList.contains('pl-tray')) return;   // 7.2: nothing to show while in the system tray
         const sAvg = SES.active ? SES.n / (SES.active / 1000) : 0;
         const card = (l, v, s2, cls) => '<div class="card' + (cls ? ' ' + cls : '') + '"><span>' + l + '</span><b>' + v + '</b><em>' + (s2 || '&nbsp;') + '</em></div>';
-        $('#liveCards').innerHTML =
+        const liveHtml =
           card('● Right now', cur + '/s', playing ? 'keys in the last second' : 'waiting for you to play', playing ? 'live' : '') +
           card('Last 10 seconds', kps(avg10), SES.t10.length + ' presses') +
           card('Session fastest', LIVE.peak + '/s', 'best single second') +
           card('Session best 10 s', kps(SES.best10 / 10), SES.best10 + ' presses') +
           card('Session best minute', SES.best60 + '/min', kps(SES.best60 / 60)) +
           card('Session average', kps(sAvg), 'while playing · ' + (fmtLong(SES.active) || '0s') + ' played');
+        const lc = $('#liveCards'); if (lc._html !== liveHtml || !lc.firstChild) { lc._html = liveHtml; lc.innerHTML = liveHtml; }
         const cv = $('#ch9'); if (cv && cv.clientWidth) {
           const H = LIVE.hist, cur2 = LIVE.sec;
           drawBars(cv, H.slice(), {
@@ -20416,7 +20445,7 @@ PianoLogger.on('noteon', e => {
          player card, practice journal, and the "What's new" update log.
          Everything here is stored in localStorage; the key-press log is only read.
          ===================================================================== */
-      const APP_VERSION = '9.2.3';
+      const APP_VERSION = '9.2.4';
       const todayKey = () => localParts(Date.now()).date;
       const hashStr = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
       const mmss2 = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + pad(t % 60); };
@@ -21105,8 +21134,8 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
       const _drbSess = dashRangeBounds;
       dashRangeBounds = function () {
         const v = $('#dashRange').value, box = $('#dashSessBox');
-        if (!v.startsWith('sess:')) { if (box) box.hidden = true; return _drbSess(); }
-        $('#dashCustom').hidden = true; if (box) box.hidden = false;
+        if (!v.startsWith('sess:')) { if (box && !box.hidden) box.hidden = true; return _drbSess(); }
+        if (!$('#dashCustom').hidden) $('#dashCustom').hidden = true; if (box && box.hidden) box.hidden = false;
         const L = sessList(); sessPaint(L);
         if (!L.length) { const td = todayKey(); return { from: td, to: td, fromTs: Date.now(), toTs: Date.now(), sess: null }; }
         let i = v === 'sess:cur' ? 0 : v === 'sess:prev' ? 1 : L.findIndex(x => x.s === SESSV.sel);
@@ -23187,7 +23216,7 @@ c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
         const name = (typeof PF !== 'undefined' && PF.p && PF.p.name) ? PF.p.name : '';
         $('#hxTitle').innerHTML = esc(greet) + (name ? ', <em>' + esc(name) + '</em>' : '') + '.';
         const { s, t } = statusNow(), c = $('#hxConn'); c.dataset.s = s; c.querySelector('span').textContent = t;
-        const live = midiAccess ? [...midiAccess.inputs.values()].filter(i => i.state === 'connected').length : 0;
+        const live = midiAccess ? [...midiAccess.inputs.values()].filter(i => i.state === 'connected' && (selectedInput === 'all' || selectedInput === i.id)).length : 0;
         $('#hxSub').textContent = s === 'ok' ? 'Listening to ' + live + ' MIDI input' + (live === 1 ? '' : 's') + (selectedInput !== 'all' ? ' (one selected)' : '') + '. Every key press is saved on this device the moment you release it.'
           : 'Connect a MIDI keyboard, or play with the on-screen piano or your PC keyboard. Every press is saved on this device.';
         $('#hxConnect span').textContent = s === 'ok' ? 'Reconnect' : 'Connect MIDI';
@@ -32166,6 +32195,9 @@ html.calm .av-aura{animation:none!important}
          ===================================================================== */
       const CSF = (() => {
         const FORMAT = 1;
+        // 9.2.4: OFF. The online service has no table or function for these files yet (migration 0006 is not applied), so sending
+        // them made every sync end with "Sync failed". Switch on only after the migration is applied and the files tests pass.
+        const READY = false;
         const SETTINGS_MAX = 90000;                       // characters: above this a settings value is sent as a file (settings_large)
         const VOICE_MAX = 19000;                          // characters: above this a voice session is sent as a file (voice_large)
         // localStorage keys by category (values are stored as the exact text, so a restore puts back the same bytes)
@@ -32295,7 +32327,7 @@ html.calm .av-aura{animation:none!important}
           return {
             name: 'files', lost: [],
             async run(ctx) {
-              if (!h.prefs().extras) return;
+              if (!READY || !h.prefs().extras) return;
               const meta = ctx.meta;
               if (meta.filesAt && ctx.now() - meta.filesAt < 600000) return;     // at most every 10 minutes, like the settings channel
               const uid = h.uid(), items = await build(uid, ctx.dev.id);
@@ -32326,6 +32358,7 @@ html.calm .av-aura{animation:none!important}
         async function restore(h, progress) {
           const net = h.net, say = p => { try { progress && progress(p); } catch (e) { } };
           const out = { sets: 0, ls: 0, audio: 0, avatar: 0, settingsLarge: 0, voiceLarge: 0, reload: false };
+          if (!READY) return out;
           const rows = await net.selectAll('category_files', 'select=category,item_key,mime,item_count,bytes,sha256,storage_path&deleted_at=is.null&order=category.asc');
           const avatar = {};                                               // the three avatar parts are written together, once
           let i = 0;
@@ -32397,7 +32430,7 @@ html.calm .av-aura{animation:none!important}
           return true;
         }
 
-        return { FORMAT, SETTINGS_MAX, VOICE_MAX, LS_CATS, SET_CATS, build, summarize, channel, restore, enc };
+        return { FORMAT, READY, SETTINGS_MAX, VOICE_MAX, LS_CATS, SET_CATS, build, summarize, channel, restore, enc };
       })();
 
       /* =====================================================================
@@ -32923,7 +32956,7 @@ html.calm .av-aura{animation:none!important}
           setPrefs({ enabled: true, extras: true, raw: true });                                              // 9.3.0: days, sessions, every key press (raw files), profile/notes/voice history
           p.approvedAt = Date.now();
           await ensureEngine(); if (ST.eng) ST.eng.syncNow();
-          acPaint(); paint(); say('Upload approved. Daily totals, practice sessions, every key press (compressed files) and the profile, notes and voice history are sent. Categories marked "NOT in this version" in the preview are not sent.', 'ok');
+          acPaint(); paint(); say('Upload approved. Daily totals, practice sessions, every key press (compressed files), profile settings and voice session records are sent. Categories marked "NOT in this version" in the preview are not sent.', 'ok');
         }
         const fmtN = n => (+n || 0).toLocaleString('en-US');
         const fmtKB = b => b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(2) + ' MB';
@@ -32947,7 +32980,7 @@ html.calm .av-aura{animation:none!important}
             (function () {
               const rowsH = PREV_OTHER.map(c => {
                 const v = (r.other || {})[c.key] || { count: 0, bytes: 0 };
-                const st = c.inc === 'extras' ? (prefs().extras ? 'uploads with the Profile toggle' : 'waits for the Profile toggle') : c.inc === 'derived' ? 'not uploaded (rebuilt on each computer)' : c.inc === 'device' ? 'stays on this computer (device settings, by design)' : 'NOT in this version: not uploaded yet';
+                const st = c.cat && !CSF.READY ? 'NOT in this version: not uploaded yet' : c.inc === 'extras' ? (prefs().extras ? 'uploads with the Profile toggle' : 'waits for the Profile toggle') : c.inc === 'derived' ? 'not uploaded (rebuilt on each computer)' : c.inc === 'device' ? 'stays on this computer (device settings, by design)' : 'NOT in this version: not uploaded yet';
                 return '<tr><td>' + esc(c.label) + '</td><td>' + fmtN(v.count) + '</td><td>' + fmtKB(v.bytes) + '</td><td>' + esc(st) + '</td></tr>';
               }).join('');
               return '<h4 class="cs-h2">Everything else on this computer</h4><div class="cs-tablewrap"><table class="cs-tbl"><thead><tr><th>Category</th><th>Items</th><th>Size</th><th>Upload status</th></tr></thead><tbody>' + rowsH + '</tbody></table></div>';
@@ -33362,6 +33395,54 @@ html.calm .av-aura{animation:none!important}
             if (old2) old2.insertAdjacentHTML('beforebegin', card2); else if (hp2) hp2.insertAdjacentHTML('beforeend', card2);
           }
         }
+        /* 9.2.2 to 9.2.4. Added in release order, so the newest ends up first. */
+        if (!vsVerLt(APP_VERSION, '9.2.4')) {
+          VERSIONS.unshift({
+            v: '9.2.2', date: '2026-11-24', title: 'See exactly what Cloud sync would upload before it uploads anything',
+            groups: [['Cloud sync', [
+              'New: “Make a preview” shows the days, practice sessions, key presses and estimated size that would be uploaded, compared with the copy online',
+              'Nothing is uploaded until you tick the box and approve the preview. If your history changed since the preview, you are asked to make a new one',
+              'Sync starts switched off on a new computer'
+            ]]]
+          });
+          VERSIONS.unshift({
+            v: '9.2.3', date: '2026-11-24', title: 'Every key press, profile and voice history in the cloud (optional)',
+            groups: [['Cloud sync', [
+              'Optional: every key press is saved online as compressed daily files, and can be restored on a new computer',
+              'Optional: profile settings, practice journal, routines, badges, best scores and voice session records (never the sound)',
+              'Restore only adds what is missing; it never removes anything'
+            ]]]
+          });
+          VERSIONS.unshift({
+            v: '9.2.4', date: '2026-11-28', title: 'Only your chosen MIDI port is used, and lighter on your computer',
+            groups: [
+              ['MIDI ports (Windows app)', [
+                'Fixed: Piano Logger opened every MIDI port, which disturbed other programs. Choose one input and only that one is opened; the others stay free',
+                'Your choice is remembered after a restart. While that port is unplugged, no other port is opened instead',
+                'Fixed: “Connected” messages repeating over and over',
+                '“All MIDI inputs” still opens every port. Other programs still list all ports, because Windows lists them'
+              ]],
+              ['Less work for your computer', [
+                'Lite effects now removes all blur and stops the moving decorations',
+                'Moving decorations pause while another window is in front',
+                'Less redrawing while you are not playing'
+              ]],
+              ['Cloud sync', [
+                'Fixed: “Sync failed, will retry” caused by an unfinished upload of other files. That upload is switched off: sung notes, Sheet Music, takes, voice recordings, personal notes, profile picture, quests and gestures are not uploaded yet'
+              ]],
+              ['In a web browser', [
+                'The browser itself still opens every MIDI port; choosing one input there only chooses which notes are counted'
+              ]]
+            ]
+          });
+          const hp3 = $('#p-help'), old3 = hp3 && hp3.querySelector('#help921');
+          if (hp3 && !hp3.querySelector('#help924')) {
+            const card3 = '<div class="v71card" id="help924" style="margin-top:14px"><h3 style="margin:0 0 8px">New in 9.2.4</h3><ul style="margin:0;padding-left:18px;line-height:1.6">' +
+              '<li><b>Other programs need your MIDI ports?</b> In the Windows app, pick one input in the box at the top instead of <i>All MIDI inputs</i>. Only that port is opened.</li>' +
+              '<li><b>Slow computer?</b> Switch on <b>Lite effects</b>: no blur and no moving decorations.</li></ul></div>';
+            if (old3) old3.insertAdjacentHTML('beforebegin', card3); else hp3.insertAdjacentHTML('beforeend', card3);
+          }
+        }
 
         install();
         webReturn();                                              // only does anything when the address carries a Google answer
@@ -33427,6 +33508,32 @@ html.calm .av-aura{animation:none!important}
         document.body.appendChild(o);
         setTimeout(function () { try { window.pianoApp.quit(); } catch (e) { } }, 2500);
       });
+    })();
+  </script>
+  <script>
+    // v9.2.4: pause the endless (decorative) animations while the window is not in front, or while Lite effects is on.
+    // Only endless ones: an entrance animation that was paused could leave a message invisible.
+    (function () {
+      var mine = new Set();
+      function sync() {
+        var root = document.documentElement, away = document.hidden || !document.hasFocus();
+        var idle = away || root.classList.contains('lite');
+        root.classList.toggle('pl-bg-idle', away);
+        document.getAnimations().forEach(function (a) {
+          var t = a.effect && a.effect.getComputedTiming();
+          if (!t || t.iterations !== Infinity) return;
+          if (idle) { if (a.playState === 'running') { a.pause(); mine.add(a); } }
+          else if (mine.has(a)) { a.play(); mine.delete(a); }
+        });
+        mine.forEach(function (a) { if (a.playState === 'idle') mine.delete(a); });   // its element is gone
+      }
+      try {
+        window.addEventListener('focus', sync);
+        window.addEventListener('blur', sync);
+        document.addEventListener('visibilitychange', sync);
+        setInterval(sync, 1500);   // new animations, and the Lite effects switch
+        sync();
+      } catch (e) { }
     })();
   </script>
 </body>

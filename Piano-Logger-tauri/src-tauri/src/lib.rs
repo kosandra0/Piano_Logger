@@ -19,6 +19,7 @@ use tauri::{
     AppHandle, Manager, State, Url, WebviewUrl, WebviewWindowBuilder,
 };
 mod bridge;
+mod midi; // v9.2.4: only the MIDI ports the user selected are opened
 mod oauth; // v9.2.0: reads the browser's return trip of a sign-in (pure, unit-tested)
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
@@ -789,6 +790,41 @@ fn oauth_cancel() {
     }
 }
 
+/* ---------- MIDI (see midi.rs) ---------- */
+#[tauri::command]
+fn midi_list(m: State<midi::Midi>) -> midi::Ports {
+    m.list()
+}
+#[tauri::command]
+fn midi_sync(inputs: Vec<String>, m: State<midi::Midi>) -> Vec<String> {
+    m.sync(&inputs)
+}
+#[tauri::command]
+fn midi_send(name: String, bytes: Vec<u8>, m: State<midi::Midi>) -> Res<()> {
+    m.send(&name, &bytes)
+}
+#[tauri::command]
+fn midi_close_output(name: String, m: State<midi::Midi>) {
+    m.close_output(&name)
+}
+/// Hands incoming MIDI messages to the page, together with how long ago each one arrived.
+fn forward_midi(app: AppHandle, rx: std::sync::mpsc::Receiver<midi::Msg>) {
+    std::thread::spawn(move || {
+        while let Ok(first) = rx.recv() {
+            let mut batch = vec![first];
+            batch.extend(rx.try_iter().take(255));
+            let m = app.state::<midi::Midi>();
+            let list: Vec<_> = batch
+                .iter()
+                .filter_map(|x| m.name_of(x.slot).map(|n| (n, midi::unpack(x.packed), x.at.elapsed().as_secs_f64() * 1000.0)))
+                .collect();
+            if let (Some(w), Ok(json)) = (app.get_webview_window("main"), serde_json::to_string(&list)) {
+                let _ = w.eval(format!("window.dispatchEvent(new CustomEvent('pianoapp-midi', {{ detail: {json} }}))"));
+            }
+        }
+    });
+}
+
 /* ---------- start ---------- */
 // What the page may load. It is one file with inline scripts and styles; it fetches piano samples, fonts and its own
 // newer version from these sites only. 'unsafe-eval' is for the page's add-ons feature (new Function on a file the user picks).
@@ -852,7 +888,8 @@ pub fn run() {
             win_ontop, app_startup, upd_store, app_restart, open_data_dir, repair_storage,
             win_state, win_minimize, win_toggle_max, win_close, win_drag, app_close_to_tray, app_quit,
             bridge_send, bridge_release_all, bridge_foreground, bridge_focus_target, bridge_status,
-            oauth_begin, oauth_cancel
+            oauth_begin, oauth_cancel,
+            midi_list, midi_sync, midi_send, midi_close_output
         ])
         // Alt+F4 / closing from the taskbar follows the same choice as the title bar's close button
         .on_window_event(|w, ev| {
@@ -906,6 +943,8 @@ pub fn run() {
             let served = pick_page(&h, &p.page);
             app.manage(AppState { p, settings: Mutex::new(settings), served: Mutex::new(served), bk: Mutex::new(HashMap::new()) });
             app.manage(bridge::Bridge::default());
+            app.manage(midi::Midi::default());
+            forward_midi(h.clone(), midi::Midi::receiver());
             // Ctrl + Alt + End anywhere: release every bridge key at once and disarm the bridge in the page
             let hk = h.clone();
             let ok = bridge::start_emergency_hotkey(move || {
@@ -1013,6 +1052,12 @@ pub fn run() {
             if let tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. } = event {
                 if let Some(b) = app.try_state::<bridge::Bridge>() {
                     b.release_all();
+                }
+            }
+            // give every MIDI port back to Windows
+            if let tauri::RunEvent::Exit = event {
+                if let Some(m) = app.try_state::<midi::Midi>() {
+                    m.close_all();
                 }
             }
         });

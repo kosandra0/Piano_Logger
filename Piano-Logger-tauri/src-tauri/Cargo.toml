@@ -1,6 +1,6 @@
 [package]
 name = "piano-logger"
-version = "9.2.3"
+version = "9.2.4"
 description = "Piano Logger: MIDI visualizer and lifetime key logger for Windows"
 authors = ["kosandra0"]
 license = "UNLICENSED"
@@ -30,7 +30,7 @@ windows-registry = "0.6"   # "Start with Windows": the current user's Run key on
 # MIDI Keyboard Bridge: real key presses (SendInput), the foreground window, the Ctrl+Alt+End emergency hotkey.
 # Same version Tauri already uses, so no second copy is built.
 webview2-com = "0.39"   # 7.2: tell WebView2 it is hidden (no drawing) and to use less memory while in the tray
-windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading"] }
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading", "Win32_Media_Audio"] }   # Win32_Media_Audio: native MIDI (midi.rs)
 
 [profile.release]
 codegen-units = 1

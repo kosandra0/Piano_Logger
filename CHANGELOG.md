@@ -3,15 +3,24 @@
 Versions of the Piano Logger page (`APP_VERSION` in `piano-logger.html`). The same history is shown in the app under **What's new**.
 Desktop app versions are listed separately at the end.
 
-## Unreleased — other data categories (live page only; NOT yet verified; migration NOT applied)
+## 9.2.4 — 2026-11-28 · Only your chosen MIDI port is used, and lighter on your computer
 
-The live demo page now contains a new `files` sync channel. It is not in the 9.2.3 installer and is not verified yet.
-- Sung notes, Sheet Music (library, progress, settings), saved takes, voice recordings (details and audio), voice settings, personal notes, profile picture, quests and gestures are read by one manifest (the preview and the uploader use the same numbers) and uploaded as checksummed files when the Profile, notes and voice history toggle is on.
-- Large settings values and voice session records, which used to be skipped silently above 90,000 and 19,000 characters, are now sent as files.
-- Restore of these categories is add-only: it never overwrites or deletes what is already on the computer, and a file whose SHA-256 does not match is refused.
-- Needs the database migration `cloud-sync/migrations/0006_category_files.sql` (adds one table and one function). The migration is written and dry-run tested, but it is not applied to the live project yet.
-- Not yet done: isolated upload and restore tests of these categories, a new installer, and a version bump.
-- Still not synced by design: themes, graphics and layout (device settings), and derived caches (rebuilt on each computer).
+### Windows app: MIDI ports
+- Only the MIDI port you choose is opened. The app now talks to Windows MIDI itself; before, the browser engine inside it opened every port and never released it, which disturbed other programs.
+- Your choice is remembered after a restart. While that port is unplugged, no other port is opened instead.
+- Fixed: "Connected" pop-ups repeating thousands of times (seen in an unreleased 9.2.4 build).
+- The status line shows only the port that is being listened to.
+- "All MIDI inputs" still opens every port. Other programs still list all ports, because Windows lists them.
+
+### Lighter on your computer
+- Lite effects now removes all blur and stops the endless animations. Endless animations also pause while the window is behind another one. Less redrawing while nothing is played.
+- Measured on one PC (2 logical processors, empty profile, idle, share of one processor core): Lite effects off 62 % in front and 26 % behind; Lite effects on 19 % and 18 %. Memory about 550 MB and 440 MB. Measured before the last small redraw change.
+
+### Cloud sync
+- Fixed: "Sync failed, will retry". The 9.2.3 web page carried an unfinished upload of other data (sung notes, Sheet Music, takes, voice recordings, personal notes, profile picture, quests, gestures, large records) that the online service cannot accept yet. It is switched off; those items are not uploaded, and the preview says so. Files it had already placed in storage are left there.
+
+### Web browser
+- A web browser still opens every MIDI port; the port selector there only chooses which notes are counted.
 
 ## 9.2.3 — 2026-11-24 · Every key press, profile and voice history in the cloud, restorable on a new computer (installer published)
 
